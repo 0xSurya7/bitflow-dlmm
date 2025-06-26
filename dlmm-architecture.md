@@ -272,3 +272,42 @@ Manage or retrieve data about the pool contract
 - `create-pool`: Called via `create-pool` in core
 
 ## dlmm-router-v-1-1 (w.i.p.)
+
+### Traits
+- `dlmm-pool-trait-v-1-1` (use)
+- `sip-010-trait-ft-standard-v-1-1` (use)
+
+### Quote Functions
+Retrieve quotes using a single or multiple bins in a pool
+
+**Public** (read-only if possible)
+- `get-dy-multi`: Return token X -> Y quote (100 max)
+- `get-dx-multi`: Return token Y -> X quote (100 max)
+- `get-dlp-multi`: Return number of shares to mint for adding liquidity (100 max)
+
+**Private**
+- `fold-get-dy`: Used to batch `get-dy` calls via core
+- `fold-get-dx`: Used to batch `get-dx` calls via core
+- `fold-get-dlp`: Used to batch `get-dlp` calls via core
+
+### Swap Functions
+Swap using a single bin or multiple bins in a pool
+
+**Public**
+- `swap-x-for-y-multi`: Swap token X -> Y (100 max)
+- `swap-y-for-x-multi`: Swap token Y -> X (100 max)
+
+**Private**
+- `fold-swap-x-for-y`: Used to batch `swap-x-for-y` calls via core
+- `fold-swap-y-for-x`: Used to batch `swap-y-for-x` calls via core
+
+### Liquidity Functions
+Add or withdraw liquidity using a single or multiple bins in a pool
+
+**Public**
+- `add-liquidity-multi`: Add proportional liquidity (single-sided for non-active bins) (100 max)
+- `withdraw-liquidity-multi`: Withdraw proportional liquidity (100 max)
+
+**Private**
+- `fold-add-liquidity`: Used to batch `add-liquidity` calls via core
+- `fold-withdraw-liquidity`: Used to batch `withdraw-liquidity` calls via core
