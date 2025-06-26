@@ -30,7 +30,7 @@
 #### Admin-Configurable
 Set via public admin functions
 - `admins` (`(list 5 principal)`): List of principals with admin permissions
-- `bin-steps` (`list 10 uint`): List of allowed bin steps
+- `bin-steps` (`list 10 uint`): List of allowed bin steps (initial: 1, 5, 10, and 20)
 - `minimum-total-shares` (`uint`): Minimum shares to mint when creating a pool
 - `minimum-burnt-shares` (`uint`): Minimum shares to burn when creating a pool
 - `public-pool-creation` (`bool`): Allow pool creation by anyone or admins only
