@@ -5,7 +5,7 @@
 ### Core
 - `dlmm-core-v-1-1`
 - `dlmm-pool-trait-v-1-1`
-- `dlmm-pool-stx-aeusdc-v-1-1` (example pool)
+- `dlmm-pool-stx-sbtc-v-1-1` (example pool)
 - `dlmm-router-v-1-1`
 
 ### External
@@ -184,7 +184,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `pool-burn`: (uint uint principal) (response bool uint)
 - `create-pool`: ...
 
-## 4. dlmm-pool-stx-aeusdc-v-1-1
+## 4. dlmm-pool-stx-sbtc-v-1-1
 
 ### Traits
 - `dlmm-pool-trait-v-1-1` (implement)
