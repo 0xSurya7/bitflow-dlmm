@@ -36,13 +36,13 @@ Set via public admin functions
 - `public-pool-creation` (`bool`): Allow pool creation by anyone or admins only
 
 #### Indirectly Modified
-Updated only as a side-effect of other functions
+Updated as a side-effect of other functions
 - `admin-helper` (`principal`): Helper variable for removing an admin
 - `last-pool-id` (`uint`): ID of last created pool
 
 ### Mappings
-- `pools` (`uint { id: uint, name: (string-ascii 32), symbol: (string-ascii 32), pool-contract: principal }`)  
-  _May add `pool-status` and `fee-address` here instead of in each pool contract_
+- `pools` (`uint { id: uint, name: (string-ascii 32), symbol: (string-ascii 32), pool-contract: principal, status: bool }`)  
+  _May add `fee-address` here instead of in each pool contract_
 
 ### Admin Functions
 Follows the same design as XYK Core
@@ -81,15 +81,15 @@ Manage or retrieve data about pools
 - `set-y-fees`: Set Y protocol and provider fees (admin-only)
   - Parameters: `(pool-trait <dlmm-pool-trait>) (protocol-fee uint) (provider-fee uint)`
 - `set-pool-uri-multi`: Batch version of `set-pool-uri` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (uris (list 120 (string-utf8 256))))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (uris (list 120 (string-utf8 256)))`
 - `set-pool-status-multi`: Batch version of `set-pool-status` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (statuses (list 120 bool)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (statuses (list 120 bool))`
 - `set-fee-address-multi`: Batch version of `set-fee-address` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (addresses (list 120 principal)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (addresses (list 120 principal))`
 - `set-x-fees-multi`: Batch version of `set-x-fees` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint))`
 - `set-y-fees-multi`: Batch version of `set-y-fees` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint))`
 
 #### Private
 - `is-valid-pool`: Check the validity of a pool
@@ -117,7 +117,7 @@ Create new pools
 
 #### Public
 - `create-pool`: Create a new pool (admin-only when `public-pool-creation` is false)
-  - Parameters: ...  
+  - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>) (x-amount uint) (y-amount uint) (burn-amount uint) (bin-step uint) (x-protocol-fee uint) (x-provider-fee uint) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-variable-fee uint) (variable-fees-cooldown uint) (freeze-variable-fees-manager bool) (fee-address principal) (uri (string-utf8 256)) (status bool)`  
   _If `public-pool-creation` is `true`, anyone can create pools. Otherwise, only admins can create pools_
 
 #### Private
@@ -168,13 +168,13 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `reset-variable-fees`: Reset variable fees if the cooldown period has passed
   - Parameters: `(pool-trait <dlmm-pool-trait>)`
 - `set-variable-fees-multi`: Batch version of `set-variable-fees` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (x-fees (list 120 uint)) (y-fees (list 120 uint)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (x-fees (list 120 uint)) (y-fees (list 120 uint))`
 - `set-variable-fees-manager-multi`: Batch version of `set-variable-fees-manager` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (managers (list 120 principal)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (managers (list 120 principal))`
 - `set-variable-fees-cooldown-multi`: Batch version of `set-variable-fees-cooldown` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (cooldowns (list 120 uint)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (cooldowns (list 120 uint))`
 - `set-freeze-variable-fees-manager-multi`: Batch version of `set-freeze-variable-fees-manager` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>))`
 
 ## 3. dlmm-pool-trait-v-1-1 (w.i.p.)
 
@@ -193,11 +193,9 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `get-overall-balance`: (principal) (response uint uint)
 - `get-pool`: ...
 - `get-active-bin-id`: () (response uint uint)
-- `get-balances-at-bin`: ...
+- `get-balances-at-bin`: (uint) (response uint uint)
 - `get-user-bins`: ...
 - `set-pool-uri`: ((string-utf8 256)) (response bool uint)
-- `set-pool-status`: (bool) (response bool uint)  
-  _Remove if `pool-status` is managed in the core contract_
 - `set-variable-fees-manager`: (principal) (response bool uint)
 - `set-fee-address`: (principal) (response bool uint)  
   _Remove if `fee-address` is managed in the core contract_
@@ -206,8 +204,8 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `set-variable-fees`: (uint uint) (response bool uint)
 - `set-variable-fees-cooldown`: (uint) (response bool uint)
 - `set-freeze-variable-fees-manager`: () (response bool uint)
-- `update-bin-balances`: ...
-- `update-user-balance`: ...
+- `update-bin-balances`: (uint uint uint uint) (response bool uint)
+- `update-user-balance`: (uint principal uint) (response bool uint)
 - `transfer`: (uint uint principal principal) (response bool uint)
 - `transfer-memo`: (uint uint principal principal (buff 34)) (response bool uint)
 - `transfer-many`: ((list 200 {token-id: uint, amount: uint, sender: principal, recipient: principal})) (response bool uint)
@@ -215,7 +213,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `pool-transfer`: (\<sip-010-trait> uint principal) (response bool uint)
 - `pool-mint`: (uint uint principal) (response bool uint)
 - `pool-burn`: (uint uint principal) (response bool uint)
-- `create-pool`: ...
+- `create-pool`: (principal principal principal uint principal principal uint (string-ascii 32) (string-ascii 32) (string-utf8 256)) (response bool uint)
 
 ## 4. dlmm-pool-btc-usdc-v-1-1
 
@@ -250,8 +248,6 @@ Set via the core contract only at pool creation
 #### Admin-Configurable
 Set via the core contract using admin functions
 - `pool-uri` (`string-utf8 256`): Pool and `pool-token` URI
-- `pool-status` (`bool`): Status of the pool (`swap-x-for-y`, `swap-y-for-x`, `add-liquidity`)  
-  _May add this in the `pools` mapping in the core contract instead of here_
 - `variable-fees-manager`: Principal authorized to set variable fees 
 - `fee-address` (`principal`): Principal to send protocol fees to  
   _May add this in the `pools` mapping in the core contract instead of here_
@@ -265,14 +261,14 @@ Set via the core contract using admin functions
 - `freeze-variable-fees-manager`: If `true`, `variable-fees-manager` is permanently frozen
 
 #### Indirectly Modified
-Updated only as a side-effect of other functions
+Updated as a side-effect of other functions
 - `active-bin-id`: ID of the active bin
 - `last-variable-fees-update`: Latest variable fees update (Stacks block)
 
 ### Mappings
 - `balances-at-bin` (`uint { x-balance: uint, y-balance: uint, total-shares: uint }`)
 - `user-balance-at-bin` (`{ id: uint, user: principal } uint`)
-- `user-bins` (`principal (list 1000 uint)`)
+- `user-bins` (`principal (list 1001 uint)`)
 
 ### SIP-013 Functions
 Interact or retrieve data about the `pool-token` and `pool-token-id` (SIP-013-compliant)
@@ -322,9 +318,6 @@ Manage or retrieve data about the pool contract
 #### Public (callable by core only)
 - `set-pool-uri`: Called via `set-pool-uri` in core
   - Parameters: `(uri (string-utf8 256))`
-- `set-pool-status`: Called via `set-pool-status` in core
-  - Parameters: `(status bool)`  
-  _Remove if `pool-status` is managed in the core contract_
 - `set-fee-address`: Called via `set-fee-address` in core
   - Parameters: `(address principal)`  
   _Remove if `fee-address` is managed in the core contract_
@@ -350,8 +343,8 @@ Manage or retrieve data about the pool contract
 - `pool-burn`: Burn existing `pool-token` via `withdraw-liquidity` in core
   - Parameters: `(id uint) (amount uint) (user principal)`
 - `create-pool`: Called via `create-pool` in core
-  - Parameters: ...
-
+  - Parameters: `(x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (step uint) (fee-addr principal) (core-caller principal) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-utf8 256))`
+ 
 ## 5. dlmm-router-v-1-1
 
 ### Constants
