@@ -5,7 +5,7 @@
 ### Core
 - `dlmm-core-v-1-1`
 - `dlmm-pool-trait-v-1-1`
-- `dlmm-pool-btc-usdc-v-1-1` (example pool)
+- `dlmm-pool-sbtc-usdc-v-1-1` (example pool)
 - `dlmm-router-v-1-1`
 
 ### External
@@ -118,7 +118,7 @@ Create new pools
 
 #### Public
 - `create-pool`: Create a new pool (admin-only when `public-pool-creation` is false)
-  - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>) (x-amount uint) (y-amount uint) (burn-amount uint) (bin-step uint) (x-protocol-fee uint) (x-provider-fee uint) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-variable-fee uint) (variable-fees-cooldown uint) (freeze-variable-fees-manager bool) (fee-address principal) (uri (string-utf8 256)) (status bool)`  
+  - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>) (x-amount uint) (y-amount uint) (burn-amount uint) (bin-step uint) (x-protocol-fee uint) (x-provider-fee uint) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-variable-fee uint) (variable-fees-cooldown uint) (freeze-variable-fees-manager bool) (fee-address principal) (uri (string-ascii 256)) (status bool)`  
   _If `public-pool-creation` is `true`, anyone can create pools. Otherwise, only admins can create pools_
 
 #### Private
@@ -187,26 +187,25 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `get-name`: () (response (string-ascii 32) uint)
 - `get-symbol`: () (response (string-ascii 32) uint)
 - `get-decimals`: (uint) (response uint uint)
-- `get-token-uri`: (uint) (response (optional (string-utf8 256)) uint)
+- `get-token-uri`: (uint) (response (optional (string-ascii 256)) uint)
 - `get-total-supply`: (uint) (response uint uint)
 - `get-overall-supply`: () (response uint uint)
 - `get-balance`: (uint principal) (response uint uint)
 - `get-overall-balance`: (principal) (response uint uint)
-- `get-pool`: () (response {pool-id: uint, pool-name: (string-ascii 32), pool-symbol: (string-ascii 32), pool-uri: (string-utf8 256), pool-created: bool, creation-height: uint, core-address: principal, variable-fees-manager: principal, fee-address: principal, x-token: principal, y-token: principal, pool-token: principal, x-balance: uint, y-balance: uint, bin-step: uint, x-protocol-fee: uint, x-provider-fee: uint, x-variable-fee: uint, y-protocol-fee: uint, y-provider-fee: uint, y-variable-fee: uint, last-variable-fees-update: uint, variable-fees-cooldown: uint, freeze-variable-fees-manager: bool} uint)
-- `get-active-bin-id`: () (response uint uint)
-- `get-balances-at-bin`: (uint) (response uint uint)
-- `get-user-bins`: () (response (list 1001 uint) uint)
-- `set-pool-uri`: ((string-utf8 256)) (response bool uint)
+- `get-pool`: () (response {pool-id: uint, pool-name: (string-ascii 32), pool-symbol: (string-ascii 32), pool-uri: (string-ascii 256), pool-created: bool, creation-height: uint, core-address: principal, variable-fees-manager: principal, fee-address: principal, x-token: principal, y-token: principal, pool-token: principal, x-balance: uint, y-balance: uint, bin-step: uint, active-bin-id: uint, x-protocol-fee: uint, x-provider-fee: uint, x-variable-fee: uint, y-protocol-fee: uint, y-provider-fee: uint, y-variable-fee: uint, last-variable-fees-update: uint, variable-fees-cooldown: uint, freeze-variable-fees-manager: bool} uint)
+- `get-bin-balances`: (uint) (response uint uint)
+- `get-user-bins`: (principal) (response (list 1001 uint) uint)
+- `set-pool-uri`: ((string-ascii 256)) (response bool uint)
 - `set-variable-fees-manager`: (principal) (response bool uint)
 - `set-fee-address`: (principal) (response bool uint)  
   _Remove if `fee-address` is managed in the core contract_
+- `set-active-bin-id`: (uint) (response bool uint)
 - `set-x-fees`: (uint uint) (response bool uint)
 - `set-y-fees`: (uint uint) (response bool uint)
 - `set-variable-fees`: (uint uint) (response bool uint)
 - `set-variable-fees-cooldown`: (uint) (response bool uint)
 - `set-freeze-variable-fees-manager`: () (response bool uint)
-- `update-bin-balances`: (uint uint uint uint) (response bool uint)
-- `update-user-balance`: (uint principal uint) (response bool uint)
+- `update-bin-balances`: ({id: uint, x-balance: uint, y-balance: uint} {x-balance: uint, y-balance: uint}) (response bool uint)
 - `transfer`: (uint uint principal principal) (response bool uint)
 - `transfer-memo`: (uint uint principal principal (buff 34)) (response bool uint)
 - `transfer-many`: ((list 200 {token-id: uint, amount: uint, sender: principal, recipient: principal})) (response bool uint)
@@ -214,9 +213,9 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `pool-transfer`: (\<sip-010-trait> uint principal) (response bool uint)
 - `pool-mint`: (uint uint principal) (response bool uint)
 - `pool-burn`: (uint uint principal) (response bool uint)
-- `create-pool`: (principal principal principal uint principal principal uint (string-ascii 32) (string-ascii 32) (string-utf8 256)) (response bool uint)
+- `create-pool`: (principal principal principal uint principal principal uint (string-ascii 32) (string-ascii 32) (string-ascii 256)) (response bool uint)
 
-## 4. dlmm-pool-btc-usdc-v-1-1
+## 4. dlmm-pool-sbtc-usdc-v-1-1
 
 ### Traits
 - `dlmm-pool-trait-v-1-1` (implement)
@@ -248,8 +247,8 @@ Set via the core contract only at pool creation
 
 #### Admin-Configurable
 Set via the core contract using admin functions
-- `pool-uri` (`string-utf8 256`): Pool and `pool-token` URI
-- `variable-fees-manager`: Principal authorized to set variable fees 
+- `pool-uri` (`string-ascii 256`): Pool and `pool-token` URI
+- `variable-fees-manager` (`principal`): Principal authorized to set variable fees 
 - `fee-address` (`principal`): Principal to send protocol fees to  
   _May add this in the `pools` mapping in the core contract instead of here_
 - `x-protocol-fee` (`uint`): Protocol fee charged for protocol when swapping X → Y
@@ -258,8 +257,8 @@ Set via the core contract using admin functions
 - `y-protocol-fee` (`uint`): Protocol fee charged for protocol when swapping Y → X
 - `y-provider-fee` (`uint`): Protocol fee charged for providers when swapping Y → X
 - `y-variable-fee` (`uint`): Variable fee charged for providers when swapping Y → X
-- `variable-fees-cooldown`: Variable fees can be reset after this cooldown (Stacks blocks) is reached
-- `freeze-variable-fees-manager`: If `true`, `variable-fees-manager` is permanently frozen
+- `variable-fees-cooldown` (`uint`): Variable fees can be reset after this cooldown (Stacks blocks) is reached
+- `freeze-variable-fees-manager` (`bool`): If `true`, `variable-fees-manager` is permanently frozen
 
 #### Indirectly Modified
 Updated as a side-effect of other functions
@@ -302,6 +301,11 @@ Interact or retrieve data about the `pool-token` and `pool-token-id` (SIP 013-co
   - Parameters: `(transfers (list 200 {token-id: uint, amount: uint, sender: principal, recipient: principal, memo: (buff 34)}))`
 
 #### Private
+- `fold-transfer-many`: Helper function for transferring many `pool-token`
+- `fold-transfer-many-memo`: Helper function for transferring many `pool-token` with memo
+- `get-balance-or-default`: Helper function to get user balance at a bin from `user-balance-at-bin` mapping or default
+- `update-user-balance`: Update the `user-balance-at-bin` and `user-bins` mappings via the mint, burn, and transfer functions in pool
+  - Parameters: `(id uint) (user principal) (balance uint)`
 - `tag-pool-token-id`: Burn `pool-token-id` from one principal and mint to another
   - Parameters: `(id {token-id: uint, owner: principal})`
 
@@ -310,20 +314,19 @@ Manage or retrieve data about the pool contract
 
 #### Read-only
 - `get-pool`: Returns base pool data
-- `get-active-bin-id`: Returns `active-bin-id`
-- `get-balances-at-bin`: Returns data about a bin from `balances-at-bin` mapping
+- `get-bin-balances`: Returns data about a bin from `balances-at-bin` mapping
   - Parameters: `(id uint)`
-- `get-user-balance-at-bin`: Returns user data at a bin from `user-balance-at-bin` mapping
-  - Parameters: `(id uint) (user principal)`
 - `get-user-bins`: Returns list of user bins from `user-bins` mapping
   - Parameters: `(user principal)`
 
 #### Public (callable by core only)
 - `set-pool-uri`: Called via `set-pool-uri` in core
-  - Parameters: `(uri (string-utf8 256))`
+  - Parameters: `(uri (string-ascii 256))`
 - `set-fee-address`: Called via `set-fee-address` in core
   - Parameters: `(address principal)`  
   _Remove if `fee-address` is managed in the core contract_
+- `set-active-bin`: Set current active bin via pool creation, swap, and liquidity functions in core
+  - Parameters: `(id uint)`
 - `set-x-fees`: Called via `set-x-fees` in core
   - Parameters: `(protocol-fee uint) (provider-fee uint)`
 - `set-y-fees`: Called via `set-y-fees` in core
@@ -333,12 +336,8 @@ Manage or retrieve data about the pool contract
 - `set-variable-fees-cooldown`: Called via `set-variable-fees-cooldown` in core
   - Parameters: `(cooldown uint)`
 - `set-freeze-variable-fees-manager`: Called via `set-freeze-variable-fees-manager` in core
-- `set-active-bin`: Set current active bin via pool creation, swap, and liquidity functions in core
-  - Parameters: `(id uint)`
 - `update-bin-balances`: Update the `balances-at-bin` mapping via pool creation, swap, and liquidity functions in core
-  - Parameters: `(id uint) (x-balance uint) (y-balance uint) (total-shares uint)`
-- `update-user-balance`: Update the `user-balance-at-bin` mapping via the mint, burn, and transfer functions in pool
-  - Parameters: `(id uint) (user principal) (balance uint)`
+  - Parameters: `(bin-data {id: uint, x-balance: uint, y-balance: uint}) (pool-data {x-balance: uint, y-balance: uint})`
 - `pool-transfer`: Transfer X / Y token from the pool via swap and withdraw liquidity functions in core
   - Parameters: `(token-trait <sip-010-trait>) (amount uint) (recipient principal)`
 - `pool-mint`: Mint new `pool-token` via pool creation and add liquidity functions in core
@@ -346,7 +345,7 @@ Manage or retrieve data about the pool contract
 - `pool-burn`: Burn existing `pool-token` via `withdraw-liquidity` in core
   - Parameters: `(id uint) (amount uint) (user principal)`
 - `create-pool`: Called via `create-pool` in core
-  - Parameters: `(x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (step uint) (fee-addr principal) (core-caller principal) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-utf8 256))`
+  - Parameters: `(x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (step uint) (fee-addr principal) (core-caller principal) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))`
  
 ## 5. dlmm-router-v-1-1
 
