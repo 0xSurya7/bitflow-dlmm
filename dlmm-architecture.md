@@ -10,7 +10,7 @@
 
 ### External
 - `sip-010-trait-ft-standard-v-1-1`
-- `sip-013-trait-ft-standard-v-1-1`
+- `sip-013-trait-sft-standard-v-1-1`
 - `sip-013-transfer-many-trait-v-1-1`
 - `token-stx-v-1-2`
 
@@ -220,7 +220,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 
 ### Traits
 - `dlmm-pool-trait-v-1-1` (implement)
-- `sip-013-trait-ft-standard-v-1-1` (implement)
+- `sip-013-trait-sft-standard-v-1-1` (implement)
 - `sip-013-transfer-many-trait-v-1-1` (implement)
 - `sip-010-trait-ft-standard-v-1-1` (use)
 
@@ -229,7 +229,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `define-non-fungible-token pool-token-id {token-id: uint, owner: principal}`
 
 ### Constants
-- Pool and SIP-013 error codes
+- Pool and SIP 013 error codes
 - `CORE_ADDRESS` (`.dlmm-core-v-1-1`)
 - `CONTRACT_DEPLOYER` (`tx-sender`)
 
@@ -273,8 +273,8 @@ Updated as a side-effect of other functions
 - `user-balance-at-bin` (`{id: uint, user: principal} uint`)
 - `user-bins` (`principal (list 1001 uint)`)
 
-### SIP-013 Functions
-Interact or retrieve data about the `pool-token` and `pool-token-id` (SIP-013-compliant)
+### SIP 013 Functions
+Interact or retrieve data about the `pool-token` and `pool-token-id` (SIP 013-compliant)
 
 #### Read-only
 - `get-name`: Returns `pool-name`
