@@ -36,11 +36,12 @@
       y-protocol-fee: uint,
       y-provider-fee: uint,
       y-variable-fee: uint,
+      bin-change-count: uint,
       last-variable-fees-update: uint,
       variable-fees-cooldown: uint,
       freeze-variable-fees-manager: bool
     } uint))
-    (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, total-shares: uint} uint))
+    (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
     (get-user-bins (principal) (response (list 1001 uint) uint))
     (set-pool-uri ((string-ascii 256)) (response bool uint))
     (set-variable-fees-manager (principal) (response bool uint))
@@ -59,6 +60,6 @@
     (pool-transfer (<sip-010-trait> uint principal) (response bool uint))
     (pool-mint (uint uint principal) (response bool uint))
     (pool-burn (uint uint principal) (response bool uint))
-    (create-pool (principal principal principal principal principal uint uint uint (string-ascii 32) (string-ascii 32) (string-ascii 256)) (response bool uint))
+    (create-pool (principal principal principal principal principal uint uint uint uint (string-ascii 32) (string-ascii 32) (string-ascii 256)) (response bool uint))
   )
 )

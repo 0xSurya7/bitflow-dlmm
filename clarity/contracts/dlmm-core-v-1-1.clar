@@ -81,7 +81,7 @@
 (define-map bin-factors uint (list 1001 uint))
 
 ;; Minimum shares required to mint per bin when creating a pool
-(define-data-var minimum-total-shares uint u10000)
+(define-data-var minimum-bin-shares uint u10000)
 
 ;; Minimum shares required to burn per bin when creating a pool
 (define-data-var minimum-burnt-shares uint u1000)
@@ -129,8 +129,8 @@
 )
 
 ;; Get minimum shares required to mint per bin when creating a pool
-(define-read-only (get-minimum-total-shares)
-  (ok (var-get minimum-total-shares))
+(define-read-only (get-minimum-bin-shares)
+  (ok (var-get minimum-bin-shares))
 )
 
 ;; Get minimum shares required to burn per bin when creating a pool
@@ -214,20 +214,20 @@
 )
 
 ;; Set minimum shares required to mint and burn per bin when creating a pool
-(define-public (set-minimum-shares (min-total uint) (min-burnt uint))
+(define-public (set-minimum-shares (min-bin uint) (min-burnt uint))
   (let (
     (caller tx-sender)
   )
     (begin
       ;; Assert caller is an admin and amounts are greater than 0
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (and (> min-total u0) (> min-burnt u0)) ERR_INVALID_AMOUNT)
+      (asserts! (and (> min-bin u0) (> min-burnt u0)) ERR_INVALID_AMOUNT)
       
-      ;; Assert that min-total is greater than min-burnt
-      (asserts! (> min-total min-burnt) ERR_INVALID_MIN_BURNT_SHARES)
+      ;; Assert that min-bin is greater than min-burnt
+      (asserts! (> min-bin min-burnt) ERR_INVALID_MIN_BURNT_SHARES)
 
-      ;; Update minimum-total-shares and minimum-burnt-shares
-      (var-set minimum-total-shares min-total)
+      ;; Update minimum-bin-shares and minimum-burnt-shares
+      (var-set minimum-bin-shares min-bin)
       (var-set minimum-burnt-shares min-burnt)
 
       ;; Print function data and return true
@@ -235,7 +235,7 @@
         action: "set-minimum-shares",
         caller: caller,
         data: {
-          min-total: min-total,
+          min-bin: min-bin,
           min-burnt: min-burnt
         }
       })
@@ -639,8 +639,7 @@
 (define-public (create-pool 
     (pool-trait <dlmm-pool-trait>)
     (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)
-    (x-amount-active-bin uint) (y-amount-active-bin uint)
-    (x-amount-per-bin uint) (y-amount-per-bin uint) (burn-amount-per-bin uint)
+    (x-amount-active-bin uint) (y-amount-active-bin uint) (burn-amount-active-bin uint)
     (x-protocol-fee uint) (x-provider-fee uint)
     (y-protocol-fee uint) (y-provider-fee uint)
     (bin-step uint) (variable-fees-cooldown uint) (freeze-variable-fees-manager bool)
@@ -651,24 +650,30 @@
     ;; Gather all pool data and pool contract
     (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
-    
+
     ;; Get pool ID and create pool symbol and name 
     (new-pool-id (+ (var-get last-pool-id) u1))
     (symbol (unwrap! (create-symbol x-token-trait y-token-trait) ERR_INVALID_POOL_SYMBOL))
     (name (concat symbol "-LP"))
-    
+
     ;; Get token contracts and decimals
     (x-token-contract (contract-of x-token-trait))
     (y-token-contract (contract-of y-token-trait))
     (x-token-decimals (unwrap! (contract-call? x-token-trait get-decimals) ERR_INVALID_X_TOKEN))
     (y-token-decimals (unwrap! (contract-call? y-token-trait get-decimals) ERR_INVALID_Y_TOKEN))
-    
+
+    ;; Get scaled x token decimals
+    (x-decimals-scaled (pow u10 x-token-decimals))
+
     ;; Get initial price at active bin
     (initial-price (unwrap! (get-initial-price x-amount-active-bin x-token-decimals y-amount-active-bin y-token-decimals) ERR_INVALID_INITIAL_PRICE))
-    
-    ;; Calculate total x and y amount being added
-    (x-amount-added-total (+ x-amount-active-bin (* x-amount-per-bin (- NUM_OF_BINS u1))))
-    (y-amount-added-total (+ y-amount-active-bin (* y-amount-per-bin (- NUM_OF_BINS u1))))
+
+    ;; Scale up y-amount-active-bin
+    (y-amount-active-bin-scaled (* y-amount-active-bin x-decimals-scaled))
+
+    ;; Get liquidity value and calculate dlp
+    (add-liquidity-value (unwrap! (get-liquidity-value x-amount-active-bin y-amount-active-bin-scaled initial-price) ERR_INVALID_LIQUIDITY_VALUE))
+    (dlp (sqrti add-liquidity-value))
     (caller tx-sender)
   )
     (begin
@@ -685,15 +690,18 @@
       (asserts! (is-standard x-token-contract) ERR_INVALID_PRINCIPAL)
       (asserts! (is-standard y-token-contract) ERR_INVALID_PRINCIPAL)
       (asserts! (is-standard fee-address) ERR_INVALID_PRINCIPAL)
-      
+
       ;; Assert that x-amount-active-bin and y-amount-active-bin are greater than 0
       (asserts! (and (> x-amount-active-bin u0) (> y-amount-active-bin u0)) ERR_INVALID_AMOUNT)
 
-      ;; Assert that x-amount-per-bin and y-amount-per-bin are greater than 0
-      (asserts! (and (> x-amount-per-bin u0) (> y-amount-per-bin u0)) ERR_INVALID_AMOUNT)
+      ;; Assert that dlp minted meets minimum total shares required
+      (asserts! (>= dlp (var-get minimum-bin-shares)) ERR_MINIMUM_LP_AMOUNT)
 
-      ;; Assert that burn amount per bin meets minimum shares required to burn
-      (asserts! (>= burn-amount-per-bin (var-get minimum-burnt-shares)) ERR_MINIMUM_BURN_AMOUNT)
+      ;; Assert that burn-amount-active-bin meets minimum shares required to burn
+      (asserts! (>= burn-amount-active-bin (var-get minimum-burnt-shares)) ERR_MINIMUM_BURN_AMOUNT)
+
+      ;; Assert that dlp is greater than or equal to 0 after subtracting burn amount
+      (asserts! (>= (- dlp burn-amount-active-bin) u0) ERR_MINIMUM_LP_AMOUNT)
 
       ;; Assert that length of pool uri, symbol, and name is greater than 0
       (asserts! (> (len uri) u0) ERR_INVALID_POOL_URI)
@@ -707,27 +715,32 @@
       ;; Assert that bin step is valid
       (asserts! (is-some (index-of (var-get bin-steps) bin-step)) ERR_INVALID_BIN_STEP)
 
-      ;; Create pool, set active bin, set fees, and set variable fees cooldown
-      (try! (contract-call? pool-trait create-pool x-token-contract y-token-contract CONTRACT_DEPLOYER fee-address caller bin-step initial-price new-pool-id name symbol uri))
-      (try! (contract-call? pool-trait set-active-bin-id CENTER_BIN_ID))
+      ;; Create pool, set fees, and set variable fees cooldown
+      (try! (contract-call? pool-trait create-pool x-token-contract y-token-contract CONTRACT_DEPLOYER fee-address caller CENTER_BIN_ID bin-step initial-price new-pool-id name symbol uri))
       (try! (contract-call? pool-trait set-x-fees x-protocol-fee x-provider-fee))
       (try! (contract-call? pool-trait set-y-fees y-protocol-fee y-provider-fee))
       (try! (contract-call? pool-trait set-variable-fees-cooldown variable-fees-cooldown))
 
       ;; Freeze variable fees manager if freeze-variable-fees-manager is true
       (if freeze-variable-fees-manager (try! (contract-call? pool-trait set-freeze-variable-fees-manager)) false)
-      
+
       ;; Update ID of last created pool and add pool to pools map
       (var-set last-pool-id new-pool-id)
       (map-set pools new-pool-id {id: new-pool-id, name: name, symbol: symbol, pool-contract: pool-contract, status: status})
-      
-      ;; Transfer x-amount-added-total x tokens and y-amount-added-total y tokens from caller to pool-contract
-      (try! (contract-call? x-token-trait transfer x-amount-added-total caller pool-contract none))
-      (try! (contract-call? y-token-trait transfer y-amount-added-total caller pool-contract none))
 
-      ;; Add initial liquidity to all bins
-      (try! (fold fold-add-initial-liquidity BIN_IDS_LIST (ok {pool-trait: pool-trait, bin-step: bin-step, initial-price: initial-price, x-decimals-scaled: (pow u10 x-token-decimals), x-amount-active-bin: x-amount-active-bin, y-amount-active-bin: y-amount-active-bin, x-amount-per-bin: x-amount-per-bin, y-amount-per-bin: y-amount-per-bin, burn-amount-per-bin: burn-amount-per-bin, caller: caller})))
-      
+      ;; Transfer x-amount-active-bin x tokens and y-amount-active-bin y tokens from caller to pool-contract
+      (try! (contract-call? x-token-trait transfer x-amount-active-bin caller pool-contract none))
+      (try! (contract-call? y-token-trait transfer y-amount-active-bin caller pool-contract none))
+
+      ;; Update bin balances
+      (try! (contract-call? pool-trait update-bin-balances CENTER_BIN_ID x-amount-active-bin y-amount-active-bin))
+
+      ;; Mint LP tokens to caller
+      (try! (contract-call? pool-trait pool-mint CENTER_BIN_ID (- dlp burn-amount-active-bin) caller))
+
+      ;; Mint burn amount LP tokens to pool-contract
+      (try! (contract-call? pool-trait pool-mint CENTER_BIN_ID burn-amount-active-bin pool-contract))
+
       ;; Print create pool data and return true
       (print {
         action: "create-pool",
@@ -746,15 +759,14 @@
           y-variable-fee: u0,
           x-amount-active-bin: x-amount-active-bin,
           y-amount-active-bin: y-amount-active-bin,
-          x-amount-per-bin: x-amount-per-bin,
-          y-amount-per-bin: y-amount-per-bin,
-          burn-amount-per-bin: burn-amount-per-bin,
-          x-amount-added-total: x-amount-added-total,
-          y-amount-added-total: y-amount-added-total,
+          burn-amount-active-bin: burn-amount-active-bin,
+          dlp: dlp,
+          add-liquidity-value: add-liquidity-value,
           pool-symbol: symbol,
           pool-uri: uri,
           pool-status: status,
           creation-height: burn-block-height,
+          active-bin-id: CENTER_BIN_ID,
           bin-step: bin-step,
           initial-price: initial-price,
           variable-fees-manager: CONTRACT_DEPLOYER,
@@ -824,11 +836,9 @@
     (updated-y-balance (- y-balance updated-dy))
 
     ;; Calculate new active bin id
-    (updated-active-bin-id (if (and (> updated-x-balance u0) (> updated-y-balance u0))
-                           bin-id
-                           (if (> updated-y-balance u0)
-                               (if (< bin-id MAX_BIN_ID) (+ bin-id u1) bin-id)
-                               (if (> bin-id MIN_BIN_ID) (- bin-id u1) bin-id))))
+    (updated-active-bin-id (if (and (is-eq updated-y-balance u0) (> bin-id MIN_BIN_ID))
+                               (- bin-id u1)
+                               bin-id))
 
     (caller tx-sender)
   )
@@ -956,11 +966,9 @@
     (updated-y-balance (+ y-balance dy dy-fees-provider dy-fees-variable))
 
     ;; Calculate new active bin id
-    (updated-active-bin-id (if (and (> updated-x-balance u0) (> updated-y-balance u0))
-                           bin-id
-                           (if (> updated-y-balance u0)
-                               (if (< bin-id MAX_BIN_ID) (+ bin-id u1) bin-id)
-                               (if (> bin-id MIN_BIN_ID) (- bin-id u1) bin-id))))
+    (updated-active-bin-id (if (and (is-eq updated-x-balance u0) (< bin-id MAX_BIN_ID))
+                               (+ bin-id u1)
+                               bin-id))
 
     (caller tx-sender)
   )
@@ -1056,7 +1064,7 @@
     (bin-balances (try! (contract-call? pool-trait get-bin-balances bin-id)))
     (x-balance (get x-balance bin-balances))
     (y-balance (get y-balance bin-balances))
-    (total-shares (get total-shares bin-balances))
+    (bin-shares (get bin-shares bin-balances))
 
     ;; Get price at bin
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
@@ -1068,7 +1076,9 @@
     ;; Get liquidity values and calculate dlp
     (add-liquidity-value (unwrap! (get-liquidity-value x-amount y-amount-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
     (bin-liquidity-value (unwrap! (get-liquidity-value x-balance y-balance-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
-    (dlp (/ (* add-liquidity-value total-shares) bin-liquidity-value))
+    (dlp (if (or (is-eq bin-shares u0) (is-eq bin-liquidity-value u0))
+             (sqrti add-liquidity-value)
+             (/ (* add-liquidity-value bin-shares) bin-liquidity-value)))
 
     ;; Calculate updated bin balances and total shares
     (updated-x-balance (+ x-balance x-amount))
@@ -1133,7 +1143,7 @@
           bin-liquidity-value: bin-liquidity-value,
           updated-x-balance: updated-x-balance,
           updated-y-balance: updated-y-balance,
-          updated-total-shares: (+ total-shares dlp)
+          updated-bin-shares: (+ bin-shares dlp)
         }
       })
       (ok dlp)
@@ -1159,11 +1169,11 @@
     (bin-balances (try! (contract-call? pool-trait get-bin-balances bin-id)))
     (x-balance (get x-balance bin-balances))
     (y-balance (get y-balance bin-balances))
-    (total-shares (get total-shares bin-balances))
+    (bin-shares (get bin-shares bin-balances))
 
     ;; Calculate x-amount and y-amount to transfer
-    (x-amount (/ (* amount x-balance) total-shares))
-    (y-amount (/ (* amount y-balance) total-shares))
+    (x-amount (/ (* amount x-balance) bin-shares))
+    (y-amount (/ (* amount y-balance) bin-shares))
 
     ;; Calculate updated bin balances and total shares
     (updated-x-balance (- x-balance x-amount))
@@ -1226,7 +1236,7 @@
           min-y-amount: min-y-amount,
           updated-x-balance: updated-x-balance,
           updated-y-balance: updated-y-balance,
-          updated-total-shares: (- total-shares amount)
+          updated-bin-shares: (- bin-shares amount)
         }
       })
       (ok {x-amount: x-amount, y-amount: y-amount})
@@ -1399,92 +1409,6 @@
     (pool-data (unwrap! (map-get? pools id) false))
   )
     (is-eq (get status pool-data) true)
-  )
-)
-
-;; Add initial liquidity to all bins during pool creation
-(define-private (fold-add-initial-liquidity
-    (bin-id uint)
-    (static-data (response {
-      pool-trait: <dlmm-pool-trait>, bin-step: uint,
-      initial-price: uint, x-decimals-scaled: uint,
-      x-amount-active-bin: uint, y-amount-active-bin: uint,
-      x-amount-per-bin: uint, y-amount-per-bin: uint,
-      burn-amount-per-bin: uint, caller: principal
-    } uint))
-  )
-  (match static-data
-    ok-value 
-      (let (
-        ;; Gather all static data
-        (pool-trait (get pool-trait ok-value))
-        (pool-contract (contract-of pool-trait))
-        (bin-step (get bin-step ok-value))
-        (initial-price (get initial-price ok-value))
-        (x-decimals-scaled (get x-decimals-scaled ok-value))
-        (x-amount-active-bin (get x-amount-active-bin ok-value))
-        (y-amount-active-bin (get y-amount-active-bin ok-value))
-        (x-amount-per-bin (get x-amount-per-bin ok-value))
-        (y-amount-per-bin (get y-amount-per-bin ok-value))
-        (burn-amount-per-bin (get burn-amount-per-bin ok-value))
-        (caller (get caller ok-value))
-
-        ;; Get price at bin
-        (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
-
-        ;; Calculate amounts to add based on bin-id
-        (x-amount-to-add (if (>= bin-id CENTER_BIN_ID)
-            (if (is-eq bin-id CENTER_BIN_ID) x-amount-active-bin x-amount-per-bin)
-            u0))
-        (y-amount-to-add (if (<= bin-id CENTER_BIN_ID)
-            (if (is-eq bin-id CENTER_BIN_ID) y-amount-active-bin y-amount-per-bin)
-            u0))
-
-        ;; Scale up y amount to add
-        (y-amount-to-add-scaled (* y-amount-to-add x-decimals-scaled))
-
-        ;; Get liquidity value and calculate dlp
-        (add-liquidity-value (unwrap! (get-liquidity-value x-amount-to-add y-amount-to-add-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
-        (dlp (sqrti add-liquidity-value))
-      )
-        ;; Assert that dlp minted meets minimum total shares required
-        (asserts! (>= dlp (var-get minimum-total-shares)) ERR_MINIMUM_LP_AMOUNT) ;; @NOTE All total-shares -> bin-shares
-
-        ;; Assert that dlp is greater than or equal to 0 after subtracting burn amount
-        (asserts! (>= (- dlp burn-amount-per-bin) u0) ERR_MINIMUM_LP_AMOUNT)
-
-        ;; Assert that correct token amounts are being added based on bin-id and CENTER_BIN_ID
-        (asserts! (or (>= bin-id CENTER_BIN_ID) (is-eq x-amount-to-add u0)) ERR_INVALID_AMOUNT)
-        (asserts! (or (<= bin-id CENTER_BIN_ID) (is-eq y-amount-to-add u0)) ERR_INVALID_AMOUNT)
-        
-        ;; Update bin balances
-        (try! (contract-call? pool-trait update-bin-balances bin-id x-amount-to-add y-amount-to-add))
-
-        ;; Mint LP tokens to caller
-        (try! (contract-call? pool-trait pool-mint bin-id (- dlp burn-amount-per-bin) caller))
-
-        ;; Mint burn amount LP tokens to pool-contract
-        (try! (contract-call? pool-trait pool-mint bin-id burn-amount-per-bin pool-contract))
-        
-        ;; Print add initial liquidity data and return static-data
-        (print {
-          action: "fold-add-initial-liquidity",
-          caller: caller,
-          data: {
-            pool-contract: pool-contract,
-            initial-price: initial-price,
-            bin-price: bin-price,
-            bin-id: bin-id,
-            x-amount-to-add: x-amount-to-add,
-            y-amount-to-add: y-amount-to-add,
-            dlp: dlp,
-            add-liquidity-value: add-liquidity-value
-          }
-        })
-        static-data
-      )
-    err-value
-      (err err-value)
   )
 )
 

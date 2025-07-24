@@ -54,12 +54,14 @@
 (define-data-var y-provider-fee uint u0)
 (define-data-var y-variable-fee uint u0)
 
+(define-data-var bin-change-count uint u0)
+
 (define-data-var last-variable-fees-update uint u0)
 (define-data-var variable-fees-cooldown uint u0)
 
 (define-data-var freeze-variable-fees-manager bool false)
 
-(define-map balances-at-bin uint {x-balance: uint, y-balance: uint, total-shares: uint})
+(define-map balances-at-bin uint {x-balance: uint, y-balance: uint, bin-shares: uint})
 
 (define-map user-balance-at-bin {id: uint, user: principal} uint)
 
@@ -87,7 +89,7 @@
 
 ;; SIP 013 function to get total token supply by ID
 (define-read-only (get-total-supply (token-id uint))
-  (ok (default-to u0 (get total-shares (map-get? balances-at-bin token-id))))
+  (ok (default-to u0 (get bin-shares (map-get? balances-at-bin token-id))))
 )
 
 ;; SIP 013 function to get overall token supply
@@ -129,6 +131,7 @@
     y-protocol-fee: (var-get y-protocol-fee),
     y-provider-fee: (var-get y-provider-fee),
     y-variable-fee: (var-get y-variable-fee),
+    bin-change-count: (var-get bin-change-count),
     last-variable-fees-update: (var-get last-variable-fees-update),
     variable-fees-cooldown: (var-get variable-fees-cooldown),
     freeze-variable-fees-manager: (var-get freeze-variable-fees-manager)
@@ -137,7 +140,7 @@
 
 ;; Get balance data at a bin
 (define-read-only (get-bin-balances (id uint))
-  (ok (default-to {x-balance: u0, y-balance: u0, total-shares: u0} (map-get? balances-at-bin id)))
+  (ok (default-to {x-balance: u0, y-balance: u0, bin-shares: u0} (map-get? balances-at-bin id)))
 )
 
 ;; Get a list of bins a user has a position in
@@ -196,6 +199,7 @@
       ;; Assert that caller is core address before setting vars
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
       (var-set active-bin-id id)
+      (var-set bin-change-count (+ (var-get bin-change-count) u1))
       (ok true)
     )
   )
@@ -241,6 +245,7 @@
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
       (var-set x-variable-fee x-fee)
       (var-set y-variable-fee y-fee)
+      (var-set bin-change-count u0)
       (var-set last-variable-fees-update stacks-block-height)
       (ok true)
     )
@@ -390,7 +395,7 @@
       ;; Try to tag pool token and update balances
       (try! (tag-pool-token-id {token-id: id, owner: user}))
       (try! (update-user-balance id user (+ (get-balance-or-default id user) amount)))
-      (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {total-shares: (+ (unwrap-panic (get-total-supply id)) amount)}))
+      (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (+ (unwrap-panic (get-total-supply id)) amount)}))
       
       ;; Print SIP 013 data, function data, and return true
       (print {type: "sft_mint", token-id: id, amount: amount, recipient: user})
@@ -421,7 +426,7 @@
       ;; Try to tag pool token and update balances
       (try! (tag-pool-token-id {token-id: id, owner: user}))
       (try! (update-user-balance id user (- user-balance amount)))
-      (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {total-shares: (- (unwrap-panic (get-total-supply id)) amount)}))
+      (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (- (unwrap-panic (get-total-supply id)) amount)}))
       
       ;; Print SIP 013 data, function data, and return true
       (print {type: "sft_burn", token-id: id, amount: amount, sender: user})
@@ -435,7 +440,7 @@
 (define-public (create-pool
     (x-token-contract principal) (y-token-contract principal)
     (variable-fees-mgr principal) (fee-addr principal) (core-caller principal)
-    (step uint) (price uint)
+    (active-bin uint) (step uint) (price uint)
     (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))
   )
   (let (
@@ -453,6 +458,7 @@
       (var-set creation-height burn-block-height)
       (var-set x-token x-token-contract)
       (var-set y-token y-token-contract)
+      (var-set active-bin-id active-bin)
       (var-set bin-step step)
       (var-set initial-price price)
       (var-set variable-fees-manager variable-fees-mgr)
