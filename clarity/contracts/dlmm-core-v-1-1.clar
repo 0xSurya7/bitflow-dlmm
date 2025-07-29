@@ -58,7 +58,7 @@
 
 ;; Maximum BPS
 (define-constant FEE_BPS u10000)
-(define-constant BIN_PRICE_BPS u100000000)
+(define-constant BIN_BPS u100000000)
 
 ;; Admins list and helper var used to remove admins
 (define-data-var admins (list 5 principal) (list tx-sender))
@@ -142,34 +142,13 @@
   (ok (var-get public-pool-creation))
 )
 
-;; @NOTE maybe we handle some reversed logic?; tests are working fine when only using x-to-y-price
-;; Get initial price for the center bin when creating a pool
-(define-read-only (get-initial-price (x-balance uint) (x-decimals uint) (y-balance uint) (y-decimals uint))
-  (let (
-    (x-balance-scaled
-      (if (is-eq x-decimals y-decimals)
-        x-balance
-        (if (> x-decimals y-decimals)
-          x-balance
-          (* x-balance (pow u10 (- y-decimals x-decimals))))))
-    (y-balance-scaled
-      (if (is-eq x-decimals y-decimals)
-        y-balance
-        (if (> y-decimals x-decimals)
-          y-balance
-          (* y-balance (pow u10 (- x-decimals y-decimals))))))
-  )
-    (ok (/ (* y-balance-scaled (pow u10 y-decimals)) x-balance-scaled))
-  )
-)
-
 ;; Get price a specific bin
 (define-read-only (get-bin-price (initial-price uint) (bin-step uint) (bin-id uint))
   (let (
     (bin-factors-list (unwrap! (map-get? bin-factors bin-step) ERR_NO_BIN_FACTORS))
     (bin-factor (unwrap! (element-at? bin-factors-list bin-id) ERR_INVALID_BIN_FACTOR))
   )
-    (ok (/ (* initial-price bin-factor) BIN_PRICE_BPS))
+    (ok (/ (* initial-price bin-factor) BIN_BPS))
   )
 )
 
@@ -628,7 +607,7 @@
   )
 )
 
-;; Create a new pool @NOTE renaming active-bin parameters to just x-amount, y-amount, and burn-amount?
+;; Create a new pool
 (define-public (create-pool 
     (pool-trait <dlmm-pool-trait>)
     (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)
@@ -644,25 +623,20 @@
     (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
 
-    ;; Get pool ID and create pool symbol and name 
+    ;; Get pool ID and create pool symbol and name
     (new-pool-id (+ (var-get last-pool-id) u1))
     (symbol (unwrap! (create-symbol x-token-trait y-token-trait) ERR_INVALID_POOL_SYMBOL))
     (name (concat symbol "-LP"))
 
-    ;; Get token contracts and decimals
+    ;; Get token contracts
     (x-token-contract (contract-of x-token-trait))
     (y-token-contract (contract-of y-token-trait))
-    (x-token-decimals (unwrap! (contract-call? x-token-trait get-decimals) ERR_INVALID_X_TOKEN))
-    (y-token-decimals (unwrap! (contract-call? y-token-trait get-decimals) ERR_INVALID_Y_TOKEN))
-
-    ;; Get scaled x token decimals
-    (x-decimals-scaled (pow u10 x-token-decimals))
 
     ;; Get initial price at active bin
-    (initial-price (unwrap! (get-initial-price x-amount-active-bin x-token-decimals y-amount-active-bin y-token-decimals) ERR_INVALID_INITIAL_PRICE))
+    (initial-price (/ (* y-amount-active-bin BIN_BPS) x-amount-active-bin))
 
     ;; Scale up y-amount-active-bin
-    (y-amount-active-bin-scaled (* y-amount-active-bin x-decimals-scaled))
+    (y-amount-active-bin-scaled (* y-amount-active-bin BIN_BPS))
 
     ;; Get liquidity value and calculate dlp
     (add-liquidity-value (unwrap! (get-liquidity-value x-amount-active-bin y-amount-active-bin-scaled initial-price) ERR_INVALID_LIQUIDITY_VALUE))
@@ -802,9 +776,6 @@
     (provider-fee (get x-provider-fee pool-data))
     (variable-fee (get x-variable-fee pool-data))
 
-    ;; Get scaled x token decimals
-    (x-decimals-scaled (pow u10 (unwrap! (contract-call? x-token-trait get-decimals) ERR_INVALID_X_TOKEN)))
-
     ;; Get balances at bin
     (bin-balances (try! (contract-call? pool-trait get-bin-balances bin-id)))
     (x-balance (get x-balance bin-balances))
@@ -814,7 +785,7 @@
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
     ;; Calculate maximum x-amount with fees
-    (max-x-amount (/ (* y-balance x-decimals-scaled) bin-price))
+    (max-x-amount (/ (* y-balance BIN_BPS) bin-price))
     (max-x-amount-fees-total (/ (* max-x-amount (+ protocol-fee provider-fee variable-fee)) FEE_BPS))
     (updated-max-x-amount (+ max-x-amount max-x-amount-fees-total))
     
@@ -829,7 +800,7 @@
     (dx (- x-amount x-amount-fees-total))
 
     ;; Calculate dy
-    (dy (/ (* dx bin-price) x-decimals-scaled))
+    (dy (/ (* dx bin-price) BIN_BPS))
 
     ;; Calculate updated bin balances
     (updated-x-balance (+ x-balance dx x-amount-fees-provider x-amount-fees-variable))
@@ -926,9 +897,6 @@
     (provider-fee (get y-provider-fee pool-data))
     (variable-fee (get y-variable-fee pool-data))
 
-    ;; Get scaled x token decimals
-    (x-decimals-scaled (pow u10 (unwrap! (contract-call? x-token-trait get-decimals) ERR_INVALID_X_TOKEN)))
-
     ;; Get balances at bin
     (bin-balances (try! (contract-call? pool-trait get-bin-balances bin-id)))
     (x-balance (get x-balance bin-balances))
@@ -938,7 +906,7 @@
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
     ;; Calculate maximum y-amount with fees
-    (max-y-amount (/ (* x-balance bin-price) x-decimals-scaled))
+    (max-y-amount (/ (* x-balance bin-price) BIN_BPS))
     (max-y-amount-fees-total (/ (* max-y-amount (+ protocol-fee provider-fee variable-fee)) FEE_BPS))
     (updated-max-y-amount (+ max-y-amount max-y-amount-fees-total))
 
@@ -953,7 +921,7 @@
     (dy (- y-amount y-amount-fees-total))
 
     ;; Calculate dx
-    (dx (/ (* dy x-decimals-scaled) bin-price))
+    (dx (/ (* dy BIN_BPS) bin-price))
 
     ;; Calculate updated bin balances
     (updated-x-balance (- x-balance dx))
@@ -1046,9 +1014,6 @@
     (initial-price (get initial-price pool-data))
     (active-bin-id (get active-bin-id pool-data))
 
-    ;; Get scaled x token decimals
-    (x-decimals-scaled (pow u10 (unwrap! (contract-call? x-token-trait get-decimals) ERR_INVALID_X_TOKEN)))
-
     ;; Get balances at bin
     (bin-balances (try! (contract-call? pool-trait get-bin-balances bin-id)))
     (x-balance (get x-balance bin-balances))
@@ -1059,17 +1024,64 @@
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
     ;; Scale up y-amount and y-balance
-    (y-amount-scaled (* y-amount x-decimals-scaled))
-    (y-balance-scaled (* y-balance x-decimals-scaled))
+    (y-amount-scaled (* y-amount BIN_BPS))
+    (y-balance-scaled (* y-balance BIN_BPS))
 
-    ;; Get liquidity values and calculate dlp
+    ;; Get initial liquidity values and calculate dlp without fees
     (add-liquidity-value (unwrap! (get-liquidity-value x-amount y-amount-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
     (bin-liquidity-value (unwrap! (get-liquidity-value x-balance y-balance-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
-    (dlp (if (or (is-eq bin-shares u0) (is-eq bin-liquidity-value u0))
-             (sqrti add-liquidity-value)
-             (/ (* add-liquidity-value bin-shares) bin-liquidity-value)))
+    (initial-dlp (if (or (is-eq bin-shares u0) (is-eq bin-liquidity-value u0))
+                     (sqrti add-liquidity-value)
+                     (/ (* add-liquidity-value bin-shares) bin-liquidity-value)))
 
-    ;; Calculate updated bin balances and total shares
+    ;; Calculate liquidity fees if adding liquidity to active bin
+    (x-amount-fees-liquidity (if (is-eq bin-id active-bin-id)
+      (let (
+        (x-liquidity-fee (+ (get x-protocol-fee pool-data) (get x-provider-fee pool-data) (get x-variable-fee pool-data)))
+        
+        ;; Calculate withdrawable x amount without fees
+        (x-amount-withdrawable (/ (* initial-dlp (+ x-balance x-amount)) (+ bin-shares initial-dlp)))
+        
+        ;; Calculate ideal liquidity fee for x amount
+        (ideal-x-amount-fees-liquidity (if (> x-amount-withdrawable x-amount)
+                                           (/ (* (- x-amount-withdrawable x-amount) x-liquidity-fee) FEE_BPS)
+                                           u0))
+      )
+        ;; Calculate final liquidity fee for x amount
+        (if (> x-amount ideal-x-amount-fees-liquidity) ideal-x-amount-fees-liquidity x-amount)
+      )
+      u0
+    ))
+    (y-amount-fees-liquidity (if (is-eq bin-id active-bin-id)
+      (let (
+        (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
+        
+        ;; Calculate withdrawable y amount without fees
+        (y-amount-withdrawable (/ (* initial-dlp (+ y-balance y-amount)) (+ bin-shares initial-dlp)))
+        
+        ;; Calculate ideal liquidity fee for y amount
+        (ideal-y-amount-fees-liquidity (if (> y-amount-withdrawable y-amount)
+                                           (/ (* (- y-amount-withdrawable y-amount) y-liquidity-fee) FEE_BPS)
+                                           u0))
+      )
+        ;; Calculate final liquidity fee for y amount
+        (if (> y-amount ideal-y-amount-fees-liquidity) ideal-y-amount-fees-liquidity y-amount)
+      )
+      u0
+    ))
+
+    ;; Calculate final x and y amounts post fees
+    (x-amount-post-fees (- x-amount x-amount-fees-liquidity))
+    (y-amount-post-fees (- y-amount y-amount-fees-liquidity))
+    (y-amount-post-fees-scaled (* y-amount-post-fees BIN_BPS))
+
+    ;; Get final liquidity value and calculate dlp
+    (add-liquidity-value-post-fees (unwrap! (get-liquidity-value x-amount-post-fees y-amount-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
+    (dlp (if (or (is-eq bin-shares u0) (is-eq bin-liquidity-value u0))
+             (sqrti add-liquidity-value-post-fees)
+             (/ (* add-liquidity-value-post-fees bin-shares) bin-liquidity-value)))
+
+    ;; Calculate updated bin balances
     (updated-x-balance (+ x-balance x-amount))
     (updated-y-balance (+ y-balance y-amount))
     (caller tx-sender)
@@ -1122,11 +1134,13 @@
           bin-price: bin-price,
           active-bin-id: active-bin-id,
           bin-id: bin-id,
-          x-amount: x-amount,
-          y-amount: y-amount,
+          x-amount: x-amount-post-fees,
+          y-amount: y-amount-post-fees,
+          x-amount-fees-liquidity: x-amount-fees-liquidity,
+          y-amount-fees-liquidity: y-amount-fees-liquidity,
           dlp: dlp,
           min-dlp: min-dlp,
-          add-liquidity-value: add-liquidity-value,
+          add-liquidity-value: add-liquidity-value-post-fees,
           bin-liquidity-value: bin-liquidity-value,
           updated-x-balance: updated-x-balance,
           updated-y-balance: updated-y-balance,
