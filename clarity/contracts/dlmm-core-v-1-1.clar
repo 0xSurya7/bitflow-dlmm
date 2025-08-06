@@ -182,10 +182,10 @@
 
     ;; Assert factors list length is 1001
     (asserts! (is-eq (len factors) u1001) ERR_INVALID_BIN_FACTORS_LENGTH)
-    
+
     ;; Add bin step to list with max length of 1000
     (var-set bin-steps (unwrap! (as-max-len? (append bin-steps-list step) u1000) ERR_BIN_STEP_LIMIT_REACHED))
-    
+
     ;; Add bin factors to bin-factors mapping
     (map-set bin-factors step factors)
 
@@ -204,7 +204,7 @@
       ;; Assert caller is an admin and amounts are greater than 0
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (and (> min-bin u0) (> min-burnt u0)) ERR_INVALID_AMOUNT)
-      
+
       ;; Assert that min-bin is greater than min-burnt
       (asserts! (> min-bin min-burnt) ERR_INVALID_MIN_BURNT_SHARES)
 
@@ -257,13 +257,13 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Assert that uri length is greater than 0
       (asserts! (> (len uri) u0) ERR_INVALID_POOL_URI)
-      
+
       ;; Set pool uri for pool
       (try! (contract-call? pool-trait set-pool-uri uri))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-pool-uri",
@@ -293,10 +293,10 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Set pool status for pool
       (map-set pools (get pool-id pool-data) (merge pool-map-data {status: status}))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-pool-status",
@@ -326,16 +326,16 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Assert that variable fees manager is not frozen
       (asserts! (not freeze-variable-fees-manager) ERR_VARIABLE_FEES_MANAGER_FROZEN)
 
       ;; Assert that address is standard principal
       (asserts! (is-standard manager) ERR_INVALID_PRINCIPAL) 
-      
+
       ;; Set variable fees manager for pool
       (try! (contract-call? pool-trait set-variable-fees-manager manager))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-variable-fees-manager",
@@ -364,13 +364,13 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Assert that address is standard principal
       (asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
-      
+
       ;; Set fee address for pool
       (try! (contract-call? pool-trait set-fee-address address))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-fee-address",
@@ -452,13 +452,13 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Assert protocol-fee + provider-fee + x-variable-fee is less than maximum FEE_SCALE_BPS
       (asserts! (< (+ protocol-fee provider-fee x-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
-      
+
       ;; Set x fees for pool
       (try! (contract-call? pool-trait set-x-fees protocol-fee provider-fee))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-x-fees",
@@ -490,13 +490,13 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Assert protocol-fee + provider-fee + y-variable-fee is less than maximum FEE_SCALE_BPS
       (asserts! (< (+ protocol-fee provider-fee y-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
-      
+
       ;; Set y fees for pool
       (try! (contract-call? pool-trait set-y-fees protocol-fee provider-fee))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-y-fees",
@@ -527,10 +527,10 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Set variable fees cooldown for pool
       (try! (contract-call? pool-trait set-variable-fees-cooldown cooldown))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-variable-fees-cooldown",
@@ -560,13 +560,13 @@
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
-      
+
       ;; Assert that variable fees manager is not frozen
       (asserts! (not freeze-variable-fees-manager) ERR_VARIABLE_FEES_MANAGER_FROZEN)
 
       ;; Set freeze variable fees manager for pool
       (try! (contract-call? pool-trait set-freeze-variable-fees-manager))
-      
+
       ;; Print function data and return true
       (print {
         action: "set-freeze-variable-fees-manager",
@@ -601,7 +601,7 @@
 
       ;; Reset variable fees for pool
       (try! (contract-call? pool-trait set-variable-fees u0 u0))
-      
+
       ;; Print function data and return true
       (print {
         action: "reset-variable-fees",
@@ -656,7 +656,7 @@
     (begin
       ;; Assert that caller is an admin or public-pool-creation is true
       (asserts! (or (is-some (index-of (var-get admins) caller)) (var-get public-pool-creation)) ERR_NOT_AUTHORIZED)
-      
+
       ;; Assert that pool is not created
       (asserts! (not (get pool-created pool-data)) ERR_POOL_ALREADY_CREATED)
 
@@ -831,7 +831,7 @@
       (asserts! (is-enabled-pool (get pool-id pool-data)) ERR_POOL_DISABLED)
       (asserts! (is-eq (contract-of x-token-trait) x-token) ERR_INVALID_X_TOKEN)
       (asserts! (is-eq (contract-of y-token-trait) y-token) ERR_INVALID_Y_TOKEN)
-      
+
       ;; Assert that x-amount is greater than 0
       (asserts! (> x-amount u0) ERR_INVALID_AMOUNT)
 
@@ -956,7 +956,7 @@
       (asserts! (is-enabled-pool (get pool-id pool-data)) ERR_POOL_DISABLED)
       (asserts! (is-eq (contract-of x-token-trait) x-token) ERR_INVALID_X_TOKEN)
       (asserts! (is-eq (contract-of y-token-trait) y-token) ERR_INVALID_Y_TOKEN)
-      
+
       ;; Assert that y-amount is greater than 0
       (asserts! (> y-amount u0) ERR_INVALID_AMOUNT)
 
@@ -1059,10 +1059,10 @@
     (x-amount-fees-liquidity (if (is-eq unsigned-bin-id active-bin-id)
       (let (
         (x-liquidity-fee (+ (get x-protocol-fee pool-data) (get x-provider-fee pool-data) (get x-variable-fee pool-data)))
-        
+
         ;; Calculate withdrawable x-amount without fees
         (x-amount-withdrawable (/ (* dlp (+ x-balance x-amount)) (+ bin-shares dlp)))
-        
+
         ;; Calculate max liquidity fee for x-amount
         (max-x-amount-fees-liquidity (if (> x-amount-withdrawable x-amount)
                                            (/ (* (- x-amount-withdrawable x-amount) x-liquidity-fee) FEE_SCALE_BPS)
@@ -1076,10 +1076,10 @@
     (y-amount-fees-liquidity (if (is-eq unsigned-bin-id active-bin-id)
       (let (
         (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
-        
+
         ;; Calculate withdrawable y-amount without fees
         (y-amount-withdrawable (/ (* dlp (+ y-balance y-amount)) (+ bin-shares dlp)))
-        
+
         ;; Calculate max liquidity fee for y-amount
         (max-y-amount-fees-liquidity (if (> y-amount-withdrawable y-amount)
                                            (/ (* (- y-amount-withdrawable y-amount) y-liquidity-fee) FEE_SCALE_BPS)
@@ -1278,10 +1278,10 @@
     ;; Assert caller is an existing admin and new admin is not in admins-list
     (asserts! (is-some (index-of admins-list caller)) ERR_NOT_AUTHORIZED)
     (asserts! (is-none (index-of admins-list admin)) ERR_ALREADY_ADMIN)
-    
+
     ;; Add admin to list with max length of 5
     (var-set admins (unwrap! (as-max-len? (append admins-list admin) u5) ERR_ADMIN_LIMIT_REACHED))
-    
+
     ;; Print add admin data and return true
     (print {action: "add-admin", caller: caller, data: {admin: admin}})
     (ok true)
@@ -1399,7 +1399,7 @@
     ;; Get x token and y token symbols
     (x-symbol (unwrap-panic (contract-call? x-token-trait get-symbol)))
     (y-symbol (unwrap-panic (contract-call? y-token-trait get-symbol)))
-    
+
     ;; Truncate symbols if length exceeds 14
     (x-truncated 
       (if (> (len x-symbol) u14)

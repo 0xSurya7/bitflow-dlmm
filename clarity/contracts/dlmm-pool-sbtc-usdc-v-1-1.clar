@@ -368,7 +368,7 @@
 
       ;; Try to transfer amount of token from pool contract to recipient
       (try! (as-contract (contract-call? token-trait transfer amount tx-sender recipient none)))
-      
+
       ;; Print function data and return true
       (print {action: "pool-transfer", data: {token: token-contract, amount: amount, recipient: recipient}})
       (ok true)
@@ -396,7 +396,7 @@
       (try! (tag-pool-token-id {token-id: id, owner: user}))
       (try! (update-user-balance id user (+ (get-balance-or-default id user) amount)))
       (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (+ (unwrap-panic (get-total-supply id)) amount)}))
-      
+
       ;; Print SIP 013 data, function data, and return true
       (print {type: "sft_mint", token-id: id, amount: amount, recipient: user})
       (print {action: "pool-mint", data: {id: id, amount: amount, user: user}})
@@ -427,7 +427,7 @@
       (try! (tag-pool-token-id {token-id: id, owner: user}))
       (try! (update-user-balance id user (- user-balance amount)))
       (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (- (unwrap-panic (get-total-supply id)) amount)}))
-      
+
       ;; Print SIP 013 data, function data, and return true
       (print {type: "sft_burn", token-id: id, amount: amount, sender: user})
       (print {action: "pool-burn", data: {id: id, amount: amount, user: user}})
