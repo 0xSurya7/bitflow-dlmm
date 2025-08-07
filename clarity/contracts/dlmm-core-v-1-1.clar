@@ -48,13 +48,13 @@
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
 
-;; Number of bins per pool and center bin ID
+;; Number of bins per pool and center bin ID as unsigned ints
 (define-constant NUM_OF_BINS u1001)
 (define-constant CENTER_BIN_ID (/ NUM_OF_BINS u2))
 
-;; Minimum and maximum bin IDs
-(define-constant MIN_BIN_ID u0)
-(define-constant MAX_BIN_ID u1000)
+;; Minimum and maximum bin IDs as signed ints
+(define-constant MIN_BIN_ID -500)
+(define-constant MAX_BIN_ID 500)
 
 ;; Maximum BPS
 (define-constant FEE_SCALE_BPS u10000)
@@ -696,7 +696,7 @@
       (asserts! (is-some (index-of (var-get bin-steps) bin-step)) ERR_INVALID_BIN_STEP)
 
       ;; Create pool, set fees, and set variable fees cooldown
-      (try! (contract-call? pool-trait create-pool x-token-contract y-token-contract CONTRACT_DEPLOYER fee-address caller CENTER_BIN_ID bin-step initial-price new-pool-id name symbol uri))
+      (try! (contract-call? pool-trait create-pool x-token-contract y-token-contract CONTRACT_DEPLOYER fee-address caller 0 bin-step initial-price new-pool-id name symbol uri))
       (try! (contract-call? pool-trait set-x-fees x-protocol-fee x-provider-fee))
       (try! (contract-call? pool-trait set-y-fees y-protocol-fee y-provider-fee))
       (try! (contract-call? pool-trait set-variable-fees-cooldown variable-fees-cooldown))
@@ -819,10 +819,10 @@
     (updated-x-balance (+ x-balance dx x-amount-fees-provider x-amount-fees-variable))
     (updated-y-balance (- y-balance dy))
 
-    ;; Calculate new active bin id (default to unsigned-bin-id if at the edge of the bin range)
-    (updated-active-bin-id (if (and (is-eq updated-y-balance u0) (> unsigned-bin-id MIN_BIN_ID))
-                               (- unsigned-bin-id u1)
-                               unsigned-bin-id))
+    ;; Calculate new active bin id (default to bin-id if at the edge of the bin range)
+    (updated-active-bin-id (if (and (is-eq updated-y-balance u0) (> bin-id MIN_BIN_ID))
+                               (- bin-id 1)
+                               bin-id))
 
     (caller tx-sender)
   )
@@ -835,8 +835,8 @@
       ;; Assert that x-amount is greater than 0
       (asserts! (> x-amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Assert that unsigned-bin-id is equal to active-bin-id
-      (asserts! (is-eq unsigned-bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
+      ;; Assert that bin-id is equal to active-bin-id
+      (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
       ;; Transfer dx + x-amount-fees-provider + x-amount-fees-variable x tokens from caller to pool-contract
       (try! (contract-call? x-token-trait transfer (+ dx x-amount-fees-provider x-amount-fees-variable) caller pool-contract none))
@@ -944,10 +944,10 @@
     (updated-x-balance (- x-balance dx))
     (updated-y-balance (+ y-balance dy y-amount-fees-provider y-amount-fees-variable))
 
-    ;; Calculate new active bin id (default to unsigned-bin-id if at the edge of the bin range)
-    (updated-active-bin-id (if (and (is-eq updated-x-balance u0) (< unsigned-bin-id MAX_BIN_ID))
-                               (+ unsigned-bin-id u1)
-                               unsigned-bin-id))
+    ;; Calculate new active bin id (default to bin-id if at the edge of the bin range)
+    (updated-active-bin-id (if (and (is-eq updated-x-balance u0) (< bin-id MAX_BIN_ID))
+                               (+ bin-id 1)
+                               bin-id))
 
     (caller tx-sender)
   )
@@ -960,8 +960,8 @@
       ;; Assert that y-amount is greater than 0
       (asserts! (> y-amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Assert that unsigned-bin-id is equal to active-bin-id
-      (asserts! (is-eq unsigned-bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
+      ;; Assert that bin-id is equal to active-bin-id
+      (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
       ;; Transfer dy + y-amount-fees-provider + y-amount-fees-variable y tokens from caller to pool-contract
       (try! (contract-call? y-token-trait transfer (+ dy y-amount-fees-provider y-amount-fees-variable) caller pool-contract none))
@@ -1056,7 +1056,7 @@
              (/ (* add-liquidity-value bin-shares) bin-liquidity-value)))
 
     ;; Calculate liquidity fees if adding liquidity to active bin based on ratio of bin balances
-    (x-amount-fees-liquidity (if (is-eq unsigned-bin-id active-bin-id)
+    (x-amount-fees-liquidity (if (is-eq bin-id active-bin-id)
       (let (
         (x-liquidity-fee (+ (get x-protocol-fee pool-data) (get x-provider-fee pool-data) (get x-variable-fee pool-data)))
 
@@ -1073,7 +1073,7 @@
       )
       u0
     ))
-    (y-amount-fees-liquidity (if (is-eq unsigned-bin-id active-bin-id)
+    (y-amount-fees-liquidity (if (is-eq bin-id active-bin-id)
       (let (
         (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
 
@@ -1116,20 +1116,20 @@
       ;; Assert that x-amount + y-amount is greater than 0
       (asserts! (> (+ x-amount y-amount) u0) ERR_INVALID_AMOUNT)
 
-      ;; Assert that correct token amounts are being added based on unsigned-bin-id and active-bin-id
-      (asserts! (or (>= unsigned-bin-id active-bin-id) (is-eq x-amount u0)) ERR_INVALID_AMOUNT)
-      (asserts! (or (<= unsigned-bin-id active-bin-id) (is-eq y-amount u0)) ERR_INVALID_AMOUNT)
+      ;; Assert that correct token amounts are being added based on bin-id and active-bin-id
+      (asserts! (or (>= bin-id active-bin-id) (is-eq x-amount u0)) ERR_INVALID_AMOUNT)
+      (asserts! (or (<= bin-id active-bin-id) (is-eq y-amount u0)) ERR_INVALID_AMOUNT)
 
       ;; Assert that min-dlp is greater than 0 and dlp-post-fees is greater than or equal to min-dlp
       (asserts! (> min-dlp u0) ERR_INVALID_AMOUNT)
       (asserts! (>= dlp-post-fees min-dlp) ERR_MINIMUM_LP_AMOUNT)
 
-      ;; Transfer x-amount x tokens from caller to pool-contract
+      ;; Transfer x-amount x tokens from caller to pool-contract (includes x-amount-fees-liquidity)
       (if (> x-amount u0)
           (try! (contract-call? x-token-trait transfer x-amount caller pool-contract none))
           false)
 
-      ;; Transfer y-amount y tokens from caller to pool-contract
+      ;; Transfer y-amount y tokens from caller to pool-contract (includes y-amount-fees-liquidity)
       (if (> y-amount u0)
           (try! (contract-call? y-token-trait transfer y-amount caller pool-contract none))
           false)

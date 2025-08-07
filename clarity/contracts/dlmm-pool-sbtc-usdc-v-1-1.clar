@@ -44,7 +44,7 @@
 
 (define-data-var initial-price uint u0)
 
-(define-data-var active-bin-id uint u0)
+(define-data-var active-bin-id int 0)
 
 (define-data-var x-protocol-fee uint u0)
 (define-data-var x-provider-fee uint u0)
@@ -191,7 +191,7 @@
 )
 
 ;; Set active bin ID via DLMM Core
-(define-public (set-active-bin-id (id uint))
+(define-public (set-active-bin-id (id int))
   (let (
     (caller contract-caller)
   )
@@ -440,7 +440,7 @@
 (define-public (create-pool
     (x-token-contract principal) (y-token-contract principal)
     (variable-fees-mgr principal) (fee-addr principal) (core-caller principal)
-    (active-bin uint) (step uint) (price uint)
+    (active-bin int) (step uint) (price uint)
     (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))
   )
   (let (

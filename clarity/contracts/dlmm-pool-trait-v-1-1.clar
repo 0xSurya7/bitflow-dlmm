@@ -29,7 +29,7 @@
       pool-token: principal,
       bin-step: uint,
       initial-price: uint,
-      active-bin-id: uint,
+      active-bin-id: int,
       x-protocol-fee: uint,
       x-provider-fee: uint,
       x-variable-fee: uint,
@@ -46,7 +46,7 @@
     (set-pool-uri ((string-ascii 256)) (response bool uint))
     (set-variable-fees-manager (principal) (response bool uint))
     (set-fee-address (principal) (response bool uint))
-    (set-active-bin-id (uint) (response bool uint))
+    (set-active-bin-id (int) (response bool uint))
     (set-x-fees (uint uint) (response bool uint))
     (set-y-fees (uint uint) (response bool uint))
     (set-variable-fees (uint uint) (response bool uint))
@@ -60,6 +60,6 @@
     (pool-transfer (<sip-010-trait> uint principal) (response bool uint))
     (pool-mint (uint uint principal) (response bool uint))
     (pool-burn (uint uint principal) (response bool uint))
-    (create-pool (principal principal principal principal principal uint uint uint uint (string-ascii 32) (string-ascii 32) (string-ascii 256)) (response bool uint))
+    (create-pool (principal principal principal principal principal int uint uint uint (string-ascii 32) (string-ascii 32) (string-ascii 256)) (response bool uint))
   )
 )
