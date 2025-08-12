@@ -138,6 +138,11 @@
   })
 )
 
+;; Get active bin ID
+(define-read-only (get-active-bin-id)
+  (ok (var-get active-bin-id))
+)
+
 ;; Get balance data at a bin
 (define-read-only (get-bin-balances (id uint))
   (ok (default-to {x-balance: u0, y-balance: u0, bin-shares: u0} (map-get? balances-at-bin id)))

@@ -142,12 +142,12 @@
   (ok (var-get public-pool-creation))
 )
 
-;; Get bin id as unsigned int
+;; Get bin ID as unsigned int
 (define-read-only (get-unsigned-bin-id (bin-id int))
   (ok (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
 )
 
-;; Get bin id as signed int
+;; Get bin ID as signed int
 (define-read-only (get-signed-bin-id (bin-id uint))
   (ok (- (to-int bin-id) (to-int CENTER_BIN_ID)))
 )
@@ -820,7 +820,7 @@
     (updated-x-balance (+ x-balance dx x-amount-fees-provider x-amount-fees-variable))
     (updated-y-balance (- y-balance dy))
 
-    ;; Calculate new active bin id (default to bin-id if at the edge of the bin range)
+    ;; Calculate new active bin ID (default to bin-id if at the edge of the bin range)
     (updated-active-bin-id (if (and (is-eq updated-y-balance u0) (> bin-id MIN_BIN_ID))
                                (- bin-id 1)
                                bin-id))
@@ -853,7 +853,7 @@
       ;; Update bin balances
       (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
 
-      ;; Set active bin id
+      ;; Set active bin ID
       (if (not (is-eq updated-active-bin-id active-bin-id))
           (try! (contract-call? pool-trait set-active-bin-id updated-active-bin-id))
           false)
@@ -945,7 +945,7 @@
     (updated-x-balance (- x-balance dx))
     (updated-y-balance (+ y-balance dy y-amount-fees-provider y-amount-fees-variable))
 
-    ;; Calculate new active bin id (default to bin-id if at the edge of the bin range)
+    ;; Calculate new active bin ID (default to bin-id if at the edge of the bin range)
     (updated-active-bin-id (if (and (is-eq updated-x-balance u0) (< bin-id MAX_BIN_ID))
                                (+ bin-id 1)
                                bin-id))
@@ -978,7 +978,7 @@
       ;; Update bin balances
       (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
 
-      ;; Set active bin id
+      ;; Set active bin ID
       (if (not (is-eq updated-active-bin-id active-bin-id))
           (try! (contract-call? pool-trait set-active-bin-id updated-active-bin-id))
           false)

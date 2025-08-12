@@ -41,6 +41,7 @@
       variable-fees-cooldown: uint,
       freeze-variable-fees-manager: bool
     } uint))
+    (get-active-bin-id () (response int uint))
     (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
     (get-user-bins (principal) (response (list 1001 uint) uint))
     (set-pool-uri ((string-ascii 256)) (response bool uint))
