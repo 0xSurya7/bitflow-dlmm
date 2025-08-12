@@ -3,7 +3,7 @@ name = "bitflow-dlmm"
 description = ""
 authors = []
 telemetry = false
-cache_dir = "./.cache"
+cache_dir = ".cache"
 
 [contracts.sip-010-trait-ft-standard-v-1-1]
 path = "contracts/external/sip-010-trait-ft-standard-v-1-1.clar"
@@ -35,15 +35,31 @@ path = "contracts/dlmm-pool-sbtc-usdc-v-1-1.clar"
 clarity_version = 3
 epoch = "3"
 
-[contracts.dlmm-swap-helper-v-1-1]
-path = "contracts/dlmm-swap-helper-v-1-1.clar"
+[contracts.mock-sbtc-token]
+path = "contracts/mocks/mock-sbtc-token.clar"
 clarity_version = 3
 epoch = "3"
 
-[contracts.dlmm-liquidity-helper-v-1-1]
-path = "contracts/dlmm-liquidity-helper-v-1-1.clar"
+[contracts.mock-usdc-token]
+path = "contracts/mocks/mock-usdc-token.clar"
 clarity_version = 3
 epoch = "3"
+
+[contracts.mock-pool]
+path = "contracts/mocks/mock-pool.clar"
+clarity_version = 3
+epoch = "3"
+
+
+# [contracts.dlmm-swap-helper-v-1-1]
+# path = "contracts/dlmm-swap-helper-v-1-1.clar"
+# clarity_version = 3
+# epoch = "3"
+
+# [contracts.dlmm-liquidity-helper-v-1-1]
+# path = "contracts/dlmm-liquidity-helper-v-1-1.clar"
+# clarity_version = 3
+# epoch = "3"
 
 [repl.analysis]
 passes = ["check_checker"]
@@ -55,4 +71,4 @@ check_checker = { trusted_sender = false, trusted_caller = false, callee_filter 
 # callee_filter: if true, untrusted data may be passed into a private function without a
 # warning, if it gets checked inside. This check will also propagate up to the
 # caller.
-# More informations: https://www.hiro.so/blog/new-safety-checks-in-clarinet
+# More information: https://www.hiro.so/blog/new-safety-checks-in-clarinet
