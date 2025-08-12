@@ -31,14 +31,18 @@
     (result (response {received: uint, unfavorable: uint} uint))
   )
   (let (
-      (result-data (unwrap! result ERR_NO_RESULT_DATA))
       (pool-trait (get pool-trait swap))
+      (x-token-trait (get x-token-trait swap))
+      (y-token-trait (get y-token-trait swap))
+      (amount (get amount swap))
+      (x-for-y (get x-for-y swap))
       (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
       (bin-id-delta (- active-bin-id (get bin-id swap)))
-      (is-unfavorable (if (get x-for-y swap) (> bin-id-delta 0) (< bin-id-delta 0)))
-      (swap-result (if (get x-for-y swap)
-                       (try! (contract-call? .dlmm-core-v-1-1 swap-x-for-y pool-trait (get x-token-trait swap) (get y-token-trait swap) active-bin-id (get amount swap)))
-                       (try! (contract-call? .dlmm-core-v-1-1 swap-y-for-x pool-trait (get x-token-trait swap) (get y-token-trait swap) active-bin-id (get amount swap)))))
+      (is-unfavorable (if x-for-y (> bin-id-delta 0) (< bin-id-delta 0)))
+      (swap-result (if x-for-y
+                       (try! (contract-call? .dlmm-core-v-1-1 swap-x-for-y pool-trait x-token-trait y-token-trait active-bin-id amount))
+                       (try! (contract-call? .dlmm-core-v-1-1 swap-y-for-x pool-trait x-token-trait y-token-trait active-bin-id amount))))
+      (result-data (unwrap! result ERR_NO_RESULT_DATA))
   )
     (ok {
       received: (+ (get received result-data) swap-result),
