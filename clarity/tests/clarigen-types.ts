@@ -784,6 +784,7 @@ dlmmPoolSbtcUsdcV11: {
 }[], "transfers">], Response<boolean, bigint>>,
     transferMemo: {"name":"transfer-memo","access":"public","args":[{"name":"token-id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"sender","type":"principal"},{"name":"recipient","type":"principal"},{"name":"memo","type":{"buffer":{"length":34}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, amount: TypedAbiArg<number | bigint, "amount">, sender: TypedAbiArg<string, "sender">, recipient: TypedAbiArg<string, "recipient">, memo: TypedAbiArg<Uint8Array, "memo">], Response<boolean, bigint>>,
     updateBinBalances: {"name":"update-bin-balances","access":"public","args":[{"name":"bin-id","type":"uint128"},{"name":"x-balance","type":"uint128"},{"name":"y-balance","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[binId: TypedAbiArg<number | bigint, "binId">, xBalance: TypedAbiArg<number | bigint, "xBalance">, yBalance: TypedAbiArg<number | bigint, "yBalance">], Response<boolean, bigint>>,
+    getActiveBinId: {"name":"get-active-bin-id","access":"read_only","args":[],"outputs":{"type":{"response":{"ok":"int128","error":"none"}}}} as TypedAbiFunction<[], Response<bigint, null>>,
     getBalance: {"name":"get-balance","access":"read_only","args":[{"name":"token-id","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":"uint128","error":"none"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, user: TypedAbiArg<string, "user">], Response<bigint, null>>,
     getBinBalances: {"name":"get-bin-balances","access":"read_only","args":[{"name":"id","type":"uint128"}],"outputs":{"type":{"response":{"ok":{"tuple":[{"name":"bin-shares","type":"uint128"},{"name":"x-balance","type":"uint128"},{"name":"y-balance","type":"uint128"}]},"error":"none"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">], Response<{
   "binShares": bigint;
@@ -822,6 +823,7 @@ dlmmPoolSbtcUsdcV11: {
   "yVariableFee": bigint;
 }, null>>,
     getSymbol: {"name":"get-symbol","access":"read_only","args":[],"outputs":{"type":{"response":{"ok":{"string-ascii":{"length":32}},"error":"none"}}}} as TypedAbiFunction<[], Response<string, null>>,
+    getTest: {"name":"get-test","access":"read_only","args":[],"outputs":{"type":{"response":{"ok":"uint128","error":"none"}}}} as TypedAbiFunction<[], Response<bigint, null>>,
     getTokenUri: {"name":"get-token-uri","access":"read_only","args":[{"name":"token-id","type":"uint128"}],"outputs":{"type":{"response":{"ok":{"optional":{"string-ascii":{"length":256}}},"error":"none"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">], Response<string | null, null>>,
     getTotalSupply: {"name":"get-total-supply","access":"read_only","args":[{"name":"token-id","type":"uint128"}],"outputs":{"type":{"response":{"ok":"uint128","error":"none"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">], Response<bigint, null>>,
     getUserBins: {"name":"get-user-bins","access":"read_only","args":[{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":{"list":{"type":"uint128","length":1001}},"error":"none"}}}} as TypedAbiFunction<[user: TypedAbiArg<string, "user">], Response<bigint[], null>>
@@ -1139,57 +1141,134 @@ dlmmPoolTraitV11: {
   "fungible_tokens":[],"epoch":"Epoch30","clarity_version":"Clarity3",
   contractName: 'dlmm-pool-trait-v-1-1',
   },
+dlmmSwapHelperV11: {
+  "functions": {
+    absInt: {"name":"abs-int","access":"private","args":[{"name":"value","type":"int128"}],"outputs":{"type":"uint128"}} as TypedAbiFunction<[value: TypedAbiArg<number | bigint, "value">], bigint>,
+    foldSwapHelper: {"name":"fold-swap-helper","access":"private","args":[{"name":"swap","type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"bin-id","type":"int128"},{"name":"pool-trait","type":"trait_reference"},{"name":"x-for-y","type":"bool"},{"name":"x-token-trait","type":"trait_reference"},{"name":"y-token-trait","type":"trait_reference"}]}},{"name":"result","type":{"response":{"ok":{"tuple":[{"name":"received","type":"uint128"},{"name":"unfavorable","type":"uint128"}]},"error":"uint128"}}}],"outputs":{"type":{"response":{"ok":{"tuple":[{"name":"received","type":"uint128"},{"name":"unfavorable","type":"uint128"}]},"error":"uint128"}}}} as TypedAbiFunction<[swap: TypedAbiArg<{
+  "amount": number | bigint;
+  "binId": number | bigint;
+  "poolTrait": string;
+  "xForY": boolean;
+  "xTokenTrait": string;
+  "yTokenTrait": string;
+}, "swap">, result: TypedAbiArg<Response<{
+  "received": number | bigint;
+  "unfavorable": number | bigint;
+}, number | bigint>, "result">], Response<{
+  "received": bigint;
+  "unfavorable": bigint;
+}, bigint>>,
+    swapHelper: {"name":"swap-helper","access":"public","args":[{"name":"swaps","type":{"list":{"type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"bin-id","type":"int128"},{"name":"pool-trait","type":"trait_reference"},{"name":"x-for-y","type":"bool"},{"name":"x-token-trait","type":"trait_reference"},{"name":"y-token-trait","type":"trait_reference"}]},"length":120}}},{"name":"min-received","type":"uint128"},{"name":"max-unfavorable-bins","type":"uint128"}],"outputs":{"type":{"response":{"ok":"uint128","error":"uint128"}}}} as TypedAbiFunction<[swaps: TypedAbiArg<{
+  "amount": number | bigint;
+  "binId": number | bigint;
+  "poolTrait": string;
+  "xForY": boolean;
+  "xTokenTrait": string;
+  "yTokenTrait": string;
+}[], "swaps">, minReceived: TypedAbiArg<number | bigint, "minReceived">, maxUnfavorableBins: TypedAbiArg<number | bigint, "maxUnfavorableBins">], Response<bigint, bigint>>
+  },
+  "maps": {
+    
+  },
+  "variables": {
+    ERR_BIN_SLIPPAGE: {
+  name: 'ERR_BIN_SLIPPAGE',
+  type: {
+    response: {
+      ok: 'none',
+      error: 'uint128'
+    }
+  },
+  access: 'constant'
+} as TypedAbiVariable<Response<null, bigint>>,
+    ERR_MINIMUM_RECEIVED: {
+  name: 'ERR_MINIMUM_RECEIVED',
+  type: {
+    response: {
+      ok: 'none',
+      error: 'uint128'
+    }
+  },
+  access: 'constant'
+} as TypedAbiVariable<Response<null, bigint>>,
+    ERR_NO_ACTIVE_BIN_DATA: {
+  name: 'ERR_NO_ACTIVE_BIN_DATA',
+  type: {
+    response: {
+      ok: 'none',
+      error: 'uint128'
+    }
+  },
+  access: 'constant'
+} as TypedAbiVariable<Response<null, bigint>>,
+    ERR_NO_RESULT_DATA: {
+  name: 'ERR_NO_RESULT_DATA',
+  type: {
+    response: {
+      ok: 'none',
+      error: 'uint128'
+    }
+  },
+  access: 'constant'
+} as TypedAbiVariable<Response<null, bigint>>
+  },
+  constants: {
+  ERR_BIN_SLIPPAGE: {
+    isOk: false,
+    value: 2_002n
+  },
+  ERR_MINIMUM_RECEIVED: {
+    isOk: false,
+    value: 2_003n
+  },
+  ERR_NO_ACTIVE_BIN_DATA: {
+    isOk: false,
+    value: 2_004n
+  },
+  ERR_NO_RESULT_DATA: {
+    isOk: false,
+    value: 2_001n
+  }
+},
+  "non_fungible_tokens": [
+    
+  ],
+  "fungible_tokens":[],"epoch":"Epoch30","clarity_version":"Clarity3",
+  contractName: 'dlmm-swap-helper-v-1-1',
+  },
 mockPool: {
   "functions": {
-    foldTransferMany: {"name":"fold-transfer-many","access":"private","args":[{"name":"item","type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"recipient","type":"principal"},{"name":"sender","type":"principal"},{"name":"token-id","type":"uint128"}]}},{"name":"previous-response","type":{"response":{"ok":"bool","error":"uint128"}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[item: TypedAbiArg<{
-  "amount": number | bigint;
-  "recipient": string;
-  "sender": string;
-  "tokenId": number | bigint;
-}, "item">, previousResponse: TypedAbiArg<Response<boolean, number | bigint>, "previousResponse">], Response<boolean, bigint>>,
-    foldTransferManyMemo: {"name":"fold-transfer-many-memo","access":"private","args":[{"name":"item","type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"memo","type":{"buffer":{"length":34}}},{"name":"recipient","type":"principal"},{"name":"sender","type":"principal"},{"name":"token-id","type":"uint128"}]}},{"name":"previous-response","type":{"response":{"ok":"bool","error":"uint128"}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[item: TypedAbiArg<{
-  "amount": number | bigint;
-  "memo": Uint8Array;
-  "recipient": string;
-  "sender": string;
-  "tokenId": number | bigint;
-}, "item">, previousResponse: TypedAbiArg<Response<boolean, number | bigint>, "previousResponse">], Response<boolean, bigint>>,
-    getBalanceOrDefault: {"name":"get-balance-or-default","access":"private","args":[{"name":"id","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":"uint128"}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">, user: TypedAbiArg<string, "user">], bigint>,
-    tagPoolTokenId: {"name":"tag-pool-token-id","access":"private","args":[{"name":"id","type":{"tuple":[{"name":"owner","type":"principal"},{"name":"token-id","type":"uint128"}]}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[id: TypedAbiArg<{
-  "owner": string;
-  "tokenId": number | bigint;
-}, "id">], Response<boolean, bigint>>,
-    updateUserBalance: {"name":"update-user-balance","access":"private","args":[{"name":"id","type":"uint128"},{"name":"user","type":"principal"},{"name":"balance","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">, user: TypedAbiArg<string, "user">, balance: TypedAbiArg<number | bigint, "balance">], Response<boolean, bigint>>,
-    createPool: {"name":"create-pool","access":"public","args":[{"name":"x-token-contract","type":"principal"},{"name":"y-token-contract","type":"principal"},{"name":"variable-fees-mgr","type":"principal"},{"name":"fee-addr","type":"principal"},{"name":"core-caller","type":"principal"},{"name":"active-bin","type":"int128"},{"name":"step","type":"uint128"},{"name":"price","type":"uint128"},{"name":"id","type":"uint128"},{"name":"name","type":{"string-ascii":{"length":32}}},{"name":"symbol","type":{"string-ascii":{"length":32}}},{"name":"uri","type":{"string-ascii":{"length":256}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[xTokenContract: TypedAbiArg<string, "xTokenContract">, yTokenContract: TypedAbiArg<string, "yTokenContract">, variableFeesMgr: TypedAbiArg<string, "variableFeesMgr">, feeAddr: TypedAbiArg<string, "feeAddr">, coreCaller: TypedAbiArg<string, "coreCaller">, activeBin: TypedAbiArg<number | bigint, "activeBin">, step: TypedAbiArg<number | bigint, "step">, price: TypedAbiArg<number | bigint, "price">, id: TypedAbiArg<number | bigint, "id">, name: TypedAbiArg<string, "name">, symbol: TypedAbiArg<string, "symbol">, uri: TypedAbiArg<string, "uri">], Response<boolean, bigint>>,
-    poolBurn: {"name":"pool-burn","access":"public","args":[{"name":"id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">, amount: TypedAbiArg<number | bigint, "amount">, user: TypedAbiArg<string, "user">], Response<boolean, bigint>>,
-    poolMint: {"name":"pool-mint","access":"public","args":[{"name":"id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">, amount: TypedAbiArg<number | bigint, "amount">, user: TypedAbiArg<string, "user">], Response<boolean, bigint>>,
-    poolTransfer: {"name":"pool-transfer","access":"public","args":[{"name":"token-trait","type":"trait_reference"},{"name":"amount","type":"uint128"},{"name":"recipient","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[tokenTrait: TypedAbiArg<string, "tokenTrait">, amount: TypedAbiArg<number | bigint, "amount">, recipient: TypedAbiArg<string, "recipient">], Response<boolean, bigint>>,
-    setActiveBinId: {"name":"set-active-bin-id","access":"public","args":[{"name":"id","type":"int128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">], Response<boolean, bigint>>,
-    setFeeAddress: {"name":"set-fee-address","access":"public","args":[{"name":"address","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[address: TypedAbiArg<string, "address">], Response<boolean, bigint>>,
-    setFreezeVariableFeesManager: {"name":"set-freeze-variable-fees-manager","access":"public","args":[],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[], Response<boolean, bigint>>,
-    setPoolUri: {"name":"set-pool-uri","access":"public","args":[{"name":"uri","type":{"string-ascii":{"length":256}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[uri: TypedAbiArg<string, "uri">], Response<boolean, bigint>>,
+    createPool: {"name":"create-pool","access":"public","args":[{"name":"x-token-contract","type":"principal"},{"name":"y-token-contract","type":"principal"},{"name":"variable-fees-mgr","type":"principal"},{"name":"fee-addr","type":"principal"},{"name":"core-caller","type":"principal"},{"name":"active-bin","type":"int128"},{"name":"step","type":"uint128"},{"name":"price","type":"uint128"},{"name":"id","type":"uint128"},{"name":"name","type":{"string-ascii":{"length":32}}},{"name":"symbol","type":{"string-ascii":{"length":32}}},{"name":"uri","type":{"string-ascii":{"length":256}}}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[xTokenContract: TypedAbiArg<string, "xTokenContract">, yTokenContract: TypedAbiArg<string, "yTokenContract">, variableFeesMgr: TypedAbiArg<string, "variableFeesMgr">, feeAddr: TypedAbiArg<string, "feeAddr">, coreCaller: TypedAbiArg<string, "coreCaller">, activeBin: TypedAbiArg<number | bigint, "activeBin">, step: TypedAbiArg<number | bigint, "step">, price: TypedAbiArg<number | bigint, "price">, id: TypedAbiArg<number | bigint, "id">, name: TypedAbiArg<string, "name">, symbol: TypedAbiArg<string, "symbol">, uri: TypedAbiArg<string, "uri">], Response<boolean, null>>,
+    poolBurn: {"name":"pool-burn","access":"public","args":[{"name":"id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">, amount: TypedAbiArg<number | bigint, "amount">, user: TypedAbiArg<string, "user">], Response<boolean, null>>,
+    poolMint: {"name":"pool-mint","access":"public","args":[{"name":"id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">, amount: TypedAbiArg<number | bigint, "amount">, user: TypedAbiArg<string, "user">], Response<boolean, null>>,
+    poolTransfer: {"name":"pool-transfer","access":"public","args":[{"name":"token-trait","type":"trait_reference"},{"name":"amount","type":"uint128"},{"name":"recipient","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[tokenTrait: TypedAbiArg<string, "tokenTrait">, amount: TypedAbiArg<number | bigint, "amount">, recipient: TypedAbiArg<string, "recipient">], Response<boolean, null>>,
+    setActiveBinId: {"name":"set-active-bin-id","access":"public","args":[{"name":"id","type":"int128"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">], Response<boolean, null>>,
+    setFeeAddress: {"name":"set-fee-address","access":"public","args":[{"name":"address","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[address: TypedAbiArg<string, "address">], Response<boolean, null>>,
+    setFreezeVariableFeesManager: {"name":"set-freeze-variable-fees-manager","access":"public","args":[],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[], Response<boolean, null>>,
+    setPoolUri: {"name":"set-pool-uri","access":"public","args":[{"name":"uri","type":{"string-ascii":{"length":256}}}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[uri: TypedAbiArg<string, "uri">], Response<boolean, null>>,
     setRevert: {"name":"set-revert","access":"public","args":[{"name":"flag","type":"bool"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[flag: TypedAbiArg<boolean, "flag">], Response<boolean, null>>,
-    setVariableFees: {"name":"set-variable-fees","access":"public","args":[{"name":"x-fee","type":"uint128"},{"name":"y-fee","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[xFee: TypedAbiArg<number | bigint, "xFee">, yFee: TypedAbiArg<number | bigint, "yFee">], Response<boolean, bigint>>,
-    setVariableFeesCooldown: {"name":"set-variable-fees-cooldown","access":"public","args":[{"name":"cooldown","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[cooldown: TypedAbiArg<number | bigint, "cooldown">], Response<boolean, bigint>>,
-    setVariableFeesManager: {"name":"set-variable-fees-manager","access":"public","args":[{"name":"manager","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[manager: TypedAbiArg<string, "manager">], Response<boolean, bigint>>,
-    setXFees: {"name":"set-x-fees","access":"public","args":[{"name":"protocol-fee","type":"uint128"},{"name":"provider-fee","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[protocolFee: TypedAbiArg<number | bigint, "protocolFee">, providerFee: TypedAbiArg<number | bigint, "providerFee">], Response<boolean, bigint>>,
-    setYFees: {"name":"set-y-fees","access":"public","args":[{"name":"protocol-fee","type":"uint128"},{"name":"provider-fee","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[protocolFee: TypedAbiArg<number | bigint, "protocolFee">, providerFee: TypedAbiArg<number | bigint, "providerFee">], Response<boolean, bigint>>,
-    transfer: {"name":"transfer","access":"public","args":[{"name":"token-id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"sender","type":"principal"},{"name":"recipient","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, amount: TypedAbiArg<number | bigint, "amount">, sender: TypedAbiArg<string, "sender">, recipient: TypedAbiArg<string, "recipient">], Response<boolean, bigint>>,
-    transferMany: {"name":"transfer-many","access":"public","args":[{"name":"transfers","type":{"list":{"type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"recipient","type":"principal"},{"name":"sender","type":"principal"},{"name":"token-id","type":"uint128"}]},"length":200}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[transfers: TypedAbiArg<{
+    setVariableFees: {"name":"set-variable-fees","access":"public","args":[{"name":"x-fee","type":"uint128"},{"name":"y-fee","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[xFee: TypedAbiArg<number | bigint, "xFee">, yFee: TypedAbiArg<number | bigint, "yFee">], Response<boolean, null>>,
+    setVariableFeesCooldown: {"name":"set-variable-fees-cooldown","access":"public","args":[{"name":"cooldown","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[cooldown: TypedAbiArg<number | bigint, "cooldown">], Response<boolean, null>>,
+    setVariableFeesManager: {"name":"set-variable-fees-manager","access":"public","args":[{"name":"manager","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[manager: TypedAbiArg<string, "manager">], Response<boolean, null>>,
+    setXFees: {"name":"set-x-fees","access":"public","args":[{"name":"protocol-fee","type":"uint128"},{"name":"provider-fee","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[protocolFee: TypedAbiArg<number | bigint, "protocolFee">, providerFee: TypedAbiArg<number | bigint, "providerFee">], Response<boolean, null>>,
+    setYFees: {"name":"set-y-fees","access":"public","args":[{"name":"protocol-fee","type":"uint128"},{"name":"provider-fee","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[protocolFee: TypedAbiArg<number | bigint, "protocolFee">, providerFee: TypedAbiArg<number | bigint, "providerFee">], Response<boolean, null>>,
+    transfer: {"name":"transfer","access":"public","args":[{"name":"token-id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"sender","type":"principal"},{"name":"recipient","type":"principal"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, amount: TypedAbiArg<number | bigint, "amount">, sender: TypedAbiArg<string, "sender">, recipient: TypedAbiArg<string, "recipient">], Response<boolean, null>>,
+    transferMany: {"name":"transfer-many","access":"public","args":[{"name":"transfers","type":{"list":{"type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"recipient","type":"principal"},{"name":"sender","type":"principal"},{"name":"token-id","type":"uint128"}]},"length":200}}}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[transfers: TypedAbiArg<{
   "amount": number | bigint;
   "recipient": string;
   "sender": string;
   "tokenId": number | bigint;
-}[], "transfers">], Response<boolean, bigint>>,
-    transferManyMemo: {"name":"transfer-many-memo","access":"public","args":[{"name":"transfers","type":{"list":{"type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"memo","type":{"buffer":{"length":34}}},{"name":"recipient","type":"principal"},{"name":"sender","type":"principal"},{"name":"token-id","type":"uint128"}]},"length":200}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[transfers: TypedAbiArg<{
+}[], "transfers">], Response<boolean, null>>,
+    transferManyMemo: {"name":"transfer-many-memo","access":"public","args":[{"name":"transfers","type":{"list":{"type":{"tuple":[{"name":"amount","type":"uint128"},{"name":"memo","type":{"buffer":{"length":34}}},{"name":"recipient","type":"principal"},{"name":"sender","type":"principal"},{"name":"token-id","type":"uint128"}]},"length":200}}}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[transfers: TypedAbiArg<{
   "amount": number | bigint;
   "memo": Uint8Array;
   "recipient": string;
   "sender": string;
   "tokenId": number | bigint;
-}[], "transfers">], Response<boolean, bigint>>,
-    transferMemo: {"name":"transfer-memo","access":"public","args":[{"name":"token-id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"sender","type":"principal"},{"name":"recipient","type":"principal"},{"name":"memo","type":{"buffer":{"length":34}}}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, amount: TypedAbiArg<number | bigint, "amount">, sender: TypedAbiArg<string, "sender">, recipient: TypedAbiArg<string, "recipient">, memo: TypedAbiArg<Uint8Array, "memo">], Response<boolean, bigint>>,
-    updateBinBalances: {"name":"update-bin-balances","access":"public","args":[{"name":"bin-id","type":"uint128"},{"name":"x-balance","type":"uint128"},{"name":"y-balance","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"uint128"}}}} as TypedAbiFunction<[binId: TypedAbiArg<number | bigint, "binId">, xBalance: TypedAbiArg<number | bigint, "xBalance">, yBalance: TypedAbiArg<number | bigint, "yBalance">], Response<boolean, bigint>>,
+}[], "transfers">], Response<boolean, null>>,
+    transferMemo: {"name":"transfer-memo","access":"public","args":[{"name":"token-id","type":"uint128"},{"name":"amount","type":"uint128"},{"name":"sender","type":"principal"},{"name":"recipient","type":"principal"},{"name":"memo","type":{"buffer":{"length":34}}}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, amount: TypedAbiArg<number | bigint, "amount">, sender: TypedAbiArg<string, "sender">, recipient: TypedAbiArg<string, "recipient">, memo: TypedAbiArg<Uint8Array, "memo">], Response<boolean, null>>,
+    updateBinBalances: {"name":"update-bin-balances","access":"public","args":[{"name":"bin-id","type":"uint128"},{"name":"x-balance","type":"uint128"},{"name":"y-balance","type":"uint128"}],"outputs":{"type":{"response":{"ok":"bool","error":"none"}}}} as TypedAbiFunction<[binId: TypedAbiArg<number | bigint, "binId">, xBalance: TypedAbiArg<number | bigint, "xBalance">, yBalance: TypedAbiArg<number | bigint, "yBalance">], Response<boolean, null>>,
+    getActiveBinId: {"name":"get-active-bin-id","access":"read_only","args":[],"outputs":{"type":{"response":{"ok":"int128","error":"uint128"}}}} as TypedAbiFunction<[], Response<bigint, bigint>>,
     getBalance: {"name":"get-balance","access":"read_only","args":[{"name":"token-id","type":"uint128"},{"name":"user","type":"principal"}],"outputs":{"type":{"response":{"ok":"uint128","error":"none"}}}} as TypedAbiFunction<[tokenId: TypedAbiArg<number | bigint, "tokenId">, user: TypedAbiArg<string, "user">], Response<bigint, null>>,
     getBinBalances: {"name":"get-bin-balances","access":"read_only","args":[{"name":"id","type":"uint128"}],"outputs":{"type":{"response":{"ok":{"tuple":[{"name":"bin-shares","type":"uint128"},{"name":"x-balance","type":"uint128"},{"name":"y-balance","type":"uint128"}]},"error":"none"}}}} as TypedAbiFunction<[id: TypedAbiArg<number | bigint, "id">], Response<{
   "binShares": bigint;
@@ -1245,28 +1324,8 @@ mockPool: {
     userBins: {"name":"user-bins","key":"principal","value":{"list":{"type":"uint128","length":1001}}} as TypedAbiMap<string, bigint[]>
   },
   "variables": {
-    CONTRACT_DEPLOYER: {
-  name: 'CONTRACT_DEPLOYER',
-  type: 'principal',
-  access: 'constant'
-} as TypedAbiVariable<string>,
-    CORE_ADDRESS: {
-  name: 'CORE_ADDRESS',
-  type: 'principal',
-  access: 'constant'
-} as TypedAbiVariable<string>,
     ERR_INVALID_AMOUNT: {
   name: 'ERR_INVALID_AMOUNT',
-  type: {
-    response: {
-      ok: 'none',
-      error: 'uint128'
-    }
-  },
-  access: 'constant'
-} as TypedAbiVariable<Response<null, bigint>>,
-    eRR_INVALID_AMOUNT_SIP_013: {
-  name: 'ERR_INVALID_AMOUNT_SIP_013',
   type: {
     response: {
       ok: 'none',
@@ -1285,48 +1344,8 @@ mockPool: {
   },
   access: 'constant'
 } as TypedAbiVariable<Response<null, bigint>>,
-    eRR_INVALID_PRINCIPAL_SIP_013: {
-  name: 'ERR_INVALID_PRINCIPAL_SIP_013',
-  type: {
-    response: {
-      ok: 'none',
-      error: 'uint128'
-    }
-  },
-  access: 'constant'
-} as TypedAbiVariable<Response<null, bigint>>,
-    ERR_MAX_NUMBER_OF_BINS: {
-  name: 'ERR_MAX_NUMBER_OF_BINS',
-  type: {
-    response: {
-      ok: 'none',
-      error: 'uint128'
-    }
-  },
-  access: 'constant'
-} as TypedAbiVariable<Response<null, bigint>>,
     ERR_NOT_AUTHORIZED: {
   name: 'ERR_NOT_AUTHORIZED',
-  type: {
-    response: {
-      ok: 'none',
-      error: 'uint128'
-    }
-  },
-  access: 'constant'
-} as TypedAbiVariable<Response<null, bigint>>,
-    eRR_NOT_AUTHORIZED_SIP_013: {
-  name: 'ERR_NOT_AUTHORIZED_SIP_013',
-  type: {
-    response: {
-      ok: 'none',
-      error: 'uint128'
-    }
-  },
-  access: 'constant'
-} as TypedAbiVariable<Response<null, bigint>>,
-    ERR_NOT_POOL_CONTRACT_DEPLOYER: {
-  name: 'ERR_NOT_POOL_CONTRACT_DEPLOYER',
   type: {
     response: {
       ok: 'none',
@@ -1469,43 +1488,21 @@ mockPool: {
 } as TypedAbiVariable<bigint>
   },
   constants: {
-  CONTRACT_DEPLOYER: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
-  CORE_ADDRESS: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1',
   ERR_INVALID_AMOUNT: {
     isOk: false,
     value: 3_002n
-  },
-  eRR_INVALID_AMOUNT_SIP_013: {
-    isOk: false,
-    value: 1n
   },
   ERR_INVALID_PRINCIPAL: {
     isOk: false,
     value: 3_003n
   },
-  eRR_INVALID_PRINCIPAL_SIP_013: {
-    isOk: false,
-    value: 5n
-  },
-  ERR_MAX_NUMBER_OF_BINS: {
-    isOk: false,
-    value: 3_005n
-  },
   ERR_NOT_AUTHORIZED: {
     isOk: false,
     value: 3_001n
   },
-  eRR_NOT_AUTHORIZED_SIP_013: {
-    isOk: false,
-    value: 4n
-  },
-  ERR_NOT_POOL_CONTRACT_DEPLOYER: {
-    isOk: false,
-    value: 3_004n
-  },
   activeBinId: 0n,
   binChangeCount: 0n,
-  binStep: 0n,
+  binStep: 25n,
   creationHeight: 0n,
   feeAddress: 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM',
   freezeVariableFeesManager: false,
@@ -1513,8 +1510,8 @@ mockPool: {
   lastVariableFeesUpdate: 0n,
   poolCreated: false,
   poolId: 0n,
-  poolName: '',
-  poolSymbol: '',
+  poolName: 'Mock Pool',
+  poolSymbol: 'MOCK',
   poolUri: '',
   revert: false,
   variableFeesCooldown: 0n,
@@ -1529,9 +1526,9 @@ mockPool: {
   yVariableFee: 0n
 },
   "non_fungible_tokens": [
-    {"name":"pool-token-id","type":{"tuple":[{"name":"owner","type":"principal"},{"name":"token-id","type":"uint128"}]}}
+    
   ],
-  "fungible_tokens":[{"name":"pool-token"}],"epoch":"Epoch30","clarity_version":"Clarity3",
+  "fungible_tokens":[],"epoch":"Epoch30","clarity_version":"Clarity3",
   contractName: 'mock-pool',
   },
 mockSbtcToken: {
@@ -1733,7 +1730,7 @@ sip013TransferManyTraitV11: {
 
 export const accounts = {"deployer":{"address":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM","balance":"100000000000000"},"faucet":{"address":"STNHKEPYEPJ8ET55ZZ0M5A34J0R3N5FM2CMMMAZ6","balance":"100000000000000"},"wallet_1":{"address":"ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5","balance":"100000000000000"},"wallet_2":{"address":"ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG","balance":"100000000000000"},"wallet_3":{"address":"ST2JHG361ZXG51QTKY2NQCVBPPRRE2KZB1HR05NNC","balance":"100000000000000"},"wallet_4":{"address":"ST2NEB84ASENDXKYGJPQW86YXQCEFEX2ZQPG87ND","balance":"100000000000000"},"wallet_5":{"address":"ST2REHHS5J3CERCRBEPMGH7921Q6PYKAADT7JP2VB","balance":"100000000000000"},"wallet_6":{"address":"ST3AM1A56AK2C1XAFJ4115ZSV26EB49BVQ10MGCS0","balance":"100000000000000"},"wallet_7":{"address":"ST3PF13W7Z0RRM42A8VZRVFQ75SV1K26RXEP8YGKJ","balance":"100000000000000"},"wallet_8":{"address":"ST3NBRSFKX28FQ2ZJ1MAKX58HKHSDGNV5N7R21XCP","balance":"100000000000000"}} as const;
 
-export const identifiers = {"dlmmCoreV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1","dlmmPoolSbtcUsdcV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-sbtc-usdc-v-1-1","dlmmPoolTraitV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-trait-v-1-1","mockPool":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-pool","mockSbtcToken":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc-token","mockUsdcToken":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdc-token","sip010TraitFtStandardV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard-v-1-1","sip013TraitSftStandardV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-trait-sft-standard-v-1-1","sip013TransferManyTraitV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-transfer-many-trait-v-1-1"} as const
+export const identifiers = {"dlmmCoreV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1","dlmmPoolSbtcUsdcV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-sbtc-usdc-v-1-1","dlmmPoolTraitV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-trait-v-1-1","dlmmSwapHelperV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-swap-helper-v-1-1","mockPool":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-pool","mockSbtcToken":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc-token","mockUsdcToken":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdc-token","sip010TraitFtStandardV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard-v-1-1","sip013TraitSftStandardV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-trait-sft-standard-v-1-1","sip013TransferManyTraitV11":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-transfer-many-trait-v-1-1"} as const
 
 export const simnet = {
   accounts,
@@ -1742,7 +1739,7 @@ export const simnet = {
 } as const;
 
 
-export const deployments = {"dlmmCoreV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1","testnet":null,"mainnet":null},"dlmmPoolSbtcUsdcV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-sbtc-usdc-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-sbtc-usdc-v-1-1","testnet":null,"mainnet":null},"dlmmPoolTraitV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-trait-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-trait-v-1-1","testnet":null,"mainnet":null},"mockPool":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-pool","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-pool","testnet":null,"mainnet":null},"mockSbtcToken":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc-token","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc-token","testnet":null,"mainnet":null},"mockUsdcToken":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdc-token","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdc-token","testnet":null,"mainnet":null},"sip010TraitFtStandardV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard-v-1-1","testnet":null,"mainnet":null},"sip013TraitSftStandardV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-trait-sft-standard-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-trait-sft-standard-v-1-1","testnet":null,"mainnet":null},"sip013TransferManyTraitV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-transfer-many-trait-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-transfer-many-trait-v-1-1","testnet":null,"mainnet":null}} as const;
+export const deployments = {"dlmmCoreV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-core-v-1-1","testnet":null,"mainnet":null},"dlmmPoolSbtcUsdcV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-sbtc-usdc-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-sbtc-usdc-v-1-1","testnet":null,"mainnet":null},"dlmmPoolTraitV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-trait-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-pool-trait-v-1-1","testnet":null,"mainnet":null},"dlmmSwapHelperV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-swap-helper-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.dlmm-swap-helper-v-1-1","testnet":null,"mainnet":null},"mockPool":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-pool","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-pool","testnet":null,"mainnet":null},"mockSbtcToken":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc-token","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc-token","testnet":null,"mainnet":null},"mockUsdcToken":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdc-token","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdc-token","testnet":null,"mainnet":null},"sip010TraitFtStandardV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-010-trait-ft-standard-v-1-1","testnet":null,"mainnet":null},"sip013TraitSftStandardV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-trait-sft-standard-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-trait-sft-standard-v-1-1","testnet":null,"mainnet":null},"sip013TransferManyTraitV11":{"devnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-transfer-many-trait-v-1-1","simnet":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip-013-transfer-many-trait-v-1-1","testnet":null,"mainnet":null}} as const;
 
 export const project = {
   contracts,

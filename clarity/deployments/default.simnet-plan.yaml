@@ -90,6 +90,11 @@ plan:
             path: contracts/dlmm-pool-sbtc-usdc-v-1-1.clar
             clarity-version: 3
         - emulated-contract-publish:
+            contract-name: dlmm-swap-helper-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-swap-helper-v-1-1.clar
+            clarity-version: 3
+        - emulated-contract-publish:
             contract-name: mock-pool
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mocks/mock-pool.clar

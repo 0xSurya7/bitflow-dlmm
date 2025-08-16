@@ -3,6 +3,7 @@
   - [`dlmm-core-v-1-1`](dlmm-core-v-1-1.md)
 - [`dlmm-pool-sbtc-usdc-v-1-1`](dlmm-pool-sbtc-usdc-v-1-1.md)
 - [`dlmm-pool-trait-v-1-1`](dlmm-pool-trait-v-1-1.md)
+- [`dlmm-swap-helper-v-1-1`](dlmm-swap-helper-v-1-1.md)
 - [`mock-pool`](mock-pool.md)
 - [`mock-sbtc-token`](mock-sbtc-token.md)
 - [`mock-usdc-token`](mock-usdc-token.md)

@@ -1,105 +1,27 @@
 import {
   alice,
-  bob,
   deployer,
   dlmmCore,
   errors,
   sbtcUsdcPool,
   mockSbtcToken,
   mockUsdcToken,
-  mockPool
+  mockPool,
+  setupTestEnvironment
 } from "./helpers";
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { accounts } from './clarigen-types'; 
 import {
   cvToValue,
 } from '@clarigen/core';
-import { filterEvents, rov, txErr, txOk, rovOk } from '@clarigen/test';
+import { txErr, txOk, rovOk } from '@clarigen/test';
 
+let addBulkLiquidityOutput: { bin: bigint; xAmount: bigint; yAmount: bigint; liquidity: bigint;}[];
 
 describe('DLMM Core Swap Functions', () => {
   
   beforeEach(async () => {
-    // Step 1: Mint tokens to required parties
-    txOk(mockSbtcToken.mint(1000000000n, deployer), deployer);  // 10 BTC to deployer
-    txOk(mockUsdcToken.mint(500000000000n, deployer), deployer); // 500k USDC to deployer
-    txOk(mockSbtcToken.mint(100000000n, alice), deployer);  // 1 BTC to alice
-    txOk(mockUsdcToken.mint(50000000000n, alice), deployer); // 50k USDC to alice
-    txOk(mockSbtcToken.mint(100000000n, bob), deployer);  // 1 BTC to bob
-    txOk(mockUsdcToken.mint(50000000000n, bob), deployer); // 50k USDC to bob
-    
-    // Step 2: Enable public pool creation and create pool
-    txOk(dlmmCore.setPublicPoolCreation(true), deployer);
-    const poolData = rov(sbtcUsdcPool.getPool());
-    if (!poolData.isOk || !poolData.value.poolCreated) {
-      // Create pool with proper parameters
-      txOk(dlmmCore.createPool(
-        sbtcUsdcPool.identifier,           
-        mockSbtcToken.identifier,          
-        mockUsdcToken.identifier,          
-        10000000n,    // 0.1 BTC in active bin
-        5000000000n,  // 5000 USDC in active bin  
-        1000n,        // burn amount
-        1000n, 3000n, // x fees (0.1% protocol, 0.3% provider)
-        1000n, 3000n, // y fees (0.1% protocol, 0.3% provider)
-        25n,          // bin step (25 basis points)
-        900n,         // variable fees cooldown
-        false,        // freeze variable fees manager
-        deployer,     // fee address
-        "https://bitflow.finance/dlmm", // uri
-        true          // status
-      ), deployer);
-    } 
-
-    // Step 3: Add liquidity to multiple bins following DLMM rules
-    // Active bin is 0, so:
-    // - Bins < 0: only Y tokens (higher price bins)
-    // - Bin = 0: both X and Y tokens (active bin)  
-    // - Bins > 0: only X tokens (lower price bins)
-    
-    const liquidityX = 5000000n;    // 0.05 BTC
-    const liquidityY = 2500000000n; // 2500 USDC
-    const minDlp = 1n; // Must be > 0
-    
-    // Add liquidity to negative bins (Y tokens only)
-    const negativeBins = [-5n, -3n, -1n];
-    for (const binId of negativeBins) {
-      txOk(dlmmCore.addLiquidity(
-        sbtcUsdcPool.identifier,
-        mockSbtcToken.identifier,
-        mockUsdcToken.identifier,
-        binId,
-        0n,         // no X tokens for negative bins
-        liquidityY, // only Y tokens
-        minDlp
-      ), deployer);
-    }
-    
-    // Add liquidity to active bin (both X and Y tokens)
-    txOk(dlmmCore.addLiquidity(
-      sbtcUsdcPool.identifier,
-      mockSbtcToken.identifier,
-      mockUsdcToken.identifier,
-      0n,         // active bin
-      liquidityX, // X tokens
-      liquidityY, // Y tokens  
-      minDlp
-    ), deployer);
-    
-    // Add liquidity to positive bins (X tokens only)
-    const positiveBins = [1n, 3n, 5n];
-    for (const binId of positiveBins) {
-      txOk(dlmmCore.addLiquidity(
-        sbtcUsdcPool.identifier,
-        mockSbtcToken.identifier,
-        mockUsdcToken.identifier,
-        binId,
-        liquidityX, // only X tokens for positive bins
-        0n,         // no Y tokens
-        minDlp
-      ), deployer);
-    }
+    addBulkLiquidityOutput = setupTestEnvironment();
   });
 
   describe('Pool Setup Verification', () => {

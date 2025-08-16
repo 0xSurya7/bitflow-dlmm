@@ -37,6 +37,8 @@ dlmm-pool-sbtc-usdc-v-1-1
 - [`get-balance`](#get-balance)
 - [`get-overall-balance`](#get-overall-balance)
 - [`get-pool`](#get-pool)
+- [`get-active-bin-id`](#get-active-bin-id)
+- [`get-test`](#get-test)
 - [`get-bin-balances`](#get-bin-balances)
 - [`get-user-bins`](#get-user-bins)
 
@@ -332,9 +334,30 @@ Get all pool data
 
 
 
-### get-bin-balances
+### get-active-bin-id
 
 [View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L142)
+
+`(define-read-only (get-active-bin-id () (response int none))`
+
+Get active bin ID
+
+<details>
+  <summary>Source code:</summary>
+
+```clarity
+(define-read-only (get-active-bin-id)
+  (ok (var-get active-bin-id))
+)
+```
+</details>
+
+
+
+
+### get-bin-balances
+
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L153)
 
 `(define-read-only (get-bin-balances ((id uint)) (response (tuple (bin-shares uint) (x-balance uint) (y-balance uint)) none))`
 
@@ -359,7 +382,7 @@ Get balance data at a bin
 
 ### get-user-bins
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L147)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L158)
 
 `(define-read-only (get-user-bins ((user principal)) (response (list 1001 uint) none))`
 
@@ -384,7 +407,7 @@ Get a list of bins a user has a position in
 
 ### set-pool-uri
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L152)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L163)
 
 `(define-public (set-pool-uri ((uri (string-ascii 256))) (response bool uint))`
 
@@ -418,7 +441,7 @@ Set pool uri via DLMM Core
 
 ### set-variable-fees-manager
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L166)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L177)
 
 `(define-public (set-variable-fees-manager ((manager principal)) (response bool uint))`
 
@@ -452,7 +475,7 @@ Set variable fees manager via DLMM Core
 
 ### set-fee-address
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L180)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L191)
 
 `(define-public (set-fee-address ((address principal)) (response bool uint))`
 
@@ -486,7 +509,7 @@ Set fee address via DLMM Core
 
 ### set-active-bin-id
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L194)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L205)
 
 `(define-public (set-active-bin-id ((id int)) (response bool uint))`
 
@@ -521,7 +544,7 @@ Set active bin ID via DLMM Core
 
 ### set-x-fees
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L209)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L220)
 
 `(define-public (set-x-fees ((protocol-fee uint) (provider-fee uint)) (response bool uint))`
 
@@ -557,7 +580,7 @@ Set x fees via DLMM Core
 
 ### set-y-fees
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L224)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L235)
 
 `(define-public (set-y-fees ((protocol-fee uint) (provider-fee uint)) (response bool uint))`
 
@@ -593,7 +616,7 @@ Set y fees via DLMM Core
 
 ### set-variable-fees
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L239)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L250)
 
 `(define-public (set-variable-fees ((x-fee uint) (y-fee uint)) (response bool uint))`
 
@@ -631,7 +654,7 @@ Set variable fees via DLMM Core
 
 ### set-variable-fees-cooldown
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L256)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L267)
 
 `(define-public (set-variable-fees-cooldown ((cooldown uint)) (response bool uint))`
 
@@ -665,7 +688,7 @@ Set variable fees cooldown via DLMM Core
 
 ### set-freeze-variable-fees-manager
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L270)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L281)
 
 `(define-public (set-freeze-variable-fees-manager () (response bool uint))`
 
@@ -695,7 +718,7 @@ Set freeze variable fees manager via DLMM Core
 
 ### update-bin-balances
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L284)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L295)
 
 `(define-public (update-bin-balances ((bin-id uint) (x-balance uint) (y-balance uint)) (response bool uint))`
 
@@ -734,7 +757,7 @@ Update bin balances via DLMM Core
 
 ### transfer
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L301)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L312)
 
 `(define-public (transfer ((token-id uint) (amount uint) (sender principal) (recipient principal)) (response bool uint))`
 
@@ -791,7 +814,7 @@ SIP 013 transfer function that transfers pool token
 
 ### transfer-memo
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L335)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L346)
 
 `(define-public (transfer-memo ((token-id uint) (amount uint) (sender principal) (recipient principal) (memo (buff 34))) (response bool uint))`
 
@@ -824,7 +847,7 @@ SIP 013 transfer function that transfers pool token with memo
 
 ### transfer-many
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L344)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L355)
 
 `(define-public (transfer-many ((transfers (list 200 (tuple (amount uint) (recipient principal) (sender principal) (token-id uint))))) (response bool uint))`
 
@@ -849,7 +872,7 @@ SIP 013 transfer function that transfers many pool token
 
 ### transfer-many-memo
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L349)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L360)
 
 `(define-public (transfer-many-memo ((transfers (list 200 (tuple (amount uint) (memo (buff 34)) (recipient principal) (sender principal) (token-id uint))))) (response bool uint))`
 
@@ -874,7 +897,7 @@ SIP 013 transfer function that transfers many pool token with memo
 
 ### pool-transfer
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L354)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L365)
 
 `(define-public (pool-transfer ((token-trait trait_reference) (amount uint) (recipient principal)) (response bool uint))`
 
@@ -922,7 +945,7 @@ Transfer tokens from this pool contract via DLMM Core
 
 ### pool-mint
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L380)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L391)
 
 `(define-public (pool-mint ((id uint) (amount uint) (user principal)) (response bool uint))`
 
@@ -973,7 +996,7 @@ Mint pool token to an user via DLMM Core
 
 ### pool-burn
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L409)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L420)
 
 `(define-public (pool-burn ((id uint) (amount uint) (user principal)) (response bool uint))`
 
@@ -1026,7 +1049,7 @@ Burn pool token from an user via DLMM Core
 
 ### create-pool
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L440)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L451)
 
 `(define-public (create-pool ((x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (fee-addr principal) (core-caller principal) (active-bin int) (step uint) (price uint) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))) (response bool uint))`
 
@@ -1089,7 +1112,7 @@ Create pool using this pool contract via DLMM Core
 
 ### fold-transfer-many
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L472)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L483)
 
 `(define-private (fold-transfer-many ((item (tuple (amount uint) (recipient principal) (sender principal) (token-id uint))) (previous-response (response bool uint))) (response bool uint))`
 
@@ -1115,7 +1138,7 @@ Helper function to transfer many pool token
 
 ### fold-transfer-many-memo
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L477)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L488)
 
 `(define-private (fold-transfer-many-memo ((item (tuple (amount uint) (memo (buff 34)) (recipient principal) (sender principal) (token-id uint))) (previous-response (response bool uint))) (response bool uint))`
 
@@ -1141,7 +1164,7 @@ Helper function to transfer many pool token with memo
 
 ### get-balance-or-default
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L482)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L493)
 
 `(define-private (get-balance-or-default ((id uint) (user principal)) uint)`
 
@@ -1167,7 +1190,7 @@ Helper function to get token balance for an user by ID
 
 ### update-user-balance
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L487)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L498)
 
 `(define-private (update-user-balance ((id uint) (user principal) (balance uint)) (response bool uint))`
 
@@ -1211,7 +1234,7 @@ Update user balances via pool
 
 ### tag-pool-token-id
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L509)
+[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L520)
 
 `(define-private (tag-pool-token-id ((id (tuple (owner principal) (token-id uint)))) (response bool uint))`
 
