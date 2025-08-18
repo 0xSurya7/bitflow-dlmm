@@ -44,6 +44,8 @@
 (define-constant ERR_NOT_ACTIVE_BIN (err u1037))
 (define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1038))
 (define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1039))
+(define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1040))
+(define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1041))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -80,12 +82,16 @@
 ;; Data var used to enable or disable pool creation by anyone
 (define-data-var public-pool-creation bool false)
 
+;; List of verified pool code hashes
+(define-data-var verified-pool-code-hashes (list 10000 (buff 32)) (list 0x))
+
 ;; Define pools map
 (define-map pools uint {
   id: uint,
   name: (string-ascii 32),
   symbol: (string-ascii 32),
   pool-contract: principal,
+  verified: bool,
   status: bool
 })
 
@@ -140,6 +146,11 @@
 ;; Get public pool creation status
 (define-read-only (get-public-pool-creation)
   (ok (var-get public-pool-creation))
+)
+
+;; Get verified pool code hashes list
+(define-read-only (get-verified-pool-code-hashes)
+  (ok (var-get verified-pool-code-hashes))
 )
 
 ;; Get bin ID as unsigned int
@@ -243,6 +254,25 @@
       (print {action: "set-public-pool-creation", caller: caller, data: {status: status}})
       (ok true)
     )
+  )
+)
+
+;; Add a new verified pool code hash
+(define-public (add-verified-pool-code-hash (hash (buff 32)))
+  (let (
+    (verified-pool-code-hashes-list (var-get verified-pool-code-hashes))
+    (caller tx-sender)
+  )
+    ;; Assert caller is an admin and new code hash is not already in list
+    (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+    (asserts! (is-none (index-of verified-pool-code-hashes-list hash)) ERR_ALREADY_VERIFIED_POOL_CODE_HASH)
+
+    ;; Add code hash to verified pool code hashes list with max length of 10000
+    (var-set verified-pool-code-hashes (unwrap! (as-max-len? (append verified-pool-code-hashes-list hash) u10000) ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED))
+
+    ;; Print function data and return true
+    (print {action: "add-verified-pool-code-hash", caller: caller, data: {hash: hash}})
+    (ok true)
   )
 )
 
@@ -639,6 +669,9 @@
     (symbol (unwrap! (create-symbol x-token-trait y-token-trait) ERR_INVALID_POOL_SYMBOL))
     (name (concat symbol "-LP"))
 
+    ;; Check if pool code hash is verified @NOTE use contract-hash?
+    (pool-verified-check (is-some (index-of (var-get verified-pool-code-hashes) 0x)))
+
     ;; Get token contracts
     (x-token-contract (contract-of x-token-trait))
     (y-token-contract (contract-of y-token-trait))
@@ -707,7 +740,7 @@
 
       ;; Update ID of last created pool and add pool to pools map
       (var-set last-pool-id new-pool-id)
-      (map-set pools new-pool-id {id: new-pool-id, name: name, symbol: symbol, pool-contract: pool-contract, status: status})
+      (map-set pools new-pool-id {id: new-pool-id, name: name, symbol: symbol, pool-contract: pool-contract, verified: pool-verified-check, status: status})
 
       ;; Update allowed-token-direction map if needed
       (if (is-none (map-get? allowed-token-direction {x-token: x-token-contract, y-token: y-token-contract}))
@@ -735,6 +768,7 @@
           pool-id: new-pool-id,
           pool-name: name,
           pool-contract: pool-contract,
+          pool-verified: pool-verified-check,
           x-token: x-token-contract,
           y-token: y-token-contract,
           x-protocol-fee: x-protocol-fee,
