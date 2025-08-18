@@ -11,7 +11,7 @@
 
 ;; Add liquidity to multiple bins in multiple pools
 (define-public (add-liquidity-helper
-    (positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: uint, x-amount: uint, y-amount: uint}))
+    (positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint}))
     (min-dlp uint)
   )
   (let (
@@ -24,7 +24,7 @@
 
 ;; Withdraw liquidity from multiple bins in multiple pools
 (define-public (withdraw-liquidity-helper
-    (positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: uint, amount: uint}))
+    (positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint}))
     (min-x-amount uint) (min-y-amount uint)
   )
   (let (
@@ -39,7 +39,7 @@
 
 ;; Fold function to add liquidity to multiple bins in multiple pools
 (define-private (fold-add-liquidity-helper
-    (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: uint, x-amount: uint, y-amount: uint})
+    (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint})
     (result (response uint uint))
   )
   (let (
@@ -52,14 +52,14 @@
 
 ;; Fold function to withdraw liquidity from multiple bins in multiple pools
 (define-private (fold-withdraw-liquidity-helper
-    (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: uint, amount: uint})
+    (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint})
     (result (response {x-amount: uint, y-amount: uint} uint))
   )
   (let (
     (result-data (unwrap! result ERR_NO_RESULT_DATA))
     (bin-id (get bin-id position))
-    (min-x-amount (if (>= bin-id u500) u1 u0))
-    (min-y-amount (if (>= bin-id u500) u0 u1))
+    (min-x-amount (if (>= bin-id 0) u1 u0))
+    (min-y-amount (if (>= bin-id 0) u0 u1))
     (withdraw-liquidity-result (try! (contract-call? .dlmm-core-v-1-1 withdraw-liquidity (get pool-trait position) (get x-token-trait position) (get y-token-trait position) bin-id (get amount position) min-x-amount min-y-amount)))
     (updated-x-amount (+ (get x-amount result-data) (get x-amount withdraw-liquidity-result)))
     (updated-y-amount (+ (get y-amount result-data) (get y-amount withdraw-liquidity-result)))
