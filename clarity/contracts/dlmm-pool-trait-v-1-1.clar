@@ -42,6 +42,34 @@
       freeze-variable-fees-manager: bool,
       dynamic-config: (buff 4096)
     } uint))
+    (get-pool-for-swap (bool) (response {
+      pool-id: uint,
+      pool-name: (string-ascii 32),
+      fee-address: principal,
+      x-token: principal,
+      y-token: principal,
+      bin-step: uint,
+      initial-price: uint,
+      active-bin-id: int,
+      protocol-fee: uint,
+      provider-fee: uint,
+      variable-fee: uint
+    } uint))
+    (get-pool-for-liquidity () (response {
+      pool-id: uint,
+      pool-name: (string-ascii 32),
+      x-token: principal,
+      y-token: principal,
+      bin-step: uint,
+      initial-price: uint,
+      active-bin-id: int,
+      x-protocol-fee: uint,
+      x-provider-fee: uint,
+      x-variable-fee: uint,
+      y-protocol-fee: uint,
+      y-provider-fee: uint,
+      y-variable-fee: uint
+    } uint))
     (get-active-bin-id () (response int uint))
     (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
     (get-user-bins (principal) (response (list 1001 uint) uint))

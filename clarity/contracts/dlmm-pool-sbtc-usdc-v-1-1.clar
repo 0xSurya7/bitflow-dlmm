@@ -25,20 +25,33 @@
 (define-constant CONTRACT_DEPLOYER tx-sender)
 
 ;; Define all pool data vars and maps
-(define-data-var pool-id uint u0)
-(define-data-var pool-name (string-ascii 32) "")
-(define-data-var pool-symbol (string-ascii 32) "")
-(define-data-var pool-uri (string-ascii 256) "")
+(define-data-var pool-info {
+  pool-id: uint,
+  pool-name: (string-ascii 32),
+  pool-symbol: (string-ascii 32),
+  pool-uri: (string-ascii 256),
+  pool-created: bool,
+  creation-height: uint
+} {
+  pool-id: u0,
+  pool-name: "",
+  pool-symbol: "",
+  pool-uri: "",
+  pool-created: false,
+  creation-height: u0
+})
 
-(define-data-var pool-created bool false)
-(define-data-var creation-height uint u0)
-
-(define-data-var variable-fees-manager principal tx-sender)
-
-(define-data-var fee-address principal tx-sender)
-
-(define-data-var x-token principal tx-sender)
-(define-data-var y-token principal tx-sender)
+(define-data-var pool-addresses {
+  variable-fees-manager: principal,
+  fee-address: principal,
+  x-token: principal,
+  y-token: principal
+} {
+  variable-fees-manager: tx-sender,
+  fee-address: tx-sender,
+  x-token: tx-sender,
+  y-token: tx-sender
+})
 
 (define-data-var bin-step uint u0)
 
@@ -46,13 +59,21 @@
 
 (define-data-var active-bin-id int 0)
 
-(define-data-var x-protocol-fee uint u0)
-(define-data-var x-provider-fee uint u0)
-(define-data-var x-variable-fee uint u0)
-
-(define-data-var y-protocol-fee uint u0)
-(define-data-var y-provider-fee uint u0)
-(define-data-var y-variable-fee uint u0)
+(define-data-var pool-fees {
+  x-protocol-fee: uint,
+  x-provider-fee: uint,
+  x-variable-fee: uint,
+  y-protocol-fee: uint,
+  y-provider-fee: uint,
+  y-variable-fee: uint
+} {
+  x-protocol-fee: u0,
+  x-provider-fee: u0,
+  x-variable-fee: u0,
+  y-protocol-fee: u0,
+  y-provider-fee: u0,
+  y-variable-fee: u0
+})
 
 (define-data-var bin-change-count uint u0)
 
@@ -71,12 +92,12 @@
 
 ;; Get token name
 (define-read-only (get-name)
-  (ok (var-get pool-name))
+  (ok (get pool-name (var-get pool-info)))
 )
 
 ;; Get token symbol
 (define-read-only (get-symbol)
-  (ok (var-get pool-symbol))
+  (ok (get pool-symbol (var-get pool-info)))
 )
 
 ;; Get token decimals
@@ -86,7 +107,7 @@
 
 ;; SIP 013 function to get token uri
 (define-read-only (get-token-uri (token-id uint))
-  (ok (some (var-get pool-uri)))
+  (ok (some (get pool-uri (var-get pool-info))))
 )
 
 ;; SIP 013 function to get total token supply by ID
@@ -111,34 +132,86 @@
 
 ;; Get all pool data
 (define-read-only (get-pool)
-  (ok {
-    pool-id: (var-get pool-id),
-    pool-name: (var-get pool-name),
-    pool-symbol: (var-get pool-symbol),
-    pool-uri: (var-get pool-uri),
-    pool-created: (var-get pool-created),
-    creation-height: (var-get creation-height),
-    core-address: CORE_ADDRESS,
-    variable-fees-manager: (var-get variable-fees-manager),
-    fee-address: (var-get fee-address),
-    x-token: (var-get x-token),
-    y-token: (var-get y-token),
-    pool-token: (as-contract tx-sender),
-    bin-step: (var-get bin-step),
-    initial-price: (var-get initial-price),
-    active-bin-id: (var-get active-bin-id),
-    x-protocol-fee: (var-get x-protocol-fee),
-    x-provider-fee: (var-get x-provider-fee),
-    x-variable-fee: (var-get x-variable-fee),
-    y-protocol-fee: (var-get y-protocol-fee),
-    y-provider-fee: (var-get y-provider-fee),
-    y-variable-fee: (var-get y-variable-fee),
-    bin-change-count: (var-get bin-change-count),
-    last-variable-fees-update: (var-get last-variable-fees-update),
-    variable-fees-cooldown: (var-get variable-fees-cooldown),
-    freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
-    dynamic-config: (var-get dynamic-config)
-  })
+  (let (
+    (current-pool-info (var-get pool-info))
+    (current-pool-fees (var-get pool-fees))
+    (current-pool-addresses (var-get pool-addresses))
+  )
+    (ok {
+      pool-id: (get pool-id current-pool-info),
+      pool-name: (get pool-name current-pool-info),
+      pool-symbol: (get pool-symbol current-pool-info),
+      pool-uri: (get pool-uri current-pool-info),
+      pool-created: (get pool-created current-pool-info),
+      creation-height: (get creation-height current-pool-info),
+      core-address: CORE_ADDRESS,
+      variable-fees-manager: (get variable-fees-manager current-pool-addresses),
+      fee-address: (get fee-address current-pool-addresses),
+      x-token: (get x-token current-pool-addresses),
+      y-token: (get y-token current-pool-addresses),
+      pool-token: (as-contract tx-sender),
+      bin-step: (var-get bin-step),
+      initial-price: (var-get initial-price),
+      active-bin-id: (var-get active-bin-id),
+      x-protocol-fee: (get x-protocol-fee current-pool-fees),
+      x-provider-fee: (get x-provider-fee current-pool-fees),
+      x-variable-fee: (get x-variable-fee current-pool-fees),
+      y-protocol-fee: (get y-protocol-fee current-pool-fees),
+      y-provider-fee: (get y-provider-fee current-pool-fees),
+      y-variable-fee: (get y-variable-fee current-pool-fees),
+      bin-change-count: (var-get bin-change-count),
+      last-variable-fees-update: (var-get last-variable-fees-update),
+      variable-fees-cooldown: (var-get variable-fees-cooldown),
+      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+      dynamic-config: (var-get dynamic-config)
+    })
+  )
+)
+
+(define-read-only (get-pool-for-swap (is-x-for-y bool))
+  (let (
+    (current-pool-info (var-get pool-info))
+    (current-pool-addresses (var-get pool-addresses))
+    (current-pool-fees (var-get pool-fees))
+  )
+    (ok {
+      pool-id: (get pool-id current-pool-info),
+      pool-name: (get pool-name current-pool-info),
+      fee-address: (get fee-address current-pool-addresses),
+      x-token: (get x-token current-pool-addresses),
+      y-token: (get y-token current-pool-addresses),
+      bin-step: (var-get bin-step),
+      initial-price: (var-get initial-price),
+      active-bin-id: (var-get active-bin-id),
+      protocol-fee: (if is-x-for-y (get x-protocol-fee current-pool-fees) (get y-protocol-fee current-pool-fees)),
+      provider-fee: (if is-x-for-y (get x-provider-fee current-pool-fees) (get y-provider-fee current-pool-fees)),
+      variable-fee: (if is-x-for-y (get x-variable-fee current-pool-fees) (get y-variable-fee current-pool-fees))
+    })
+  )
+)
+
+(define-read-only (get-pool-for-liquidity)
+  (let (
+    (current-pool-info (var-get pool-info))
+    (current-pool-addresses (var-get pool-addresses))
+    (current-pool-fees (var-get pool-fees))
+  )
+    (ok {
+      pool-id: (get pool-id current-pool-info),
+      pool-name: (get pool-name current-pool-info),
+      x-token: (get x-token current-pool-addresses),
+      y-token: (get y-token current-pool-addresses),
+      bin-step: (var-get bin-step),
+      initial-price: (var-get initial-price),
+      active-bin-id: (var-get active-bin-id),
+      x-protocol-fee: (get x-protocol-fee current-pool-fees),
+      x-provider-fee: (get x-provider-fee current-pool-fees),
+      x-variable-fee: (get x-variable-fee current-pool-fees),
+      y-protocol-fee: (get y-protocol-fee current-pool-fees),
+      y-provider-fee: (get y-provider-fee current-pool-fees),
+      y-variable-fee: (get y-variable-fee current-pool-fees)
+    })
+  )
 )
 
 ;; Get active bin ID
@@ -164,7 +237,9 @@
     (begin
       ;; Assert that caller is core address before setting var
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set pool-uri uri)
+      (var-set pool-info (merge (var-get pool-info) {
+        pool-uri: uri
+      }))
       (ok true)
     )
   )
@@ -178,7 +253,9 @@
     (begin
       ;; Assert that caller is core address before setting var
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set variable-fees-manager manager)
+      (var-set pool-addresses (merge (var-get pool-addresses) {
+        variable-fees-manager: manager
+      }))
       (ok true)
     )
   )
@@ -192,7 +269,9 @@
     (begin
       ;; Assert that caller is core address before setting var
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set fee-address address)
+      (var-set pool-addresses (merge (var-get pool-addresses) {
+        fee-address: address
+      }))
       (ok true)
     )
   )
@@ -221,8 +300,10 @@
     (begin
       ;; Assert that caller is core address before setting vars
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set x-protocol-fee protocol-fee)
-      (var-set x-provider-fee provider-fee)
+      (var-set pool-fees (merge (var-get pool-fees) {
+        x-protocol-fee: protocol-fee,
+        x-provider-fee: provider-fee
+      }))
       (ok true)
     )
   )
@@ -236,8 +317,10 @@
     (begin
       ;; Assert that caller is core address before setting vars
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set y-protocol-fee protocol-fee)
-      (var-set y-provider-fee provider-fee)
+      (var-set pool-fees (merge (var-get pool-fees) {
+        y-protocol-fee: protocol-fee,
+        y-provider-fee: provider-fee
+      }))
       (ok true)
     )
   )
@@ -251,8 +334,10 @@
     (begin
       ;; Assert that caller is core address before setting vars
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set x-variable-fee x-fee)
-      (var-set y-variable-fee y-fee)
+      (var-set pool-fees (merge (var-get pool-fees) {
+        x-variable-fee: x-fee,
+        y-variable-fee: y-fee
+      }))
       (var-set bin-change-count u0)
       (var-set last-variable-fees-update stacks-block-height)
       (ok true)
@@ -472,19 +557,23 @@
       ;; Assert that caller is core address and core caller is contract deployer before setting vars
       (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
       (asserts! (is-eq core-caller CONTRACT_DEPLOYER) ERR_NOT_POOL_CONTRACT_DEPLOYER)
-      (var-set pool-id id)
-      (var-set pool-name name)
-      (var-set pool-symbol symbol)
-      (var-set pool-uri uri)
-      (var-set pool-created true)
-      (var-set creation-height burn-block-height)
-      (var-set x-token x-token-contract)
-      (var-set y-token y-token-contract)
+      (var-set pool-info (merge (var-get pool-info) {
+        pool-id: id,
+        pool-name: name,
+        pool-symbol: symbol,
+        pool-uri: uri,
+        pool-created: true,
+        creation-height: burn-block-height
+      }))
+      (var-set pool-addresses (merge (var-get pool-addresses) {
+        variable-fees-manager: variable-fees-mgr,
+        fee-address: fee-addr,
+        x-token: x-token-contract,
+        y-token: y-token-contract
+      }))
       (var-set active-bin-id active-bin)
       (var-set bin-step step)
       (var-set initial-price price)
-      (var-set variable-fees-manager variable-fees-mgr)
-      (var-set fee-address fee-addr)
       (ok true)
     )
   )

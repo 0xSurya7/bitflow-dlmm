@@ -853,7 +853,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap true) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (fee-address (get fee-address pool-data))
@@ -862,9 +862,9 @@
     (bin-step (get bin-step pool-data))
     (initial-price (get initial-price pool-data))
     (active-bin-id (get active-bin-id pool-data))
-    (protocol-fee (get x-protocol-fee pool-data))
-    (provider-fee (get x-provider-fee pool-data))
-    (variable-fee (get x-variable-fee pool-data))
+    (protocol-fee (get protocol-fee pool-data))
+    (provider-fee (get provider-fee pool-data))
+    (variable-fee (get variable-fee pool-data))
 
     ;; Convert bin-id to an unsigned bin-id
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
@@ -978,7 +978,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap false) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (fee-address (get fee-address pool-data))
@@ -987,9 +987,9 @@
     (bin-step (get bin-step pool-data))
     (initial-price (get initial-price pool-data))
     (active-bin-id (get active-bin-id pool-data))
-    (protocol-fee (get y-protocol-fee pool-data))
-    (provider-fee (get y-provider-fee pool-data))
-    (variable-fee (get y-variable-fee pool-data))
+    (protocol-fee (get protocol-fee pool-data))
+    (provider-fee (get provider-fee pool-data))
+    (variable-fee (get variable-fee pool-data))
 
     ;; Convert bin-id to an unsigned bin-id
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
@@ -1103,7 +1103,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-liquidity) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (x-token (get x-token pool-data))
@@ -1262,7 +1262,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-liquidity) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (x-token (get x-token pool-data))
