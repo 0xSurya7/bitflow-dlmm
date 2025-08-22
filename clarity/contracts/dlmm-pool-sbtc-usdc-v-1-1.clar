@@ -168,6 +168,7 @@
   )
 )
 
+;; Get all pool data for swapping
 (define-read-only (get-pool-for-swap (is-x-for-y bool))
   (let (
     (current-pool-info (var-get pool-info))
@@ -190,6 +191,7 @@
   )
 )
 
+;; Get all pool data for adding/withdrawing liquidity
 (define-read-only (get-pool-for-liquidity)
   (let (
     (current-pool-info (var-get pool-info))
