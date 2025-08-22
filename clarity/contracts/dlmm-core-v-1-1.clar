@@ -44,6 +44,10 @@
 (define-constant ERR_NOT_ACTIVE_BIN (err u1037))
 (define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1038))
 (define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1039))
+(define-constant ERR_INVALID_DYNAMIC_CONFIG (err u1040))
+(define-constant ERR_INVALID_VERIFIED_POOL_CODE_HASH (err u1041))
+(define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1042))
+(define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1043))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -80,12 +84,16 @@
 ;; Data var used to enable or disable pool creation by anyone
 (define-data-var public-pool-creation bool false)
 
+;; List of verified pool code hashes
+(define-data-var verified-pool-code-hashes (list 10000 (buff 32)) (list 0x))
+
 ;; Define pools map
 (define-map pools uint {
   id: uint,
   name: (string-ascii 32),
   symbol: (string-ascii 32),
   pool-contract: principal,
+  verified: bool,
   status: bool
 })
 
@@ -140,6 +148,11 @@
 ;; Get public pool creation status
 (define-read-only (get-public-pool-creation)
   (ok (var-get public-pool-creation))
+)
+
+;; Get verified pool code hashes list
+(define-read-only (get-verified-pool-code-hashes)
+  (ok (var-get verified-pool-code-hashes))
 )
 
 ;; Get bin ID as unsigned int
@@ -243,6 +256,28 @@
       (print {action: "set-public-pool-creation", caller: caller, data: {status: status}})
       (ok true)
     )
+  )
+)
+
+;; Add a new verified pool code hash
+(define-public (add-verified-pool-code-hash (hash (buff 32)))
+  (let (
+    (verified-pool-code-hashes-list (var-get verified-pool-code-hashes))
+    (caller tx-sender)
+  )
+    ;; Assert caller is an admin and new code hash is not already in list
+    (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+    (asserts! (is-none (index-of verified-pool-code-hashes-list hash)) ERR_ALREADY_VERIFIED_POOL_CODE_HASH)
+
+    ;; Assert that hash is greater than zero
+    (asserts! (> (len hash) u0) ERR_INVALID_VERIFIED_POOL_CODE_HASH)
+
+    ;; Add code hash to verified pool code hashes list with max length of 10000
+    (var-set verified-pool-code-hashes (unwrap! (as-max-len? (append verified-pool-code-hashes-list hash) u10000) ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED))
+
+    ;; Print function data and return true
+    (print {action: "add-verified-pool-code-hash", caller: caller, data: {hash: hash}})
+    (ok true)
   )
 )
 
@@ -583,6 +618,46 @@
   )
 )
 
+;; Set dynamic config for a pool
+(define-public (set-dynamic-config (pool-trait <dlmm-pool-trait>) (config (buff 4096)))
+  (let (
+    ;; Gather all pool data
+    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (variable-fees-manager (get variable-fees-manager pool-data))
+    (freeze-variable-fees-manager (get freeze-variable-fees-manager pool-data))
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert caller is an admin or variable fees manager and pool is created and valid
+      (asserts! (or (is-some (index-of (var-get admins) caller)) (is-eq variable-fees-manager caller)) ERR_NOT_AUTHORIZED)
+      (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
+      (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
+
+      ;; Assert that caller is variable fees manager if variable fees manager is frozen
+      (asserts! (or (is-eq variable-fees-manager caller) (not freeze-variable-fees-manager)) ERR_NOT_AUTHORIZED)
+
+      ;; Assert that config is greater than zero
+      (asserts! (> (len config) u0) ERR_INVALID_DYNAMIC_CONFIG)
+
+      ;; Set dynamic config for pool
+      (try! (contract-call? pool-trait set-dynamic-config config))
+
+      ;; Print function data and return true
+      (print {
+        action: "set-dynamic-config",
+        caller: caller,
+        data: {
+          pool-id: (get pool-id pool-data),
+          pool-name: (get pool-name pool-data),
+          pool-contract: (contract-of pool-trait),
+          config: config
+        }
+      })
+      (ok true)
+    )
+  )
+)
+
 ;; Reset variable fees for a pool
 (define-public (reset-variable-fees (pool-trait <dlmm-pool-trait>))
   (let (
@@ -638,6 +713,9 @@
     (new-pool-id (+ (var-get last-pool-id) u1))
     (symbol (unwrap! (create-symbol x-token-trait y-token-trait) ERR_INVALID_POOL_SYMBOL))
     (name (concat symbol "-LP"))
+
+    ;; Check if pool code hash is verified @NOTE use contract-hash?
+    (pool-verified-check (is-some (index-of (var-get verified-pool-code-hashes) 0x)))
 
     ;; Get token contracts
     (x-token-contract (contract-of x-token-trait))
@@ -707,7 +785,7 @@
 
       ;; Update ID of last created pool and add pool to pools map
       (var-set last-pool-id new-pool-id)
-      (map-set pools new-pool-id {id: new-pool-id, name: name, symbol: symbol, pool-contract: pool-contract, status: status})
+      (map-set pools new-pool-id {id: new-pool-id, name: name, symbol: symbol, pool-contract: pool-contract, verified: pool-verified-check, status: status})
 
       ;; Update allowed-token-direction map if needed
       (if (is-none (map-get? allowed-token-direction {x-token: x-token-contract, y-token: y-token-contract}))
@@ -735,6 +813,7 @@
           pool-id: new-pool-id,
           pool-name: name,
           pool-contract: pool-contract,
+          pool-verified: pool-verified-check,
           x-token: x-token-contract,
           y-token: y-token-contract,
           x-protocol-fee: x-protocol-fee,
@@ -774,7 +853,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap true) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (fee-address (get fee-address pool-data))
@@ -783,9 +862,9 @@
     (bin-step (get bin-step pool-data))
     (initial-price (get initial-price pool-data))
     (active-bin-id (get active-bin-id pool-data))
-    (protocol-fee (get x-protocol-fee pool-data))
-    (provider-fee (get x-provider-fee pool-data))
-    (variable-fee (get x-variable-fee pool-data))
+    (protocol-fee (get protocol-fee pool-data))
+    (provider-fee (get provider-fee pool-data))
+    (variable-fee (get variable-fee pool-data))
 
     ;; Convert bin-id to an unsigned bin-id
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
@@ -899,7 +978,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap false) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (fee-address (get fee-address pool-data))
@@ -908,9 +987,9 @@
     (bin-step (get bin-step pool-data))
     (initial-price (get initial-price pool-data))
     (active-bin-id (get active-bin-id pool-data))
-    (protocol-fee (get y-protocol-fee pool-data))
-    (provider-fee (get y-provider-fee pool-data))
-    (variable-fee (get y-variable-fee pool-data))
+    (protocol-fee (get protocol-fee pool-data))
+    (provider-fee (get provider-fee pool-data))
+    (variable-fee (get variable-fee pool-data))
 
     ;; Convert bin-id to an unsigned bin-id
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
@@ -1024,7 +1103,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-liquidity) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (x-token (get x-token pool-data))
@@ -1183,7 +1262,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-liquidity) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (x-token (get x-token pool-data))
@@ -1387,6 +1466,14 @@
 ;; Reset variable fees for multiple pools
 (define-public (reset-variable-fees-multi (pool-traits (list 120 <dlmm-pool-trait>)))
   (ok (map reset-variable-fees pool-traits))
+)
+
+;; Set dynamic config for multiple pools
+(define-public (set-dynamic-config-multi
+    (pool-traits (list 120 <dlmm-pool-trait>))
+    (configs (list 120 (buff 4096)))
+  )
+  (ok (map set-dynamic-config pool-traits configs))
 )
 
 ;; Helper function for removing an admin

@@ -39,7 +39,36 @@
       bin-change-count: uint,
       last-variable-fees-update: uint,
       variable-fees-cooldown: uint,
-      freeze-variable-fees-manager: bool
+      freeze-variable-fees-manager: bool,
+      dynamic-config: (buff 4096)
+    } uint))
+    (get-pool-for-swap (bool) (response {
+      pool-id: uint,
+      pool-name: (string-ascii 32),
+      fee-address: principal,
+      x-token: principal,
+      y-token: principal,
+      bin-step: uint,
+      initial-price: uint,
+      active-bin-id: int,
+      protocol-fee: uint,
+      provider-fee: uint,
+      variable-fee: uint
+    } uint))
+    (get-pool-for-liquidity () (response {
+      pool-id: uint,
+      pool-name: (string-ascii 32),
+      x-token: principal,
+      y-token: principal,
+      bin-step: uint,
+      initial-price: uint,
+      active-bin-id: int,
+      x-protocol-fee: uint,
+      x-provider-fee: uint,
+      x-variable-fee: uint,
+      y-protocol-fee: uint,
+      y-provider-fee: uint,
+      y-variable-fee: uint
     } uint))
     (get-active-bin-id () (response int uint))
     (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
@@ -53,6 +82,7 @@
     (set-variable-fees (uint uint) (response bool uint))
     (set-variable-fees-cooldown (uint) (response bool uint))
     (set-freeze-variable-fees-manager () (response bool uint))
+    (set-dynamic-config ((buff 4096)) (response bool uint))
     (update-bin-balances (uint uint uint) (response bool uint))
     (transfer (uint uint principal principal) (response bool uint))
     (transfer-memo (uint uint principal principal (buff 34)) (response bool uint))

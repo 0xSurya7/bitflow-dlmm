@@ -41,6 +41,7 @@ Set via public admin functions
 - `minimum-bin-shares` (`uint`): Minimum shares to mint when creating a pool
 - `minimum-burnt-shares` (`uint`): Minimum shares to burn when creating a pool
 - `public-pool-creation` (`bool`): Allow pool creation by anyone or admins only
+- `verified-pool-code-hashes` (`(list 10000 (buff 32))`): List of verified pool code hashes
 
 #### Indirectly Modified
 Updated as a side-effect of other functions
@@ -48,7 +49,7 @@ Updated as a side-effect of other functions
 - `last-pool-id` (`uint`): ID of last created pool
 
 ### Mappings
-- `pools` (`uint {id: uint, name: (string-ascii 32), symbol: (string-ascii 32), pool-contract: principal, status: bool}`)
+- `pools` (`uint {id: uint, name: (string-ascii 32), symbol: (string-ascii 32), pool-contract: principal, verified: bool, status: bool}`)
 - `allowed-token-direction` (`{x-token: principal, y-token: principal} bool`)
 
 ### Admin Functions
@@ -89,6 +90,8 @@ Manage or retrieve data about pools
   - Parameters: `(pool-trait <dlmm-pool-trait>) (protocol-fee uint) (provider-fee uint)`
 - `set-y-fees`: Set Y protocol and provider fees (admin-only)
   - Parameters: `(pool-trait <dlmm-pool-trait>) (protocol-fee uint) (provider-fee uint)`
+- `set-dynamic-config`: Set dynamic config for a pool (admin and manager-only)
+  - Parameters: `(pool-trait <dlmm-pool-trait>) (config (buff 4096))`
 - `set-pool-uri-multi`: Batch version of `set-pool-uri` (120 max)
   - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (uris (list 120 (string-utf8 256)))`
 - `set-pool-status-multi`: Batch version of `set-pool-status` (120 max)
@@ -99,6 +102,8 @@ Manage or retrieve data about pools
   - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint))`
 - `set-y-fees-multi`: Batch version of `set-y-fees` (120 max)
   - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint))`
+- `set-dynamic-config-multi`: Batch version of `set-dynamic-config` (120 max)
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (configs (list 120 (buff 4096)))`
 
 #### Private
 - `is-valid-pool`: Check the validity of a pool
@@ -116,6 +121,7 @@ Manage or retrieve data about the core contract
 - `get-minimum-total-shares`: Returns `minimum-total-shares`
 - `get-minimum-burnt-shares`: Returns `minimum-burnt-shares`
 - `get-public-pool-creation`: Returns `public-pool-creation`
+- `get-verified-pool-code-hashes`: Returns `verified-pool-code-hashes`
 - `get-unsigned-bin-id`: Returns bin ID as unsigned int
   - Parameters: `(bin-id int)`
 - `get-signed-bin-id`: Returns bin ID as signed int
@@ -132,6 +138,8 @@ Manage or retrieve data about the core contract
   - Parameters: `(min-bin uint) (min-burnt uint)`
 - `set-public-pool-creation`: Enable or disable public pool creation (admin-only)
   - Parameters: `(status bool)`
+- `add-verified-pool-code-hash`: Add pool code hash to `verified-pool-code-hashes` (admin-only)
+  - Parameters: `(hash (buff 32))`
 
 ### Pool Creation Functions
 Create new pools
@@ -201,7 +209,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `get-overall-supply`: () (response uint uint)
 - `get-balance`: (uint principal) (response uint uint)
 - `get-overall-balance`: (principal) (response uint uint)
-- `get-pool`: () (response {pool-id: uint, pool-name: (string-ascii 32), pool-symbol: (string-ascii 32), pool-uri: (string-ascii 256), pool-created: bool, creation-height: uint, core-address: principal, variable-fees-manager: principal, fee-address: principal, x-token: principal, y-token: principal, pool-token: principal, bin-step: uint, initial-price: uint, active-bin-id: int, x-protocol-fee: uint, x-provider-fee: uint, x-variable-fee: uint, y-protocol-fee: uint, y-provider-fee: uint, y-variable-fee: uint, bin-change-count: uint, last-variable-fees-update: uint, variable-fees-cooldown: uint, freeze-variable-fees-manager: bool} uint)
+- `get-pool`: () (response {pool-id: uint, pool-name: (string-ascii 32), pool-symbol: (string-ascii 32), pool-uri: (string-ascii 256), pool-created: bool, creation-height: uint, core-address: principal, variable-fees-manager: principal, fee-address: principal, x-token: principal, y-token: principal, pool-token: principal, bin-step: uint, initial-price: uint, active-bin-id: int, x-protocol-fee: uint, x-provider-fee: uint, x-variable-fee: uint, y-protocol-fee: uint, y-provider-fee: uint, y-variable-fee: uint, bin-change-count: uint, last-variable-fees-update: uint, variable-fees-cooldown: uint, freeze-variable-fees-manager: bool, dynamic-config: (buff 4096)} uint)
 - `get-active-bin-id`: () (response int uint)
 - `get-bin-balances`: (uint) (response uint uint)
 - `get-user-bins`: (principal) (response (list 1001 uint) uint)
@@ -214,6 +222,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `set-variable-fees`: (uint uint) (response bool uint)
 - `set-variable-fees-cooldown`: (uint) (response bool uint)
 - `set-freeze-variable-fees-manager`: () (response bool uint)
+- `set-dynamic-config`: ((buff 4096)) (response bool uint)
 - `update-bin-balances`: (uint uint uint) (response bool uint)
 - `transfer`: (uint uint principal principal) (response bool uint)
 - `transfer-memo`: (uint uint principal principal (buff 34)) (response bool uint)
@@ -269,6 +278,7 @@ Set via the core contract using admin functions
 - `y-variable-fee` (`uint`): Variable fee charged for providers when swapping Y → X
 - `variable-fees-cooldown` (`uint`): Variable fees can be reset after this cooldown (Stacks blocks) is reached
 - `freeze-variable-fees-manager` (`bool`): If `true`, `variable-fees-manager` is permanently frozen
+- `dynamic-config` (`buff 4096`): Dynamic configuration initially used to calculate variable fees
 
 #### Indirectly Modified
 Updated as a side-effect of other functions
@@ -346,6 +356,7 @@ Manage or retrieve data about the pool contract
 - `set-variable-fees-cooldown`: Called via `set-variable-fees-cooldown` in core
   - Parameters: `(cooldown uint)`
 - `set-freeze-variable-fees-manager`: Called via `set-freeze-variable-fees-manager` in core
+- `set-dynamic-config`: Called via `set-dynamic-config` in core
 - `update-bin-balances`: Update the `balances-at-bin` mapping via pool creation, swap, and liquidity functions in core
   - Parameters: `(bin-id uint) (x-balance uint) (y-balance uint)`
 - `pool-transfer`: Transfer X / Y token from the pool via swap and withdraw liquidity functions in core
