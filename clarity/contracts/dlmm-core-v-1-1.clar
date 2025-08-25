@@ -48,6 +48,11 @@
 (define-constant ERR_INVALID_VERIFIED_POOL_CODE_HASH (err u1041))
 (define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1042))
 (define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1043))
+(define-constant ERR_NO_UNCLAIMED_PROTOCOL_FEES_DATA (err u1044))
+(define-constant ERR_INVALID_X_AMOUNT (err u1045))
+(define-constant ERR_INVALID_Y_AMOUNT (err u1046))
+(define-constant ERR_INVALID_MIN_DLP_AMOUNT (err u1047))
+(define-constant ERR_NO_BIN_SHARES (err u1048))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -100,6 +105,9 @@
 ;; Define allowed-token-direction map
 (define-map allowed-token-direction {x-token: principal, y-token: principal} bool)
 
+;; Define unclaimed-protocol-fees map
+(define-map unclaimed-protocol-fees uint {x-fee: uint, y-fee: uint})
+
 ;; Get admins list
 (define-read-only (get-admins)
   (ok (var-get admins))
@@ -123,6 +131,11 @@
 ;; Get allowed-token-direction for pool creation
 (define-read-only (get-allowed-token-direction (x-token principal) (y-token principal))
   (ok (map-get? allowed-token-direction {x-token: x-token, y-token: y-token}))
+)
+
+;; Get allowed-token-direction for pool creation
+(define-read-only (get-unclaimed-protocol-fees-by-id (id uint))
+  (ok (map-get? unclaimed-protocol-fees id))
 )
 
 ;; Get allowed bin steps
@@ -278,6 +291,61 @@
     ;; Print function data and return true
     (print {action: "add-verified-pool-code-hash", caller: caller, data: {hash: hash}})
     (ok true)
+  )
+)
+
+;; Claim protocol fees for a pool
+(define-public (claim-protocol-fees
+    (pool-trait <dlmm-pool-trait>)
+    (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)
+  )
+  (let (
+    ;; Gather all pool data
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap true) ERR_NO_POOL_DATA))
+    (pool-id (get pool-id pool-data))
+    (pool-contract (contract-of pool-trait))
+    (pool-validity-check (asserts! (is-valid-pool pool-id pool-contract) ERR_INVALID_POOL))
+    (fee-address (get fee-address pool-data))
+    (x-token (get x-token pool-data))
+    (y-token (get y-token pool-data))
+    
+    ;; Get current unclaimed protocol fees for pool
+    (current-unclaimed-protocol-fees (unwrap! (map-get? unclaimed-protocol-fees pool-id) ERR_NO_UNCLAIMED_PROTOCOL_FEES_DATA))
+    (unclaimed-x-fees (get x-fee current-unclaimed-protocol-fees))
+    (unclaimed-y-fees (get y-fee current-unclaimed-protocol-fees))
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert that correct token traits are used
+      (asserts! (is-eq (contract-of x-token-trait) x-token) ERR_INVALID_X_TOKEN)
+      (asserts! (is-eq (contract-of y-token-trait) y-token) ERR_INVALID_Y_TOKEN)
+
+      ;; Transfer unclaimed-x-fees x tokens from pool-contract to fee-address
+      (if (> unclaimed-x-fees u0)
+        (try! (contract-call? pool-trait pool-transfer x-token-trait unclaimed-x-fees fee-address))
+        false)
+
+      ;; Transfer unclaimed-y-fees y tokens from pool-contract to fee-address
+      (if (> unclaimed-y-fees u0)
+        (try! (contract-call? pool-trait pool-transfer y-token-trait unclaimed-y-fees fee-address))
+        false)
+
+      ;; Print function data and return true
+      (print {
+        action: "claim-protocol-fees",
+        caller: caller,
+        data: {
+          pool-id: pool-id,
+          pool-name: (get pool-name pool-data),
+          pool-contract: pool-contract,
+          x-token: x-token,
+          y-token: y-token,
+          unclaimed-x-fees: unclaimed-x-fees,
+          unclaimed-y-fees: unclaimed-y-fees
+        }
+      })
+      (ok true)
+    )
   )
 )
 
@@ -783,9 +851,10 @@
       ;; Freeze variable fees manager if freeze-variable-fees-manager is true
       (if freeze-variable-fees-manager (try! (contract-call? pool-trait set-freeze-variable-fees-manager)) false)
 
-      ;; Update ID of last created pool and add pool to pools map
+      ;; Update ID of last created pool, add pool to pools map, and add pool to unclaimed-protocol-fees map
       (var-set last-pool-id new-pool-id)
       (map-set pools new-pool-id {id: new-pool-id, name: name, symbol: symbol, pool-contract: pool-contract, verified: pool-verified-check, status: status})
+      (map-set unclaimed-protocol-fees new-pool-id {x-fee: u0, y-fee: u0})
 
       ;; Update allowed-token-direction map if needed
       (if (is-none (map-get? allowed-token-direction {x-token: x-token-contract, y-token: y-token-contract}))
@@ -854,8 +923,9 @@
   (let (
     ;; Gather all pool data and check if pool is valid
     (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap true) ERR_NO_POOL_DATA))
+    (pool-id (get pool-id pool-data))
     (pool-contract (contract-of pool-trait))
-    (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
+    (pool-validity-check (asserts! (is-valid-pool pool-id pool-contract) ERR_INVALID_POOL))
     (fee-address (get fee-address pool-data))
     (x-token (get x-token pool-data))
     (y-token (get y-token pool-data))
@@ -904,11 +974,13 @@
                                (- bin-id 1)
                                bin-id))
 
+    ;; Get current unclaimed protocol fees for pool
+    (current-unclaimed-protocol-fees (unwrap! (map-get? unclaimed-protocol-fees pool-id) ERR_NO_UNCLAIMED_PROTOCOL_FEES_DATA))
     (caller tx-sender)
   )
     (begin
       ;; Assert that pool-status is true and correct token traits are used
-      (asserts! (is-enabled-pool (get pool-id pool-data)) ERR_POOL_DISABLED)
+      (asserts! (is-enabled-pool pool-id) ERR_POOL_DISABLED)
       (asserts! (is-eq (contract-of x-token-trait) x-token) ERR_INVALID_X_TOKEN)
       (asserts! (is-eq (contract-of y-token-trait) y-token) ERR_INVALID_Y_TOKEN)
 
@@ -918,15 +990,17 @@
       ;; Assert that bin-id is equal to active-bin-id
       (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
-      ;; Transfer dx + x-amount-fees-provider + x-amount-fees-variable x tokens from caller to pool-contract
-      (try! (contract-call? x-token-trait transfer (+ dx x-amount-fees-provider x-amount-fees-variable) caller pool-contract none))
+      ;; Transfer dx + x-amount-fees-total x tokens from caller to pool-contract
+      (try! (contract-call? x-token-trait transfer (+ dx x-amount-fees-total) caller pool-contract none))
 
       ;; Transfer dy y tokens from pool-contract to caller
       (try! (contract-call? pool-trait pool-transfer y-token-trait dy caller))
 
-      ;; Transfer x-amount-fees-protocol x tokens from caller to fee-address
+      ;; Update unclaimed-protocol-fees for pool
       (if (> x-amount-fees-protocol u0)
-          (try! (contract-call? x-token-trait transfer x-amount-fees-protocol caller fee-address none))
+          (map-set unclaimed-protocol-fees pool-id (merge current-unclaimed-protocol-fees {
+            x-fee: (+ (get x-fee current-unclaimed-protocol-fees) x-amount-fees-protocol)
+          }))
           false)
 
       ;; Update bin balances
@@ -942,7 +1016,7 @@
         action: "swap-x-for-y",
         caller: caller,
         data: {
-          pool-id: (get pool-id pool-data),
+          pool-id: pool-id,
           pool-name: (get pool-name pool-data),
           pool-contract: pool-contract,
           x-token: x-token,
@@ -979,8 +1053,9 @@
   (let (
     ;; Gather all pool data and check if pool is valid
     (pool-data (unwrap! (contract-call? pool-trait get-pool-for-swap false) ERR_NO_POOL_DATA))
+    (pool-id (get pool-id pool-data))
     (pool-contract (contract-of pool-trait))
-    (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
+    (pool-validity-check (asserts! (is-valid-pool pool-id pool-contract) ERR_INVALID_POOL))
     (fee-address (get fee-address pool-data))
     (x-token (get x-token pool-data))
     (y-token (get y-token pool-data))
@@ -1029,11 +1104,13 @@
                                (+ bin-id 1)
                                bin-id))
 
+    ;; Get current unclaimed protocol fees for pool
+    (current-unclaimed-protocol-fees (unwrap! (map-get? unclaimed-protocol-fees pool-id) ERR_NO_UNCLAIMED_PROTOCOL_FEES_DATA))
     (caller tx-sender)
   )
     (begin
       ;; Assert that pool-status is true and correct token traits are used
-      (asserts! (is-enabled-pool (get pool-id pool-data)) ERR_POOL_DISABLED)
+      (asserts! (is-enabled-pool pool-id) ERR_POOL_DISABLED)
       (asserts! (is-eq (contract-of x-token-trait) x-token) ERR_INVALID_X_TOKEN)
       (asserts! (is-eq (contract-of y-token-trait) y-token) ERR_INVALID_Y_TOKEN)
 
@@ -1043,15 +1120,17 @@
       ;; Assert that bin-id is equal to active-bin-id
       (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
-      ;; Transfer dy + y-amount-fees-provider + y-amount-fees-variable y tokens from caller to pool-contract
-      (try! (contract-call? y-token-trait transfer (+ dy y-amount-fees-provider y-amount-fees-variable) caller pool-contract none))
+      ;; Transfer dy + y-amount-fees-total y tokens from caller to pool-contract
+      (try! (contract-call? y-token-trait transfer (+ dy y-amount-fees-total) caller pool-contract none))
 
       ;; Transfer dx x tokens from pool-contract to caller
       (try! (contract-call? pool-trait pool-transfer x-token-trait dx caller))
 
-      ;; Transfer y-amount-fees-protocol y tokens from caller to fee-address
+      ;; Update unclaimed-protocol-fees for pool
       (if (> y-amount-fees-protocol u0)
-          (try! (contract-call? y-token-trait transfer y-amount-fees-protocol caller fee-address none))
+          (map-set unclaimed-protocol-fees pool-id (merge current-unclaimed-protocol-fees {
+            y-fee: (+ (get y-fee current-unclaimed-protocol-fees) y-amount-fees-protocol)
+          }))
           false)
 
       ;; Update bin balances
@@ -1067,7 +1146,7 @@
         action: "swap-y-for-x",
         caller: caller,
         data: {
-          pool-id: (get pool-id pool-data),
+          pool-id: pool-id,
           pool-name: (get pool-name pool-data),
           pool-contract: pool-contract,
           x-token: x-token,
@@ -1103,7 +1182,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-liquidity) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-add) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (x-token (get x-token pool-data))
@@ -1197,11 +1276,11 @@
       (asserts! (> (+ x-amount y-amount) u0) ERR_INVALID_AMOUNT)
 
       ;; Assert that correct token amounts are being added based on bin-id and active-bin-id
-      (asserts! (or (>= bin-id active-bin-id) (is-eq x-amount u0)) ERR_INVALID_AMOUNT)
-      (asserts! (or (<= bin-id active-bin-id) (is-eq y-amount u0)) ERR_INVALID_AMOUNT)
+      (asserts! (or (>= bin-id active-bin-id) (is-eq x-amount u0)) ERR_INVALID_X_AMOUNT)
+      (asserts! (or (<= bin-id active-bin-id) (is-eq y-amount u0)) ERR_INVALID_Y_AMOUNT)
 
       ;; Assert that min-dlp is greater than 0 and dlp-post-fees is greater than or equal to min-dlp
-      (asserts! (> min-dlp u0) ERR_INVALID_AMOUNT)
+      (asserts! (> min-dlp u0) ERR_INVALID_MIN_DLP_AMOUNT)
       (asserts! (>= dlp-post-fees min-dlp) ERR_MINIMUM_LP_AMOUNT)
 
       ;; Transfer x-amount x tokens from caller to pool-contract (includes x-amount-fees-liquidity)
@@ -1262,7 +1341,7 @@
   )
   (let (
     ;; Gather all pool data and check if pool is valid
-    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-liquidity) ERR_NO_POOL_DATA))
+    (pool-data (unwrap! (contract-call? pool-trait get-pool-for-withdraw) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
     (pool-validity-check (asserts! (is-valid-pool (get pool-id pool-data) pool-contract) ERR_INVALID_POOL))
     (x-token (get x-token pool-data))
@@ -1277,6 +1356,9 @@
     (y-balance (get y-balance bin-balances))
     (bin-shares (get bin-shares bin-balances))
 
+    ;; Assert that bin shares is greater than 0
+    (bin-shares-check (asserts! (> bin-shares u0) ERR_NO_BIN_SHARES))
+
     ;; Calculate x-amount and y-amount to transfer
     (x-amount (/ (* amount x-balance) bin-shares))
     (y-amount (/ (* amount y-balance) bin-shares))
@@ -1284,6 +1366,7 @@
     ;; Calculate updated bin balances and total shares
     (updated-x-balance (- x-balance x-amount))
     (updated-y-balance (- y-balance y-amount))
+    (updated-bin-shares (- bin-shares amount))
     (caller tx-sender)
   )
     (begin
@@ -1317,7 +1400,7 @@
           false)
 
       ;; Update bin balances
-      (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
+      (try! (contract-call? pool-trait update-bin-balances-on-withdraw unsigned-bin-id updated-x-balance updated-y-balance updated-bin-shares))
 
       ;; Burn LP tokens from caller
       (try! (contract-call? pool-trait pool-burn unsigned-bin-id amount caller))
@@ -1341,7 +1424,7 @@
           min-y-amount: min-y-amount,
           updated-x-balance: updated-x-balance,
           updated-y-balance: updated-y-balance,
-          updated-bin-shares: (- bin-shares amount)
+          updated-bin-shares: updated-bin-shares
         }
       })
       (ok {x-amount: x-amount, y-amount: y-amount})
@@ -1389,6 +1472,15 @@
     (print {action: "remove-admin", caller: caller, data: {admin: admin}})
     (ok true)
   )
+)
+
+;; Claim protocol fees for multiple pools
+(define-public (claim-protocol-fees-multi
+    (pool-traits (list 120 <dlmm-pool-trait>))
+    (x-token-traits (list 120 <sip-010-trait>))
+    (y-token-traits (list 120 <sip-010-trait>))
+  )
+  (ok (map claim-protocol-fees pool-traits x-token-traits y-token-traits))
 )
 
 ;; Set pool uri for multiple pools

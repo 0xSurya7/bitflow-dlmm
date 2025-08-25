@@ -1,4 +1,4 @@
-;; dlmm-liquidity-helper-v-1-1
+;; dlmm-liquidity-router-v-1-1
 
 ;; Use DLMM pool trait and SIP 010 trait
 (use-trait dlmm-pool-trait .dlmm-pool-trait-v-1-1.dlmm-pool-trait)
@@ -10,12 +10,12 @@
 (define-constant ERR_MINIMUM_LP_AMOUNT (err u2004))
 
 ;; Add liquidity to multiple bins in multiple pools
-(define-public (add-liquidity-helper
-    (positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint}))
+(define-public (add-liquidity-multi
+    (positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint}))
     (min-dlp uint)
   )
   (let (
-    (add-liquidity-result (try! (fold fold-add-liquidity-helper positions (ok u0))))
+    (add-liquidity-result (try! (fold fold-add-liquidity-multi positions (ok u0))))
   )
     (asserts! (>= add-liquidity-result min-dlp) ERR_MINIMUM_LP_AMOUNT)
     (ok add-liquidity-result)
@@ -23,12 +23,12 @@
 )
 
 ;; Withdraw liquidity from multiple bins in multiple pools
-(define-public (withdraw-liquidity-helper
-    (positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint}))
+(define-public (withdraw-liquidity-multi
+    (positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint}))
     (min-x-amount uint) (min-y-amount uint)
   )
   (let (
-    (withdraw-liquidity-result (try! (fold fold-withdraw-liquidity-helper positions (ok {x-amount: u0, y-amount: u0}))))
+    (withdraw-liquidity-result (try! (fold fold-withdraw-liquidity-multi positions (ok {x-amount: u0, y-amount: u0}))))
   )
     (asserts! (>= (get x-amount withdraw-liquidity-result) min-x-amount) ERR_MINIMUM_X_AMOUNT)
     (asserts! (>= (get y-amount withdraw-liquidity-result) min-y-amount) ERR_MINIMUM_Y_AMOUNT)
@@ -38,7 +38,7 @@
 
 
 ;; Fold function to add liquidity to multiple bins in multiple pools
-(define-private (fold-add-liquidity-helper
+(define-private (fold-add-liquidity-multi
     (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint})
     (result (response uint uint))
   )
@@ -51,7 +51,7 @@
 )
 
 ;; Fold function to withdraw liquidity from multiple bins in multiple pools
-(define-private (fold-withdraw-liquidity-helper
+(define-private (fold-withdraw-liquidity-multi
     (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint})
     (result (response {x-amount: uint, y-amount: uint} uint))
   )

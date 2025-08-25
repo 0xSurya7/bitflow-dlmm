@@ -6,8 +6,8 @@
 - `dlmm-core-v-1-1`
 - `dlmm-pool-trait-v-1-1`
 - `dlmm-pool-sbtc-usdc-v-1-1` (example pool)
-- `dlmm-swap-helper-v-1-1`
-- `dlmm-liquidity-helper-v-1-1`
+- `dlmm-swap-router-v-1-1`
+- `dlmm-liquidity-router-v-1-1`
 
 ### External
 - `sip-010-trait-ft-standard-v-1-1`
@@ -368,7 +368,7 @@ Manage or retrieve data about the pool contract
 - `create-pool`: Called via `create-pool` in core
   - Parameters: `(x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (fee-addr principal) (core-caller principal) (active-bin int) (step uint) (price uint) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))`
  
-## 5. dlmm-swap-helper-v-1-1
+## 5. dlmm-swap-multi-v-1-1
 
 ### Constants
 - Router error codes
@@ -381,16 +381,16 @@ Manage or retrieve data about the pool contract
 Swap using a single or multiple bins in a single or multiple pools
 
 #### Public
-- `swap-helper`: Swap tokens (120 max)
+- `swap-multi`: Swap tokens (120 max)
   - Parameters: `(swaps (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool})) (min-received uint) (max-unfavorable-bins uint)`
 
 #### Private
-- `fold-swap-helper`: Used to batch swap calls via core
+- `fold-swap-multi`: Used to batch swap calls via core
   - Parameters: `(swap {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool}) (result (response {received: uint, unfavorable: uint} uint))`
 - `abs-int`: Returns absolute value of a signed int as uint
   - Parameters: `(value int)`
 
-## 5. dlmm-liquidity-helper-v-1-1
+## 5. dlmm-liquidity-router-v-1-1
 
 ### Constants
 - Router error codes
@@ -403,13 +403,13 @@ Swap using a single or multiple bins in a single or multiple pools
 Add or withdraw liquidity using a single or multiple bins in a single or multiple pools
 
 #### Public
-- `add-liquidity-helper`: Add liquidity (single-sided for non-active bins) (120 max)
+- `add-liquidity-multi`: Add liquidity (single-sided for non-active bins) (120 max)
   - Parameters: `(positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint})) (min-dlp uint)`
-- `withdraw-liquidity-helper`: Withdraw proportional liquidity (120 max)
+- `withdraw-liquidity-multi`: Withdraw proportional liquidity (120 max)
   - Parameters: `(positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint})) (min-x-amount uint) (min-y-amount uint)`
 
 #### Private
-- `fold-add-liquidity-helper`: Used to batch `add-liquidity` calls via core
+- `fold-add-liquidity-multi`: Used to batch `add-liquidity` calls via core
   - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint}) (result (response uint uint))`
-- `fold-withdraw-liquidity-helper`: Used to batch `withdraw-liquidity` calls via core
+- `fold-withdraw-liquidity-multi`: Used to batch `withdraw-liquidity` calls via core
   - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint}) (result (response {x-amount: uint, y-amount: uint} uint))`

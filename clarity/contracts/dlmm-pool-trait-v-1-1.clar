@@ -55,7 +55,7 @@
       provider-fee: uint,
       variable-fee: uint
     } uint))
-    (get-pool-for-liquidity () (response {
+    (get-pool-for-add () (response {
       pool-id: uint,
       pool-name: (string-ascii 32),
       x-token: principal,
@@ -69,6 +69,12 @@
       y-protocol-fee: uint,
       y-provider-fee: uint,
       y-variable-fee: uint
+    } uint))
+    (get-pool-for-withdraw () (response {
+      pool-id: uint,
+      pool-name: (string-ascii 32),
+      x-token: principal,
+      y-token: principal
     } uint))
     (get-active-bin-id () (response int uint))
     (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
@@ -84,6 +90,7 @@
     (set-freeze-variable-fees-manager () (response bool uint))
     (set-dynamic-config ((buff 4096)) (response bool uint))
     (update-bin-balances (uint uint uint) (response bool uint))
+    (update-bin-balances-on-withdraw (uint uint uint uint) (response bool uint))
     (transfer (uint uint principal principal) (response bool uint))
     (transfer-memo (uint uint principal principal (buff 34)) (response bool uint))
     (transfer-many ((list 200 {token-id: uint, amount: uint, sender: principal, recipient: principal})) (response bool uint))
