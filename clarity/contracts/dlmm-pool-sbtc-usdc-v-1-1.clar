@@ -191,8 +191,8 @@
   )
 )
 
-;; Get all pool data for adding/withdrawing liquidity
-(define-read-only (get-pool-for-liquidity)
+;; Get all pool data for adding liquidity
+(define-read-only (get-pool-for-add)
   (let (
     (current-pool-info (var-get pool-info))
     (current-pool-addresses (var-get pool-addresses))
@@ -212,6 +212,21 @@
       y-protocol-fee: (get y-protocol-fee current-pool-fees),
       y-provider-fee: (get y-provider-fee current-pool-fees),
       y-variable-fee: (get y-variable-fee current-pool-fees)
+    })
+  )
+)
+
+;; Get all pool data for withdrawing liquidity
+(define-read-only (get-pool-for-withdraw)
+  (let (
+      (current-pool-info (var-get pool-info))
+      (current-pool-addresses (var-get pool-addresses))
+    )
+    (ok {
+      pool-id: (get pool-id current-pool-info),
+      pool-name: (get pool-name current-pool-info),
+      x-token: (get x-token current-pool-addresses),
+      y-token: (get y-token current-pool-addresses)
     })
   )
 )
@@ -401,6 +416,23 @@
 
       ;; Print function data and return true
       (print {action: "update-bin-balances", data: {bin-id: bin-id, x-balance: x-balance, y-balance: y-balance}})
+      (ok true)
+    )
+  )
+)
+
+;; Update bin balances when withdrawing liquidity via DLMM Core
+(define-public (update-bin-balances-on-withdraw (bin-id uint) (x-balance uint) (y-balance uint) (bin-shares uint))
+  (let (
+    (caller contract-caller)
+  )
+    (begin
+      ;; Assert that caller is core address before setting vars
+      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (map-set balances-at-bin bin-id {x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares})
+
+      ;; Print function data and return true
+      (print {action: "update-bin-balances-on-withdraw", data: {bin-id: bin-id, x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares}})
       (ok true)
     )
   )

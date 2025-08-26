@@ -1,4 +1,4 @@
-;; dlmm-swap-helper-v-1-1
+;; dlmm-swap-router-v-1-1
 
 ;; Use DLMM pool trait and SIP 010 trait
 (use-trait dlmm-pool-trait .dlmm-pool-trait-v-1-1.dlmm-pool-trait)
@@ -11,12 +11,12 @@
 (define-constant ERR_NO_ACTIVE_BIN_DATA (err u2004))
 
 ;; Swap through multiple bins in multiple pools
-(define-public (swap-helper
-    (swaps (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool}))
+(define-public (swap-multi
+    (swaps (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool}))
     (min-received uint) (max-unfavorable-bins uint)
   )
   (let (
-    (swap-result (try! (fold fold-swap-helper swaps (ok {received: u0, unfavorable: u0}))))
+    (swap-result (try! (fold fold-swap-multi swaps (ok {received: u0, unfavorable: u0}))))
     (received (get received swap-result))
   )
     (asserts! (<= (get unfavorable swap-result) max-unfavorable-bins) ERR_BIN_SLIPPAGE)
@@ -26,7 +26,7 @@
 )
 
 ;; Fold function to swap through multiple bins in multiple pools
-(define-private (fold-swap-helper
+(define-private (fold-swap-multi
     (swap {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool})
     (result (response {received: uint, unfavorable: uint} uint))
   )
