@@ -330,6 +330,9 @@
         (try! (contract-call? pool-trait pool-transfer y-token-trait unclaimed-y-fees fee-address))
         false)
 
+      ;; Update unclaimed-protocol-fees for pool
+      (map-set unclaimed-protocol-fees pool-id {x-fee: u0, y-fee: u0})
+
       ;; Print function data and return true
       (print {
         action: "claim-protocol-fees",
