@@ -939,6 +939,16 @@ dlmmLiquidityRouterV11: {
     
   },
   "variables": {
+    ERR_EMPTY_POSITIONS_LIST: {
+  name: 'ERR_EMPTY_POSITIONS_LIST',
+  type: {
+    response: {
+      ok: 'none',
+      error: 'uint128'
+    }
+  },
+  access: 'constant'
+} as TypedAbiVariable<Response<null, bigint>>,
     ERR_MINIMUM_LP_AMOUNT: {
   name: 'ERR_MINIMUM_LP_AMOUNT',
   type: {
@@ -981,6 +991,10 @@ dlmmLiquidityRouterV11: {
 } as TypedAbiVariable<Response<null, bigint>>
   },
   constants: {
+  ERR_EMPTY_POSITIONS_LIST: {
+    isOk: false,
+    value: 2_005n
+  },
   ERR_MINIMUM_LP_AMOUNT: {
     isOk: false,
     value: 2_004n
@@ -1530,6 +1544,16 @@ dlmmSwapRouterV11: {
   },
   access: 'constant'
 } as TypedAbiVariable<Response<null, bigint>>,
+    ERR_EMPTY_SWAPS_LIST: {
+  name: 'ERR_EMPTY_SWAPS_LIST',
+  type: {
+    response: {
+      ok: 'none',
+      error: 'uint128'
+    }
+  },
+  access: 'constant'
+} as TypedAbiVariable<Response<null, bigint>>,
     ERR_MINIMUM_RECEIVED: {
   name: 'ERR_MINIMUM_RECEIVED',
   type: {
@@ -1565,6 +1589,10 @@ dlmmSwapRouterV11: {
   ERR_BIN_SLIPPAGE: {
     isOk: false,
     value: 2_002n
+  },
+  ERR_EMPTY_SWAPS_LIST: {
+    isOk: false,
+    value: 2_005n
   },
   ERR_MINIMUM_RECEIVED: {
     isOk: false,

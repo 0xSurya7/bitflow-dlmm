@@ -33,13 +33,14 @@ dlmm-liquidity-router-v-1-1
 - [`ERR_MINIMUM_X_AMOUNT`](#err_minimum_x_amount)
 - [`ERR_MINIMUM_Y_AMOUNT`](#err_minimum_y_amount)
 - [`ERR_MINIMUM_LP_AMOUNT`](#err_minimum_lp_amount)
+- [`ERR_EMPTY_POSITIONS_LIST`](#err_empty_positions_list)
 
 
 ## Functions
 
 ### add-liquidity-multi
 
-[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L13)
+[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L14)
 
 `(define-public (add-liquidity-multi ((positions (list 350 (tuple (bin-id int) (pool-trait trait_reference) (x-amount uint) (x-token-trait trait_reference) (y-amount uint) (y-token-trait trait_reference)))) (min-dlp uint)) (response uint uint))`
 
@@ -56,6 +57,7 @@ Add liquidity to multiple bins in multiple pools
   (let (
     (add-liquidity-result (try! (fold fold-add-liquidity-multi positions (ok u0))))
   )
+    (asserts! (> (len positions) u0) ERR_EMPTY_POSITIONS_LIST)
     (asserts! (>= add-liquidity-result min-dlp) ERR_MINIMUM_LP_AMOUNT)
     (ok add-liquidity-result)
   )
@@ -73,7 +75,7 @@ Add liquidity to multiple bins in multiple pools
 
 ### withdraw-liquidity-multi
 
-[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L26)
+[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L28)
 
 `(define-public (withdraw-liquidity-multi ((positions (list 350 (tuple (amount uint) (bin-id int) (pool-trait trait_reference) (x-token-trait trait_reference) (y-token-trait trait_reference)))) (min-x-amount uint) (min-y-amount uint)) (response (tuple (x-amount uint) (y-amount uint)) uint))`
 
@@ -90,6 +92,7 @@ Withdraw liquidity from multiple bins in multiple pools
   (let (
     (withdraw-liquidity-result (try! (fold fold-withdraw-liquidity-multi positions (ok {x-amount: u0, y-amount: u0}))))
   )
+    (asserts! (> (len positions) u0) ERR_EMPTY_POSITIONS_LIST)
     (asserts! (>= (get x-amount withdraw-liquidity-result) min-x-amount) ERR_MINIMUM_X_AMOUNT)
     (asserts! (>= (get y-amount withdraw-liquidity-result) min-y-amount) ERR_MINIMUM_Y_AMOUNT)
     (ok withdraw-liquidity-result)
@@ -109,7 +112,7 @@ Withdraw liquidity from multiple bins in multiple pools
 
 ### fold-add-liquidity-multi
 
-[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L41)
+[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L44)
 
 `(define-private (fold-add-liquidity-multi ((position (tuple (bin-id int) (pool-trait trait_reference) (x-amount uint) (x-token-trait trait_reference) (y-amount uint) (y-token-trait trait_reference))) (result (response uint uint))) (response uint uint))`
 
@@ -143,7 +146,7 @@ Fold function to add liquidity to multiple bins in multiple pools
 
 ### fold-withdraw-liquidity-multi
 
-[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L54)
+[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L57)
 
 `(define-private (fold-withdraw-liquidity-multi ((position (tuple (amount uint) (bin-id int) (pool-trait trait_reference) (x-token-trait trait_reference) (y-token-trait trait_reference))) (result (response (tuple (x-amount uint) (y-amount uint)) uint))) (response (tuple (x-amount uint) (y-amount uint)) uint))`
 
@@ -237,4 +240,16 @@ Fold function to withdraw liquidity from multiple bins in multiple pools
 ```
 
 [View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L10)
+
+### ERR_EMPTY_POSITIONS_LIST
+
+
+
+
+
+```clarity
+(define-constant ERR_EMPTY_POSITIONS_LIST (err u2005))
+```
+
+[View in file](..\contracts\dlmm-liquidity-router-v-1-1.clar#L11)
   
