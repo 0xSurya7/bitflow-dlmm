@@ -75,6 +75,11 @@ plan:
             path: contracts/dlmm-core-v-1-1.clar
             clarity-version: 3
         - emulated-contract-publish:
+            contract-name: dlmm-liquidity-router-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-liquidity-router-v-1-1.clar
+            clarity-version: 3
+        - emulated-contract-publish:
             contract-name: sip-013-trait-sft-standard-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/external/sip-013-trait-sft-standard-v-1-1.clar
@@ -90,9 +95,19 @@ plan:
             path: contracts/dlmm-pool-sbtc-usdc-v-1-1.clar
             clarity-version: 3
         - emulated-contract-publish:
+            contract-name: dlmm-swap-router-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-swap-router-v-1-1.clar
+            clarity-version: 3
+        - emulated-contract-publish:
             contract-name: mock-pool
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mocks/mock-pool.clar
+            clarity-version: 3
+        - emulated-contract-publish:
+            contract-name: mock-random-token
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/mocks/mock-random-token.clar
             clarity-version: 3
         - emulated-contract-publish:
             contract-name: mock-sbtc-token

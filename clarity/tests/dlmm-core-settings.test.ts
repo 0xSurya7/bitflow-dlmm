@@ -4,15 +4,20 @@ import {
   deployer,
   dlmmCore,
   errors,
+  generateBinFactors,
   sbtcUsdcPool,
+  mockSbtcToken,
+  mockUsdcToken,
+  mockRandomToken,
 } from "./helpers";
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { accounts } from './clarigen-types'; 
 import {
   cvToValue,
 } from '@clarigen/core';
-import { filterEvents, rov, txErr, txOk, rovOk } from '@clarigen/test';
+import { txErr, txOk, rovOk } from '@clarigen/test';
+
 
 
 describe('DLMM Core Contract', () => {
@@ -133,7 +138,7 @@ describe('DLMM Core Contract', () => {
   describe('Bin Step Management', () => { ///////////////////////////////////////////////////////////////////
     it('Should allow admin to add valid bin step', async () => {
       const binStep = 100n;
-      const factors = Array.from({ length: Number(dlmmCore.constants.NUM_OF_BINS) }, (_, i) => 1000000n + BigInt(i));
+      const factors = generateBinFactors();
       
       let binSteps = rovOk(dlmmCore.getBinSteps());
       expect(binSteps.length, "initial bin step list should have 5 elements").toBe(5);
@@ -148,14 +153,14 @@ describe('DLMM Core Contract', () => {
 
     it('Should prevent adding duplicate bin step', async () => {
       const binStep = 1n; // This already exists in constants
-      const factors = Array.from({ length: Number(dlmmCore.constants.NUM_OF_BINS) }, (_, i) => 1000000n + BigInt(i));
+      const factors = generateBinFactors();
       const response = txErr(dlmmCore.addBinStep(binStep, factors), deployer);
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_ALREADY_BIN_STEP);
     });
 
     it('Should prevent non-admin from adding bin step', async () => {
       const binStep = 200n;
-      const factors = Array.from({ length: Number(dlmmCore.constants.NUM_OF_BINS) }, (_, i) => 1000000n + BigInt(i));
+      const factors = generateBinFactors();
       
       const response = txErr(dlmmCore.addBinStep(binStep, factors), alice);
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NOT_AUTHORIZED);
@@ -163,26 +168,25 @@ describe('DLMM Core Contract', () => {
 
     it('Should prevent adding a bin-step with a factor element array without 1001 entries', async () => {
       const binStep = 200n;
-      const factors = Array(500).fill(0).map((_, i) => 1000000n + BigInt(i));
+      const factors = generateBinFactors(500);
       const response = txErr(dlmmCore.addBinStep(binStep, factors), deployer);
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_BIN_FACTORS_LENGTH);
     });
 
     it('Should prevent from adding a 0 bin step', async () => {
       const binStep = 0n;
-      const factors = Array.from({ length: Number(dlmmCore.constants.NUM_OF_BINS) }, (_, i) => 1000000n + BigInt(i));
+      const factors = generateBinFactors();
       const response = txErr(dlmmCore.addBinStep(binStep, factors), deployer);
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_AMOUNT);
     });
 
     it.skip('Should prevent from adding a more than 1000 bin steps', async () => {
       const lastBinStep = 10000n;
-      const factors = Array.from({ length: Number(dlmmCore.constants.NUM_OF_BINS) }, (_, i) => 1000000n + BigInt(i));
       
-      for (const binStep of Array(995).fill(0).map((_, i) => 100n + BigInt(i))) {
-        txOk(dlmmCore.addBinStep(binStep, factors), deployer);
+      for (const binStep of generateBinFactors(995, 100n)) {
+        txOk(dlmmCore.addBinStep(binStep, generateBinFactors()), deployer);
       }
-      const response = txErr(dlmmCore.addBinStep(lastBinStep, factors), deployer);
+      const response = txErr(dlmmCore.addBinStep(lastBinStep, generateBinFactors()), deployer);
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_BIN_STEP_LIMIT_REACHED);
     }, 1000000);
 
@@ -264,6 +268,56 @@ describe('DLMM Core Contract', () => {
     it('should prevent non-admin from changing settings', async () => {
       const response = txErr(dlmmCore.setPublicPoolCreation(true), alice);
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NOT_AUTHORIZED);
+    });
+
+    it('should succeed when creating pool with random X token (pool creation does not validate token whitelisting)', async () => {
+      // Mint tokens for pool creation
+      txOk(mockRandomToken.mint(10000000n, deployer), deployer);
+      txOk(mockUsdcToken.mint(5000000000n, deployer), deployer);
+
+      const response = txOk(dlmmCore.createPool(
+        sbtcUsdcPool.identifier,           
+        mockRandomToken.identifier, // Using random token
+        mockUsdcToken.identifier,          
+        10000000n,    // 0.1 BTC in active bin
+        5000000000n,  // 5000 USDC in active bin  
+        1000n,        // burn amount
+        1000n, 3000n, // x fees (0.1% protocol, 0.3% provider)
+        1000n, 3000n, // y fees (0.1% protocol, 0.3% provider)
+        25n,          // bin step (25 basis points)
+        900n,         // variable fees cooldown
+        false,        // freeze variable fees manager
+        deployer,     // fee address
+        "https://bitflow.finance/dlmm", // uri
+        true          // status
+      ), deployer);
+      
+      expect(response).toBeDefined();
+    });
+
+    it('should succeed when creating pool with random Y token (pool creation does not validate token whitelisting)', async () => {
+      // Mint tokens for pool creation
+      txOk(mockSbtcToken.mint(10000000n, deployer), deployer);
+      txOk(mockRandomToken.mint(5000000000n, deployer), deployer);
+
+      const response = txOk(dlmmCore.createPool(
+        sbtcUsdcPool.identifier,           
+        mockSbtcToken.identifier,
+        mockRandomToken.identifier, // Using random token        
+        10000000n,    // 0.1 BTC in active bin
+        5000000000n,  // 5000 USDC in active bin  
+        1000n,        // burn amount
+        1000n, 3000n, // x fees (0.1% protocol, 0.3% provider)
+        1000n, 3000n, // y fees (0.1% protocol, 0.3% provider)
+        25n,          // bin step (25 basis points)
+        900n,         // variable fees cooldown
+        false,        // freeze variable fees manager
+        deployer,     // fee address
+        "https://bitflow.finance/dlmm", // uri
+        true          // status
+      ), deployer);
+      
+      expect(response).toBeDefined();
     });
   });
 });
