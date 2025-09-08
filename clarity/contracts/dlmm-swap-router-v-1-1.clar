@@ -13,7 +13,7 @@
 
 ;; Swap through multiple bins in multiple pools
 (define-public (swap-multi
-    (swaps (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool}))
+    (swaps (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, expected-bin-id: int, amount: uint, x-for-y: bool}))
     (min-received uint) (max-unfavorable-bins uint)
   )
   (let (
@@ -29,7 +29,7 @@
 
 ;; Fold function to swap through multiple bins in multiple pools
 (define-private (fold-swap-multi
-    (swap {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool})
+    (swap {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, expected-bin-id: int, amount: uint, x-for-y: bool})
     (result (response {received: uint, unfavorable: uint} uint))
   )
   (let (
@@ -39,7 +39,7 @@
       (amount (get amount swap))
       (x-for-y (get x-for-y swap))
       (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
-      (bin-id-delta (- active-bin-id (get bin-id swap)))
+      (bin-id-delta (- active-bin-id (get expected-bin-id swap)))
       (is-unfavorable (if x-for-y (> bin-id-delta 0) (< bin-id-delta 0)))
       (swap-result (if x-for-y
                        (try! (contract-call? .dlmm-core-v-1-1 swap-x-for-y pool-trait x-token-trait y-token-trait active-bin-id amount))

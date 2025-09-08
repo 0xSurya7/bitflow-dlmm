@@ -241,7 +241,7 @@
   (ok (default-to {x-balance: u0, y-balance: u0, bin-shares: u0} (map-get? balances-at-bin id)))
 )
 
-;; Get a list of bins a user has a position in
+;; Get a list of bins an user has a position in
 (define-read-only (get-user-bins (user principal))
   (ok (default-to (list ) (map-get? user-bins user)))
 )

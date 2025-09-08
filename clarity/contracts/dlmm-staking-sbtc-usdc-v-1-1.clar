@@ -17,7 +17,7 @@
 (define-constant ERR_CANNOT_GET_TOKEN_BALANCE (err u4011))
 (define-constant ERR_INSUFFICIENT_TOKEN_BALANCE (err u4012))
 (define-constant ERR_INVALID_MIN_STAKING_DURATION (err u4013))
-(define-constant ERR_MINIMUM_STAKING_DURATION_HASNT_PASSED (err u4014))
+(define-constant ERR_MINIMUM_STAKING_DURATION_HAS_NOT_PASSED (err u4014))
 (define-constant ERR_MINIMUM_STAKING_DURATION_PASSED (err u4015))
 (define-constant ERR_BINS_STAKED_OVERFLOW (err u4016))
 (define-constant ERR_NO_BIN_DATA (err u4017))
@@ -26,6 +26,7 @@
 (define-constant ERR_NO_LP_TO_UNSTAKE (err u4020))
 (define-constant ERR_NO_EARLY_LP_TO_UNSTAKE (err u4021))
 (define-constant ERR_INVALID_FEE (err u4022))
+(define-constant ERR_MIN_REWARD_BUFFER_BLOCKS_PASSED (err u4023))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -62,9 +63,13 @@
 ;; Total amount of LP tokens staked
 (define-data-var total-lp-staked uint u0)
 
-;; Total rewards accrued and claimed across all bins
-(define-data-var total-rewards-accrued uint u0)
+;; Total rewards per block and claimed across all bins
+(define-data-var total-rewards-per-block uint u0)
 (define-data-var total-rewards-claimed uint u0)
+
+;; Total rewards accrued accross all bins and last update to the data var
+(define-data-var total-rewards-accrued uint u0)
+(define-data-var last-total-rewards-accrued-update uint u0)
 
 ;; Define bin-data map
 (define-map bin-data uint {
@@ -132,14 +137,24 @@
   (ok (var-get total-lp-staked))
 )
 
-;; Get total rewards accrued
-(define-read-only (get-total-rewards-accrued)
-  (ok (var-get total-rewards-accrued))
+;; Get total rewards per block
+(define-read-only (get-total-rewards-per-block)
+  (ok (var-get total-rewards-per-block))
 )
 
 ;; Get total rewards claimed
 (define-read-only (get-total-rewards-claimed)
   (ok (var-get total-rewards-claimed))
+)
+
+;; Get total rewards accrued
+(define-read-only (get-total-rewards-accrued)
+  (ok (var-get total-rewards-accrued))
+)
+
+;; Get last total rewards accrued update
+(define-read-only (get-last-total-rewards-accrued-update)
+  (ok (var-get last-total-rewards-accrued-update))
 )
 
 ;; Get bin data
@@ -354,6 +369,8 @@
 (define-public (set-reward-per-block (bin-id uint) (reward uint))
   (let (
     (current-bin-data (map-get? bin-data bin-id))
+    (current-reward-per-block (default-to u0 (get reward-per-block current-bin-data)))
+    (updated-total-rewards-per-block (+ (- (var-get total-rewards-per-block) current-reward-per-block) reward))
     (caller tx-sender)
   )
     (begin
@@ -365,9 +382,12 @@
           (unwrap-panic (update-reward-index bin-id))
           false)
 
-      ;; Assert that contract has sufficient reward balance for new reward rate
-      (asserts! (>= (unwrap-panic (get-available-contract-balance)) (* reward MIN_REWARD_BUFFER_BLOCKS)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+      ;; Assert contract has sufficient reward balance for new reward rate
+      (asserts! (>= (unwrap-panic (get-available-contract-balance)) (* updated-total-rewards-per-block MIN_REWARD_BUFFER_BLOCKS)) ERR_INSUFFICIENT_TOKEN_BALANCE)
       
+      ;; Update total-rewards-per-block
+      (var-set total-rewards-per-block updated-total-rewards-per-block)
+
       ;; Update bin-data mapping
       (map-set bin-data bin-id (merge (default-to {lp-staked: u0, reward-per-block: u0, reward-index: u0, last-reward-index-update: stacks-block-height} current-bin-data) {
         reward-per-block: reward
@@ -468,7 +488,7 @@
     (begin
       ;; Assert lp-to-unstake is greater than 0 and minimum staking duration has passed
       (asserts! (> lp-to-unstake u0) ERR_NO_LP_TO_UNSTAKE)
-      (asserts! (>= (- stacks-block-height (get last-stake-height current-user-data-at-bin)) (var-get minimum-staking-duration)) ERR_MINIMUM_STAKING_DURATION_HASNT_PASSED)
+      (asserts! (>= (- stacks-block-height (get last-stake-height current-user-data-at-bin)) (var-get minimum-staking-duration)) ERR_MINIMUM_STAKING_DURATION_HAS_NOT_PASSED)
 
       ;; Update reward-index for bin
       (unwrap-panic (update-reward-index unsigned-bin-id))
@@ -620,6 +640,39 @@
   )
 )
 
+;; Withdraw reward token from contract
+(define-public (withdraw-rewards (amount uint) (recipient principal))
+  (let (
+    (current-available-contract-balance (unwrap-panic (get-available-contract-balance)))
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert caller is an admin and recipient is standard principal
+      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
+
+      ;; Assert amount is greater than 0
+      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+
+      ;; Assert blocks since last-total-rewards-accrued-update is less than or equal to MIN_REWARD_BUFFER_BLOCKS
+      (asserts! (<= (- stacks-block-height (var-get last-total-rewards-accrued-update)) MIN_REWARD_BUFFER_BLOCKS) ERR_MIN_REWARD_BUFFER_BLOCKS_PASSED)
+
+      ;; Assert amount is less than or equal to available contract reward balance
+      (asserts! (<= amount current-available-contract-balance) ERR_INSUFFICIENT_TOKEN_BALANCE)
+      
+      ;; Assert contract has sufficient reward balance for reward rate
+      (asserts! (>= (- current-available-contract-balance amount) (* (var-get total-rewards-per-block) MIN_REWARD_BUFFER_BLOCKS)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+
+      ;; Transfer amount rewards token from contract to recipient
+      (try! (as-contract (transfer-reward-token amount tx-sender recipient)))
+
+      ;; Print function data and return true
+      (print {action: "withdraw-rewards", caller: caller, data: {amount: amount, recipient: recipient}})
+      (ok true)
+    )
+  )
+)
+
 ;; Update reward index for a bin
 (define-public (update-reward-index (bin-id uint))
   (let (
@@ -627,6 +680,9 @@
     (updated-reward-index (unwrap-panic (get-updated-reward-index bin-id)))
     (caller tx-sender)
   )
+    ;; Update last-total-rewards-accrued-update
+    (var-set last-total-rewards-accrued-update stacks-block-height)
+
     ;; Update reward index if stacks-block-height is greater than last-reward-index-update
     (if (> stacks-block-height (get last-reward-index-update current-bin-data))
         (begin

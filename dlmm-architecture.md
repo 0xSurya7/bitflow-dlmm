@@ -54,6 +54,7 @@ Updated as a side-effect of other functions
 - `pools` (`uint {id: uint, name: (string-ascii 32), symbol: (string-ascii 32), pool-contract: principal, verified: bool, status: bool}`)
 - `allowed-token-direction` (`{x-token: principal, y-token: principal} bool`)
 - `unclaimed-protocol-fees` (`uint {x-fee: uint, y-fee: uint}`)
+- `swap-fee-exemptions` (`{address: principal, id: uint} bool`)
 
 ### Admin Functions
 Follows the same design as XYK Core
@@ -83,6 +84,8 @@ Manage or retrieve data about pools
   - Parameters: `(x-token principal) (y-token principal)`
 - `get-unclaimed-protocol-fees-by-id`: Returns unclaimed protocol fees for a pool
   - Parameters: `(id uint)`
+- `get-swap-fee-exemption-by-id`: Returns swap fee exemption for an address for a pool
+  - Parameters: `(address principal) (id uint)`
 
 #### Public
 - `claim-protocol-fees`: Claim protocol fees for a pool
@@ -149,6 +152,8 @@ Manage or retrieve data about the core contract
   - Parameters: `(status bool)`
 - `add-verified-pool-code-hash`: Add pool code hash to `verified-pool-code-hashes` (admin-only)
   - Parameters: `(hash (buff 32))`
+- `set-swap-fee-exemption`: Set swap fee exemption for an address for a pool (admin-only)
+  - Parameters: `(pool-trait <dlmm-pool-trait>) (address principal) (exempt bool)`
 
 ### Pool Creation Functions
 Create new pools
@@ -403,11 +408,11 @@ Swap using a single or multiple bins in a single or multiple pools
 
 #### Public
 - `swap-multi`: Swap tokens (350 max)
-  - Parameters: `(swaps (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool})) (min-received uint) (max-unfavorable-bins uint)`
+  - Parameters: `(swaps (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, expected-bin-id: int, amount: uint, x-for-y: bool})) (min-received uint) (max-unfavorable-bins uint)`
 
 #### Private
 - `fold-swap-multi`: Used to batch swap calls via core
-  - Parameters: `(swap {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool}) (result (response {received: uint, unfavorable: uint} uint))`
+  - Parameters: `(swap {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, expected-bin-id: int, amount: uint, x-for-y: bool}) (result (response {received: uint, unfavorable: uint} uint))`
 - `abs-int`: Returns absolute value of a signed int as uint
   - Parameters: `(value int)`
 
@@ -461,8 +466,10 @@ Add or withdraw liquidity using a single or multiple bins in a single or multipl
 - `get-early-unstake-fee`: () (response uint uint)
 - `get-minimum-staking-duration`: () (response uint uint)
 - `get-total-lp-staked`: () (response uint uint)
-- `get-total-rewards-accrued`: () (response uint uint)
+- `get-total-rewards-per-block`: () (response uint uint)
 - `get-total-rewards-claimed`: () (response uint uint)
+- `get-total-rewards-accrued`: () (response uint uint)
+- `get-last-total-rewards-accrued-update`: () (response uint uint)
 - `get-bin`: (uint) (response (optional {lp-staked: uint, reward-per-block: uint, reward-index: uint, last-reward-index-update: uint}) uint)
 - `get-user`: (principal) (response (optional {bins-staked: (list 1001 uint), lp-staked: uint}) uint)
 - `get-user-data-at-bin`: (principal uint) (response (optional {lp-staked: uint, reward-index: uint, last-stake-height: uint}) uint)
@@ -505,8 +512,10 @@ Updated as a side-effect of other functions
 - `admin-helper` (`principal`): Helper variable for removing an admin
 - `helper-value` (`uint`): Helper value used when unstaking
 - `total-lp-staked` (`uint`): Total amount of LP tokens staked
-- `total-rewards-accrued` (`uint`): Total amount of rewards accrued
+- `total-rewards-per-block` (`uint`): Total amount of rewards per block
 - `total-rewards-claimed` (`uint`): Total amount of rewards claimed
+- `total-rewards-accrued` (`uint`): Total amount of rewards accrued
+- `last-total-rewards-accrued-update` (`uint`): Blocks since `total-rewards-accrued` was last updated
 
 ### Mappings
 - `bin-data` (`uint {lp-staked: uint, reward-per-block: uint, reward-index: uint, last-reward-index-update: uint}`)
@@ -541,8 +550,10 @@ Manage or retrieve data about pools
 - `get-early-unstake-fee`: Returns `early-unstake-fee`
 - `get-minimum-staking-duration`: Returns `minimum-staking-duration`
 - `get-total-lp-staked`: Returns `total-lp-staked`
-- `get-total-rewards-accrued`: Returns `total-rewards-accrued`
+- `get-total-rewards-per-block`: Returns `total-rewards-per-block`
 - `get-total-rewards-claimed`: Returns `total-rewards-claimed`
+- `get-total-rewards-accrued`: Returns `total-rewards-accrued`
+- `get-last-total-rewards-accrued-update`: Returns `last-total-rewards-accrued-update`
 - `get-bin`: Returns data about a bin from the `bin-data` mapping
   - Parameters: `(bin-id uint)`
 - `get-user`: Returns data about a user from the `user-data` mapping
@@ -566,6 +577,8 @@ Manage or retrieve data about pools
   - Parameters: `(duration uint)`
 - `set-reward-per-block`: Set reward per block for a bin (admin-only)
   - Parameters: `(bin-id uint) (reward uint)`
+- `withdraw-rewards`: Withdraw reward token from contract (admin-only)
+  - Parameters: `(amount uint) (recipient principal)`
 - `update-reward-index`: Update reward index for a bin
   - Parameters: `(bin-id uint)`
 - `set-reward-per-block-multi`: Batch version of `set-reward-per-block` (350 max)
