@@ -8,6 +8,8 @@
 - `dlmm-pool-sbtc-usdc-v-1-1` (example pool)
 - `dlmm-swap-router-v-1-1`
 - `dlmm-liquidity-router-v-1-1`
+- `dlmm-staking-trait-v-1-1`
+- `dlmm-staking-sbtc-usdc-v-1-1`
 
 ### External
 - `sip-010-trait-ft-standard-v-1-1`
@@ -51,6 +53,7 @@ Updated as a side-effect of other functions
 ### Mappings
 - `pools` (`uint {id: uint, name: (string-ascii 32), symbol: (string-ascii 32), pool-contract: principal, verified: bool, status: bool}`)
 - `allowed-token-direction` (`{x-token: principal, y-token: principal} bool`)
+- `unclaimed-protocol-fees` (`uint {x-fee: uint, y-fee: uint}`)
 
 ### Admin Functions
 Follows the same design as XYK Core
@@ -78,8 +81,12 @@ Manage or retrieve data about pools
   - Parameters: `(id uint)`
 - `get-allowed-token-direction`: Returns if token direction exists or is allowed for pool creation
   - Parameters: `(x-token principal) (y-token principal)`
+- `get-unclaimed-protocol-fees-by-id`: Returns unclaimed protocol fees for a pool
+  - Parameters: `(id uint)`
 
 #### Public
+- `claim-protocol-fees`: Claim protocol fees for a pool
+  - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)`
 - `set-pool-uri`: Set URI for a pool (admin-only)
   - Parameters: `(pool-trait <dlmm-pool-trait>) (uri (string-ascii 256))`
 - `set-pool-status`: Set pool status (admin-only)
@@ -92,8 +99,10 @@ Manage or retrieve data about pools
   - Parameters: `(pool-trait <dlmm-pool-trait>) (protocol-fee uint) (provider-fee uint)`
 - `set-dynamic-config`: Set dynamic config for a pool (admin and manager-only)
   - Parameters: `(pool-trait <dlmm-pool-trait>) (config (buff 4096))`
+- `claim-protocol-fees-multi`: Batch version of `claim-protocol-fees` (120 max)
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (x-token-traits (list 120 <sip-010-trait>)) (y-token-traits (list 120 <sip-010-trait>))`
 - `set-pool-uri-multi`: Batch version of `set-pool-uri` (120 max)
-  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (uris (list 120 (string-utf8 256)))`
+  - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (uris (list 120 (string-ascii 256)))`
 - `set-pool-status-multi`: Batch version of `set-pool-status` (120 max)
   - Parameters: `(pool-traits (list 120 <dlmm-pool-trait>)) (statuses (list 120 bool))`
 - `set-fee-address-multi`: Batch version of `set-fee-address` (120 max)
@@ -109,7 +118,7 @@ Manage or retrieve data about pools
 - `is-valid-pool`: Check the validity of a pool
   - Parameters: `(id uint) (contract principal)`
 - `is-enabled-pool`: Check the status of a pool
-  - Parameteres: `(id uint)`
+  - Parameters: `(id uint)`
 
 ### Core Management Functions
 Manage or retrieve data about the core contract
@@ -118,7 +127,7 @@ Manage or retrieve data about the core contract
 - `get-bin-steps`: Returns `bin-steps`
 - `get-bin-factors-by-step`: Returns list of factors based on bin step
   - Parameters: `(step uint)`
-- `get-minimum-total-shares`: Returns `minimum-total-shares`
+- `get-minimum-bin-shares`: Returns `minimum-bin-shares`
 - `get-minimum-burnt-shares`: Returns `minimum-burnt-shares`
 - `get-public-pool-creation`: Returns `public-pool-creation`
 - `get-verified-pool-code-hashes`: Returns `verified-pool-code-hashes`
@@ -170,6 +179,8 @@ Add or withdraw liquidity using a single bin in a pool
   - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>) (bin-id int) (x-amount uint) (y-amount uint) (min-dlp uint)`
 - `withdraw-liquidity`: Withdraw proportional liquidity
   - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>) (bin-id int) (amount uint) (min-x-amount uint) (min-y-amount uint)`
+- `move-liquidity`: Move liquidity from one bin to another
+  - Parameters: `(pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>) (from-bin-id int) (to-bin-id int) (amount uint) (min-dlp uint)`
 
 ### Variable Fees Functions
 Manage or retrieve data about variable fees for a single bin in a pool 
@@ -210,13 +221,16 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `get-balance`: (uint principal) (response uint uint)
 - `get-overall-balance`: (principal) (response uint uint)
 - `get-pool`: () (response {pool-id: uint, pool-name: (string-ascii 32), pool-symbol: (string-ascii 32), pool-uri: (string-ascii 256), pool-created: bool, creation-height: uint, core-address: principal, variable-fees-manager: principal, fee-address: principal, x-token: principal, y-token: principal, pool-token: principal, bin-step: uint, initial-price: uint, active-bin-id: int, x-protocol-fee: uint, x-provider-fee: uint, x-variable-fee: uint, y-protocol-fee: uint, y-provider-fee: uint, y-variable-fee: uint, bin-change-count: uint, last-variable-fees-update: uint, variable-fees-cooldown: uint, freeze-variable-fees-manager: bool, dynamic-config: (buff 4096)} uint)
+- `get-pool-for-swap`: (bool) (response {pool-id: uint, pool-name: (string-ascii 32), fee-address: principal, x-token: principal, y-token: principal, bin-step: uint, initial-price: uint, active-bin-id: int, protocol-fee: uint, provider-fee: uint, variable-fee: uint} uint)
+- `get-pool-for-add`: () (response {pool-id: uint, pool-name: (string-ascii 32), x-token: principal, y-token: principal, bin-step: uint, initial-price: uint, active-bin-id: int, x-protocol-fee: uint, x-provider-fee: uint, x-variable-fee: uint, y-protocol-fee: uint, y-provider-fee: uint, y-variable-fee: uint} uint)
+- `get-pool-for-withdraw`: () (response {pool-id: uint, pool-name: (string-ascii 32), x-token: principal, y-token: principal} uint)
 - `get-active-bin-id`: () (response int uint)
-- `get-bin-balances`: (uint) (response uint uint)
+- `get-bin-balances`: (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint)
 - `get-user-bins`: (principal) (response (list 1001 uint) uint)
 - `set-pool-uri`: ((string-ascii 256)) (response bool uint)
 - `set-variable-fees-manager`: (principal) (response bool uint)
 - `set-fee-address`: (principal) (response bool uint)  
-- `set-active-bin-id`: (uint) (response bool uint)
+- `set-active-bin-id`: (int) (response bool uint)
 - `set-x-fees`: (uint uint) (response bool uint)
 - `set-y-fees`: (uint uint) (response bool uint)
 - `set-variable-fees`: (uint uint) (response bool uint)
@@ -224,6 +238,7 @@ Manage or retrieve data about variable fees for a single bin in a pool
 - `set-freeze-variable-fees-manager`: () (response bool uint)
 - `set-dynamic-config`: ((buff 4096)) (response bool uint)
 - `update-bin-balances`: (uint uint uint) (response bool uint)
+- `update-bin-balances-on-withdraw`: (uint uint uint uint) (response bool uint)
 - `transfer`: (uint uint principal principal) (response bool uint)
 - `transfer-memo`: (uint uint principal principal (buff 34)) (response bool uint)
 - `transfer-many`: ((list 200 {token-id: uint, amount: uint, sender: principal, recipient: principal})) (response bool uint)
@@ -254,28 +269,27 @@ Manage or retrieve data about variable fees for a single bin in a pool
 
 #### Pool Creation
 Set via the core contract only at pool creation
-- `pool-id` (`uint`): ID of pool (`(+ last-pool-id u1)`)
-- `pool-name` (`string-ascii 32`): Pool and `pool-token` name
-- `pool-symbol` (`string-ascii 32`): Pool and `pool-token` symbol
-- `pool-created` (`bool`): Pool creation status
-- `creation-height` (`uint`): Burn block height when the pool was created
-- `x-token` (`principal`): X token principal
-- `y-token` (`principal`): Y token principal
+- `pool-id` (`uint`): ID of pool (`(+ last-pool-id u1)`) [set within `pool-info` mapping]
+- `pool-name` (`string-ascii 32`): Pool and `pool-token` name [set within `pool-info` mapping]
+- `pool-symbol` (`string-ascii 32`): Pool and `pool-token` symbol [set within `pool-info` mapping]
+- `pool-created` (`bool`): Pool creation status [set within `pool-info` mapping]
+- `creation-height` (`uint`): Burn block height when the pool was created [set within `pool-info` mapping]
+- `x-token` (`principal`): X token principal [set within `pool-addresses` mapping]
+- `y-token` (`principal`): Y token principal [set within `pool-addresses` mapping]
 - `bin-step` (`uint`): Pool bin step
 - `initial-price` (`uint`): Price of pool at initial active bin
 
 #### Admin-Configurable
 Set via the core contract using admin functions
-- `pool-uri` (`string-ascii 256`): Pool and `pool-token` URI
-- `variable-fees-manager` (`principal`): Principal authorized to set variable fees 
-- `fee-address` (`principal`): Principal to send protocol fees to  
-  _May add this in the `pools` mapping in the core contract instead of here_
-- `x-protocol-fee` (`uint`): Protocol fee charged for protocol when swapping X → Y
-- `x-provider-fee` (`uint`): Provider fee charged for providers when swapping X → Y
-- `x-variable-fee` (`uint`): Variable fee charged for providers when swapping X → Y
-- `y-protocol-fee` (`uint`): Protocol fee charged for protocol when swapping Y → X
-- `y-provider-fee` (`uint`): Protocol fee charged for providers when swapping Y → X
-- `y-variable-fee` (`uint`): Variable fee charged for providers when swapping Y → X
+- `pool-uri` (`string-ascii 256`): Pool and `pool-token` URI [set within `pool-info` mapping]
+- `variable-fees-manager` (`principal`): Principal authorized to set variable fees [set within `pool-addresses` mapping]
+- `fee-address` (`principal`): Principal to send protocol fees to [set within `pool-addresses` mapping]
+- `x-protocol-fee` (`uint`): Protocol fee charged for protocol when swapping X → Y [set within `pool-fees` mapping]
+- `x-provider-fee` (`uint`): Provider fee charged for providers when swapping X → Y [set within `pool-fees` mapping]
+- `x-variable-fee` (`uint`): Variable fee charged for providers when swapping X → Y [set within `pool-fees` mapping]
+- `y-protocol-fee` (`uint`): Protocol fee charged for protocol when swapping Y → X [set within `pool-fees` mapping]
+- `y-provider-fee` (`uint`): Protocol fee charged for providers when swapping Y → X [set within `pool-fees` mapping]
+- `y-variable-fee` (`uint`): Variable fee charged for providers when swapping Y → X [set within `pool-fees` mapping]
 - `variable-fees-cooldown` (`uint`): Variable fees can be reset after this cooldown (Stacks blocks) is reached
 - `freeze-variable-fees-manager` (`bool`): If `true`, `variable-fees-manager` is permanently frozen
 - `dynamic-config` (`buff 4096`): Dynamic configuration initially used to calculate variable fees
@@ -295,11 +309,11 @@ Updated as a side-effect of other functions
 Interact or retrieve data about the `pool-token` and `pool-token-id` (SIP 013-compliant)
 
 #### Read-only
-- `get-name`: Returns `pool-name`
-- `get-symbol`: Returns `pool-symbol`
+- `get-name`: Returns `pool-name` from `pool-info` mapping
+- `get-symbol`: Returns `pool-symbol` from `pool-info` mapping
 - `get-decimals`: Returns `pool-token` decimals
   - Parameters: `(token-id uint)`
-- `get-token-uri`: Returns `pool-uri`
+- `get-token-uri`: Returns `pool-uri` from `pool-info` mapping
   - Parameters: `(token-id uint)`
 - `get-total-supply`: Returns total `pool-token` supply
   - Parameters: `(token-id uint)`
@@ -333,6 +347,10 @@ Manage or retrieve data about the pool contract
 
 #### Read-only
 - `get-pool`: Returns base pool data
+- `get-pool-for-swap`: Returns pool data for swap functions in core
+  - Parameters: `(is-x-for-y bool)`
+- `get-pool-for-add`: Returns pool data for add and move liquidity functions in core
+- `get-pool-for-withdraw`: Returns pool data for withdraw liquidity function in core
 - `get-bin-balances`: Returns data about a bin from `balances-at-bin` mapping
   - Parameters: `(id uint)`
 - `get-user-bins`: Returns list of user bins from `user-bins` mapping
@@ -345,7 +363,7 @@ Manage or retrieve data about the pool contract
   - Parameters: `(manager principal)`
 - `set-fee-address`: Called via `set-fee-address` in core
   - Parameters: `(address principal)`
-- `set-active-bin`: Set current active bin via pool creation, swap, and liquidity functions in core
+- `set-active-bin-id`: Set current active bin via pool creation, swap, and liquidity functions in core
   - Parameters: `(id int)`
 - `set-x-fees`: Called via `set-x-fees` in core
   - Parameters: `(protocol-fee uint) (provider-fee uint)`
@@ -357,8 +375,11 @@ Manage or retrieve data about the pool contract
   - Parameters: `(cooldown uint)`
 - `set-freeze-variable-fees-manager`: Called via `set-freeze-variable-fees-manager` in core
 - `set-dynamic-config`: Called via `set-dynamic-config` in core
-- `update-bin-balances`: Update the `balances-at-bin` mapping via pool creation, swap, and liquidity functions in core
+  - Parameters: `(config (buff 4096))`
+- `update-bin-balances`: Update the `balances-at-bin` mapping via pool creation, swap, add and move liquidity functions in core
   - Parameters: `(bin-id uint) (x-balance uint) (y-balance uint)`
+- `update-bin-balances-on-withdraw`: Update the `balances-at-bin` mapping via withdraw liquidity function in core
+  - Parameters: `(bin-id uint) (x-balance uint) (y-balance uint) (bin-shares uint)`
 - `pool-transfer`: Transfer X / Y token from the pool via swap and withdraw liquidity functions in core
   - Parameters: `(token-trait <sip-010-trait>) (amount uint) (recipient principal)`
 - `pool-mint`: Mint new `pool-token` via pool creation and add liquidity functions in core
@@ -368,7 +389,7 @@ Manage or retrieve data about the pool contract
 - `create-pool`: Called via `create-pool` in core
   - Parameters: `(x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (fee-addr principal) (core-caller principal) (active-bin int) (step uint) (price uint) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))`
  
-## 5. dlmm-swap-multi-v-1-1
+## 5. dlmm-swap-router-v-1-1
 
 ### Constants
 - Router error codes
@@ -381,8 +402,8 @@ Manage or retrieve data about the pool contract
 Swap using a single or multiple bins in a single or multiple pools
 
 #### Public
-- `swap-multi`: Swap tokens (120 max)
-  - Parameters: `(swaps (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool})) (min-received uint) (max-unfavorable-bins uint)`
+- `swap-multi`: Swap tokens (350 max)
+  - Parameters: `(swaps (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, x-for-y: bool})) (min-received uint) (max-unfavorable-bins uint)`
 
 #### Private
 - `fold-swap-multi`: Used to batch swap calls via core
@@ -390,7 +411,7 @@ Swap using a single or multiple bins in a single or multiple pools
 - `abs-int`: Returns absolute value of a signed int as uint
   - Parameters: `(value int)`
 
-## 5. dlmm-liquidity-router-v-1-1
+## 6. dlmm-liquidity-router-v-1-1
 
 ### Constants
 - Router error codes
@@ -403,13 +424,186 @@ Swap using a single or multiple bins in a single or multiple pools
 Add or withdraw liquidity using a single or multiple bins in a single or multiple pools
 
 #### Public
-- `add-liquidity-multi`: Add liquidity (single-sided for non-active bins) (120 max)
-  - Parameters: `(positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint})) (min-dlp uint)`
-- `withdraw-liquidity-multi`: Withdraw proportional liquidity (120 max)
-  - Parameters: `(positions (list 120 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint})) (min-x-amount uint) (min-y-amount uint)`
+- `add-liquidity-multi`: Add liquidity (single-sided for non-active bins) (350 max)
+  - Parameters: `(positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint})) (min-dlp uint)`
+- `add-relative-liquidity-multi`: Add liquidity (single-sided for non-active bins) relative to the active bin (350 max)
+  - Parameters: `(positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, active-bin-id-offset: int, x-amount: uint, y-amount: uint})) (min-dlp uint)`
+- `withdraw-liquidity-multi`: Withdraw proportional liquidity (350 max)
+  - Parameters: `(positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint})) (min-x-amount uint) (min-y-amount uint)`
+- `withdraw-relative-liquidity-multi`: Withdraw proportional liquidity relative to the active bin (350 max)
+  - Parameters: `(positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, active-bin-id-offset: int, amount: uint})) (min-x-amount uint) (min-y-amount uint)`
+- `move-liquidity-multi`: Move liquidity from one bin to another (350 max)
+  - Parameters: `(positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, from-bin-id: int, to-bin-id: int, amount: uint})) (min-dlp uint)`
+- `move-relative-liquidity-multi`: Move liquidity from one bin to another relative to the active bin (350 max)
+  - Parameters: `(positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, from-bin-id: int, active-bin-id-offset: int, amount: uint})) (min-dlp uint)`
 
 #### Private
 - `fold-add-liquidity-multi`: Used to batch `add-liquidity` calls via core
   - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, x-amount: uint, y-amount: uint}) (result (response uint uint))`
+- `fold-add-relative-liquidity-multi`: Used to batch `add-liquidity` calls via core
+  - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, active-bin-id-offset: int, x-amount: uint, y-amount: uint}) (result (response uint uint))`
 - `fold-withdraw-liquidity-multi`: Used to batch `withdraw-liquidity` calls via core
   - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint}) (result (response {x-amount: uint, y-amount: uint} uint))`
+- `fold-withdraw-relative-liquidity-multi`: Used to batch `withdraw-liquidity` calls via core
+  - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, active-bin-id-offset: int, amount: uint}) (result (response {x-amount: uint, y-amount: uint} uint))`
+- `fold-move-liquidity-multi`: Used to batch `move-liquidity` calls via core
+  - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, from-bin-id: int, to-bin-id: int, amount: uint}) (result (response uint uint))`
+- `fold-move-relative-liquidity-multi`: Used to batch `move-liquidity` calls via core
+  - Parameters: `(position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, from-bin-id: int, active-bin-id-offset: int, amount: uint}) (result (response uint uint))`
+
+## 7. dlmm-staking-trait-v-1-1
+
+### Trait Definition
+- `get-helper-value`: () (response uint uint)
+- `get-staking-status`: () (response bool uint)
+- `get-early-unstake-status`: () (response bool uint)
+- `get-early-unstake-fee-address`: () (response principal uint)
+- `get-early-unstake-fee`: () (response uint uint)
+- `get-minimum-staking-duration`: () (response uint uint)
+- `get-total-lp-staked`: () (response uint uint)
+- `get-total-rewards-accrued`: () (response uint uint)
+- `get-total-rewards-claimed`: () (response uint uint)
+- `get-bin`: (uint) (response (optional {lp-staked: uint, reward-per-block: uint, reward-index: uint, last-reward-index-update: uint}) uint)
+- `get-user`: (principal) (response (optional {bins-staked: (list 1001 uint), lp-staked: uint}) uint)
+- `get-user-data-at-bin`: (principal uint) (response (optional {lp-staked: uint, reward-index: uint, last-stake-height: uint}) uint)
+- `get-updated-reward-index`: (uint) (response {reward-index: uint, rewards-to-distribute: uint} uint)
+- `get-unclaimed-rewards`: (principal int) (response uint uint)
+- `get-available-contract-balance`: () (response uint uint)
+- `stake-lp-tokens`: (int uint) (response bool uint)
+- `unstake-lp-tokens`: (int) (response bool uint)
+- `early-unstake-lp-tokens`: (int) (response bool uint)
+- `claim-rewards`: (int) (response uint uint)
+- `update-reward-index`: (uint) (response bool uint)
+
+## 8. dlmm-staking-sbtc-usdc-v-1-1
+
+### Traits
+- `dlmm-staking-trait-v-1-1` (implement)
+
+### Constants
+- Staking error codes
+- `CONTRACT_DEPLOYER` (`tx-sender`)
+- `NUM_OF_BINS` (`u1001`)
+- `CENTER_BIN_ID` (`(/ NUM_OF_BINS u2)`)
+- `MIN_REWARD_BUFFER_BLOCKS` (`u10000`)
+- `FEE_SCALE_BPS` (`u10000`)
+- `REWARD_SCALE_BPS` (`u100000000`)
+
+### Data Variables
+
+#### Admin-Configurable
+Set via public admin functions
+- `admins` (`(list 5 principal)`): List of principals with admin permissions
+- `staking-status` (`bool`): Enable or disable staking
+- `early-unstake-status` (`bool`): Enable or disable early unstaking
+- `early-unstake-fee-address` (`principal`): Address that collects fees from early unstaking
+- `early-unstake-fee` (`uint`): Fee charged when early unstaking
+- `minimum-staking-duration` (`uint`): Minimum staking duration in blocks
+
+#### Indirectly Modified
+Updated as a side-effect of other functions
+- `admin-helper` (`principal`): Helper variable for removing an admin
+- `helper-value` (`uint`): Helper value used when unstaking
+- `total-lp-staked` (`uint`): Total amount of LP tokens staked
+- `total-rewards-accrued` (`uint`): Total amount of rewards accrued
+- `total-rewards-claimed` (`uint`): Total amount of rewards claimed
+
+### Mappings
+- `bin-data` (`uint {lp-staked: uint, reward-per-block: uint, reward-index: uint, last-reward-index-update: uint}`)
+- `user-data` (`principal {bins-staked: (list 1001 uint), lp-staked: uint}`)
+- `user-data-at-bin` (`{user: principal, bin-id: uint} {lp-staked: uint, reward-index: uint, last-stake-height: uint}`)
+
+### Admin Functions
+Follows the same design as XYK Core
+
+#### Read-only
+- `get-admins`: Returns `admins`
+- `get-admin-helper`: Returns `admin-helper`
+
+#### Public
+- `add-admin`: Add principal to `admins` (admin-only)
+  - Parameters: `(admin principal)`
+- `remove-admin`: Remove principal from `admins` (admin-only)
+  - Parameters: `(admin principal)`
+
+#### Private
+- `admin-not-removable`: Helper for removing a principal from `admins`
+  - Parameters: `(admin principal)`
+
+### Staking Management Functions
+Manage or retrieve data about pools
+
+#### Read-only
+- `get-helper-value`: Returns `helper-value`
+- `get-staking-status`: Returns `staking-status`
+- `get-early-unstake-status`: Returns `early-unstake-status`
+- `get-early-unstake-fee-address`: Returns `early-unstake-fee-address`
+- `get-early-unstake-fee`: Returns `early-unstake-fee`
+- `get-minimum-staking-duration`: Returns `minimum-staking-duration`
+- `get-total-lp-staked`: Returns `total-lp-staked`
+- `get-total-rewards-accrued`: Returns `total-rewards-accrued`
+- `get-total-rewards-claimed`: Returns `total-rewards-claimed`
+- `get-bin`: Returns data about a bin from the `bin-data` mapping
+  - Parameters: `(bin-id uint)`
+- `get-user`: Returns data about a user from the `user-data` mapping
+  - Parameters: `(user principal)`
+- `get-user-data-at-bin`: Returns data about a user at a bin from the `user-data-at-bin` mapping
+  - Parameters: `(user principal) (bin-id uint)`
+- `get-updated-reward-index`: Returns updated reward index at a bin
+  - Parameters: `(bin-id uint)`
+- `get-available-contract-balance`: Returns available contract balance after subtracting the reserved balance
+
+#### Public
+- `set-staking-status`: Set status for staking (admin-only)
+  - Parameters: `(status bool)`
+- `set-early-unstake-status`: Set status for early unstaking (admin-only)
+  - Parameters: `(status bool)`
+- `set-early-unstake-fee-address`: Set fee address for early unstaking fee (admin-only)
+  - Parameters: `(address principal)`
+- `set-early-unstake-fee`: Set fee taken when early unstaking (admin-only)
+  - Parameters: `(fee uint)`
+- `set-minimum-staking-duration`: Set minimum required staking duration in blocks (admin-only)
+  - Parameters: `(duration uint)`
+- `set-reward-per-block`: Set reward per block for a bin (admin-only)
+  - Parameters: `(bin-id uint) (reward uint)`
+- `update-reward-index`: Update reward index for a bin
+  - Parameters: `(bin-id uint)`
+- `set-reward-per-block-multi`: Batch version of `set-reward-per-block` (350 max)
+  - Parameters: `(bin-ids (list 350 uint)) (amounts (list 350 uint))`
+- `update-reward-index-multi`: Batch version of `update-reward-index` (350 max)
+  - Parameters: `(bin-ids (list 350 uint))`
+
+#### Private
+- `filter-values-eq-helper-value`: Filter function used when unstaking
+  - Parameters: `(value uint)`
+- `get-reward-token-balance`: Get reward token balance for contract
+- `transfer-lp-token`: Transfer the LP token
+  - Parameters: `(bin-id uint) (amount uint) (sender principal) (recipient principal)`
+- `transfer-reward-token`: Transfer the reward token
+  - Parameters: `(amount uint) (sender principal) (recipient principal)`
+
+### Staking Functions
+
+#### Read-only
+- `get-unclaimed-rewards`: Returns unclaimed rewards for a user at a bin
+  - Parameters: `(user principal) (bin-id int)`
+
+#### Public
+- `stake-lp-tokens`: Stake LP tokens for a bin
+  - Parameters: `(bin-id int) (amount uint)`
+- `unstake-lp-tokens`: Unstake LP tokens for a bin
+  - Parameters: `(bin-id int)`
+- `early-unstake-lp-tokens`: Early unstake LP tokens for a bin
+  - Parameters: `(bin-id int)`
+- `claim-rewards`: Claim any unclaimed rewards at a bin
+  - Parameters: `(bin-id int)`
+- `get-unclaimed-rewards-multi`: Batch version of `get-unclaimed-rewards` (350 max)
+  - Parameters: `(users (list 350 principal)) (bin-ids (list 350 int))`
+- `stake-lp-tokens-multi`: Batch version of `stake-lp-tokens` (350 max)
+  - Parameters: `(bin-ids (list 350 int)) (amounts (list 350 uint))`
+- `unstake-lp-tokens-multi`: Batch version of `unstake-lp-tokens` (350 max)
+  - Parameters: `(bin-ids (list 350 int))`
+- `early-unstake-lp-tokens-multi`: Batch version of `early-unstake-lp-tokens` (350 max)
+  - Parameters: `(bin-ids (list 350 int))`
+- `claim-rewards-multi`: Batch version of `claim-rewards` (350 max)
+  - Parameters: `(bin-ids (list 350 int))`

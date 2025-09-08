@@ -181,10 +181,11 @@
 )
 
 ;; Get unclaimed rewards for a user at a bin
-(define-read-only (get-unclaimed-rewards (user principal) (bin-id uint))
+(define-read-only (get-unclaimed-rewards (user principal) (bin-id int))
   (let (
-    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: user, bin-id: bin-id}) ERR_NO_USER_DATA_AT_BIN))
-    (reward-index-delta (- (get reward-index (unwrap-panic (get-updated-reward-index bin-id))) (get reward-index current-user-data-at-bin)))
+    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: user, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
+    (reward-index-delta (- (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id))) (get reward-index current-user-data-at-bin)))
     (unclaimed-rewards (/ (* (get lp-staked current-user-data-at-bin) reward-index-delta) REWARD_SCALE_BPS))
   )
     ;; Return unclaimed-rewards
@@ -405,7 +406,7 @@
 
       ;; Claim any rewards at bin
       (if (is-some current-user-data-at-bin)
-          (try! (claim-rewards unsigned-bin-id))
+          (try! (claim-rewards bin-id))
           u0)
 
       ;; Update total LP staked
@@ -473,7 +474,7 @@
       (unwrap-panic (update-reward-index unsigned-bin-id))
       
       ;; Claim any rewards at bin
-      (try! (claim-rewards unsigned-bin-id))
+      (try! (claim-rewards bin-id))
 
       ;; Update total LP staked
       (var-set total-lp-staked updated-total-lp-staked)
@@ -541,7 +542,7 @@
       (unwrap-panic (update-reward-index unsigned-bin-id))
       
       ;; Claim any rewards at bin
-      (try! (claim-rewards unsigned-bin-id))
+      (try! (claim-rewards bin-id))
 
       ;; Update total LP staked
       (var-set total-lp-staked updated-total-lp-staked)
@@ -586,25 +587,26 @@
 )
 
 ;; Claim any unclaimed rewards at a bin
-(define-public (claim-rewards (bin-id uint))
+(define-public (claim-rewards (bin-id int))
   (let (
     (caller tx-sender)
-    (current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
-    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: bin-id}) ERR_NO_USER_DATA_AT_BIN))
+    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
     (unclaimed-rewards (try! (get-unclaimed-rewards caller bin-id)))
   )
     ;; Claim rewards if unclaimed-rewards is greater than 0
     (if (> unclaimed-rewards u0)
       (begin
         ;; Update reward-index for bin
-        (unwrap-panic (update-reward-index bin-id))
+        (unwrap-panic (update-reward-index unsigned-bin-id))
 
         ;; Transfer unclaimed-rewards rewards token from contract to caller
         (try! (as-contract (transfer-reward-token unclaimed-rewards tx-sender caller)))
         
         ;; Update user-data-at-bin mapping
-        (map-set user-data-at-bin {user: caller, bin-id: bin-id} (merge current-user-data-at-bin {
-          reward-index: (get reward-index (unwrap-panic (get-updated-reward-index bin-id)))
+        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+          reward-index: (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
         }))
 
         ;; Update total-rewards-claimed
@@ -618,7 +620,7 @@
   )
 )
 
-;; Update reward index at a bin
+;; Update reward index for a bin
 (define-public (update-reward-index (bin-id uint))
   (let (
     (current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
@@ -645,60 +647,54 @@
   )
 )
 
-;; Get reward token balance for contract
-(define-private (get-reward-token-balance)
-    (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance
-                 (as-contract tx-sender)) ERR_CANNOT_GET_TOKEN_BALANCE))
-)
-
 ;; Get unclaimed rewards for multiple bins
 (define-public (get-unclaimed-rewards-multi
-    (users (list 120 principal))
-    (bin-ids (list 120 uint))
+    (users (list 350 principal))
+    (bin-ids (list 350 int))
   )
   (ok (map get-unclaimed-rewards users bin-ids))
 )
 
 ;; Set reward emitted per block for multiple bins
 (define-public (set-reward-per-block-multi
-    (bin-ids (list 120 uint))
-    (amounts (list 120 uint))
+    (bin-ids (list 350 uint))
+    (amounts (list 350 uint))
   )
   (ok (map set-reward-per-block bin-ids amounts))
 )
 
 ;; Stake LP tokens for multiple bins
 (define-public (stake-lp-tokens-multi
-    (bin-ids (list 120 int))
-    (amounts (list 120 uint))
+    (bin-ids (list 350 int))
+    (amounts (list 350 uint))
   )
   (ok (map stake-lp-tokens bin-ids amounts))
 )
 
 ;; Unstake LP tokens for multiple bins
 (define-public (unstake-lp-tokens-multi
-    (bin-ids (list 120 int))
+    (bin-ids (list 350 int))
   )
   (ok (map unstake-lp-tokens bin-ids))
 )
 
 ;; Early unstake LP tokens for multiple bins
 (define-public (early-unstake-lp-tokens-multi
-    (bin-ids (list 120 int))
+    (bin-ids (list 350 int))
   )
   (ok (map early-unstake-lp-tokens bin-ids))
 )
 
 ;; Claim any unclaimed rewards for multiple bins
 (define-public (claim-rewards-multi
-    (bin-ids (list 120 uint))
+    (bin-ids (list 350 int))
   )
   (ok (map claim-rewards bin-ids))
 )
 
 ;; Update reward index for multiple bins
 (define-public (update-reward-index-multi
-    (bin-ids (list 120 uint))
+    (bin-ids (list 350 uint))
   )
   (ok (map update-reward-index bin-ids))
 )
@@ -711,6 +707,13 @@
 ;; Filter function for removing a bin-id from the bins-staked list
 (define-private (filter-values-eq-helper-value (value uint))
   (not (is-eq value (var-get helper-value)))
+)
+
+;; Get reward token balance for contract
+(define-private (get-reward-token-balance)
+  (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance (as-contract tx-sender))
+    ERR_CANNOT_GET_TOKEN_BALANCE
+  ))
 )
 
 ;; Transfer LP token
