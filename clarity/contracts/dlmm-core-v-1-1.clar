@@ -828,6 +828,8 @@
     ;; Gather all pool data and pool contract
     (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
+    (x-variable-fee (get x-variable-fee pool-data))
+    (y-variable-fee (get y-variable-fee pool-data))
 
     ;; Get pool ID and create pool symbol and name
     (new-pool-id (+ (var-get last-pool-id) u1))
@@ -888,8 +890,8 @@
       (asserts! (> (len name) u0) ERR_INVALID_POOL_NAME)
 
       ;; Assert that fees are less than maximum BPS
-      (asserts! (< (+ x-protocol-fee x-provider-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
-      (asserts! (< (+ y-protocol-fee y-provider-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
+      (asserts! (< (+ x-protocol-fee x-provider-fee x-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
+      (asserts! (< (+ y-protocol-fee y-provider-fee y-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
 
       ;; Assert that bin step is valid
       (asserts! (is-some (index-of (var-get bin-steps) bin-step)) ERR_INVALID_BIN_STEP)
@@ -939,10 +941,10 @@
           y-token: y-token-contract,
           x-protocol-fee: x-protocol-fee,
           x-provider-fee: x-provider-fee,
-          x-variable-fee: u0,
+          x-variable-fee: x-variable-fee,
           y-protocol-fee: y-protocol-fee,
           y-provider-fee: y-provider-fee,
-          y-variable-fee: u0,
+          y-variable-fee: y-variable-fee,
           x-amount-active-bin: x-amount-active-bin,
           y-amount-active-bin: y-amount-active-bin,
           burn-amount-active-bin: burn-amount-active-bin,
