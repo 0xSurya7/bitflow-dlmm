@@ -884,6 +884,9 @@
       ;; Assert that dlp is greater than or equal to 0 after subtracting burn amount
       (asserts! (>= (- dlp burn-amount-active-bin) u0) ERR_MINIMUM_LP_AMOUNT)
 
+      ;; Assert that initial price is greater than 0
+      (asserts! (> initial-price u0) ERR_INVALID_INITIAL_PRICE)
+
       ;; Assert that length of pool uri, symbol, and name is greater than 0
       (asserts! (> (len uri) u0) ERR_INVALID_POOL_URI)
       (asserts! (> (len symbol) u0) ERR_INVALID_POOL_SYMBOL)
