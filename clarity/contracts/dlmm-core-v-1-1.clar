@@ -291,8 +291,8 @@
     (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
     (asserts! (is-none (index-of verified-pool-code-hashes-list hash)) ERR_ALREADY_VERIFIED_POOL_CODE_HASH)
 
-    ;; Assert that hash is greater than zero
-    (asserts! (> (len hash) u0) ERR_INVALID_VERIFIED_POOL_CODE_HASH)
+    ;; Assert that hash length is 32
+    (asserts! (is-eq (len hash) u32) ERR_INVALID_VERIFIED_POOL_CODE_HASH)
 
     ;; Add code hash to verified pool code hashes list with max length of 10000
     (var-set verified-pool-code-hashes (unwrap! (as-max-len? (append verified-pool-code-hashes-list hash) u10000) ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED))
