@@ -59,6 +59,9 @@
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
 
+;; Address used when burning LP tokens
+(define-constant BURN_ADDRESS (unwrap-panic (principal-construct? (if is-in-mainnet 0x16 0x1a) 0x0000000000000000000000000000000000000000)))
+
 ;; Number of bins per pool and center bin ID as unsigned ints
 (define-constant NUM_OF_BINS u1001)
 (define-constant CENTER_BIN_ID (/ NUM_OF_BINS u2))
@@ -965,8 +968,8 @@
       ;; Mint LP tokens to caller
       (try! (contract-call? pool-trait pool-mint CENTER_BIN_ID (- dlp burn-amount-active-bin) caller))
 
-      ;; Mint burn amount LP tokens to pool-contract
-      (try! (contract-call? pool-trait pool-mint CENTER_BIN_ID burn-amount-active-bin pool-contract))
+      ;; Mint burn amount LP tokens to BURN_ADDRESS
+      (try! (contract-call? pool-trait pool-mint CENTER_BIN_ID burn-amount-active-bin BURN_ADDRESS))
 
       ;; Print create pool data and return true
       (print {
@@ -1358,9 +1361,18 @@
 
     ;; Get final liquidity value and calculate dlp post fees
     (add-liquidity-value-post-fees (unwrap! (get-liquidity-value x-amount-post-fees y-amount-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
-    (dlp-post-fees (if (or (is-eq bin-shares u0) (is-eq bin-liquidity-value u0))
-                       (sqrti add-liquidity-value-post-fees)
-                       (/ (* add-liquidity-value-post-fees bin-shares) bin-liquidity-value)))
+    (dlp-post-fees (if (is-eq bin-shares u0)
+      (let (
+        (intended-dlp (sqrti add-liquidity-value-post-fees))
+        (burn-amount (var-get minimum-burnt-shares))
+      )
+        (asserts! (>= intended-dlp (var-get minimum-bin-shares)) ERR_MINIMUM_LP_AMOUNT)
+        (try! (contract-call? pool-trait pool-mint unsigned-bin-id burn-amount BURN_ADDRESS))
+        (- intended-dlp burn-amount)
+      )
+      (if (is-eq bin-liquidity-value u0)
+          (sqrti add-liquidity-value-post-fees)
+          (/ (* add-liquidity-value-post-fees bin-shares) bin-liquidity-value))))
 
     ;; Calculate updated bin balances
     (updated-x-balance (+ x-balance x-amount))
@@ -1633,9 +1645,18 @@
 
     ;; Get final liquidity value for to-bin-id and calculate dlp post fees
     (add-liquidity-value-post-fees (unwrap! (get-liquidity-value x-amount-post-fees y-amount-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
-    (dlp-post-fees (if (or (is-eq bin-shares-b u0) (is-eq bin-liquidity-value u0))
-                       (sqrti add-liquidity-value-post-fees)
-                       (/ (* add-liquidity-value-post-fees bin-shares-b) bin-liquidity-value)))
+    (dlp-post-fees (if (is-eq bin-shares-b u0)
+      (let (
+        (intended-dlp (sqrti add-liquidity-value-post-fees))
+        (burn-amount (var-get minimum-burnt-shares))
+      )
+        (asserts! (>= intended-dlp (var-get minimum-bin-shares)) ERR_MINIMUM_LP_AMOUNT)
+        (try! (contract-call? pool-trait pool-mint unsigned-to-bin-id burn-amount BURN_ADDRESS))
+        (- intended-dlp burn-amount)
+      )
+      (if (is-eq bin-liquidity-value u0)
+          (sqrti add-liquidity-value-post-fees)
+          (/ (* add-liquidity-value-post-fees bin-shares-b) bin-liquidity-value))))
 
     ;; Calculate updated bin balances for to-bin-id
     (updated-x-balance-b (+ x-balance-b x-amount))
