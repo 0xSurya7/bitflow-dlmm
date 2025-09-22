@@ -446,7 +446,7 @@
 	)
     (begin
       ;; Assert that caller is sender and sender is not recipient
-      (asserts! (is-eq caller sender) ERR_NOT_AUTHORIZED_SIP_013)
+      (asserts! (or (is-eq caller sender) (is-eq contract-caller sender)) ERR_NOT_AUTHORIZED_SIP_013)
       (asserts! (not (is-eq sender recipient)) ERR_INVALID_PRINCIPAL_SIP_013)
 
       ;; Assert that addresses are standard principals and amount is valid
