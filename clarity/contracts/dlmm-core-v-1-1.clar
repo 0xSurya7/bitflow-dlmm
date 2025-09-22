@@ -42,19 +42,22 @@
 (define-constant ERR_BIN_STEP_LIMIT_REACHED (err u1035))
 (define-constant ERR_NO_BIN_FACTORS (err u1036))
 (define-constant ERR_INVALID_BIN_FACTOR (err u1037))
-(define-constant ERR_INVALID_BIN_FACTORS_LENGTH (err u1038))
-(define-constant ERR_INVALID_INITIAL_PRICE (err u1039))
-(define-constant ERR_INVALID_BIN_PRICE (err u1040))
-(define-constant ERR_MATCHING_BIN_ID (err u1041))
-(define-constant ERR_NOT_ACTIVE_BIN (err u1042))
-(define-constant ERR_NO_BIN_SHARES (err u1043))
-(define-constant ERR_INVALID_VERIFIED_POOL_CODE_HASH (err u1044))
-(define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1045))
-(define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1046))
-(define-constant ERR_VERIFIED_POOL_CODE_HASH_NOT_IN_LIST (err u1047))
-(define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1048))
-(define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1049))
-(define-constant ERR_INVALID_DYNAMIC_CONFIG (err u1050))
+(define-constant ERR_INVALID_FIRST_BIN_FACTOR (err u1038))
+(define-constant ERR_INVALID_CENTER_BIN_FACTOR (err u1039))
+(define-constant ERR_UNSORTED_BIN_FACTORS_LIST (err u1040))
+(define-constant ERR_INVALID_BIN_FACTORS_LENGTH (err u1041))
+(define-constant ERR_INVALID_INITIAL_PRICE (err u1042))
+(define-constant ERR_INVALID_BIN_PRICE (err u1043))
+(define-constant ERR_MATCHING_BIN_ID (err u1044))
+(define-constant ERR_NOT_ACTIVE_BIN (err u1045))
+(define-constant ERR_NO_BIN_SHARES (err u1046))
+(define-constant ERR_INVALID_VERIFIED_POOL_CODE_HASH (err u1047))
+(define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1048))
+(define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1049))
+(define-constant ERR_VERIFIED_POOL_CODE_HASH_NOT_IN_LIST (err u1050))
+(define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1051))
+(define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1052))
+(define-constant ERR_INVALID_DYNAMIC_CONFIG (err u1053))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -234,6 +237,15 @@
 
     ;; Assert factors list length is 1001
     (asserts! (is-eq (len factors) u1001) ERR_INVALID_BIN_FACTORS_LENGTH)
+
+    ;; Assert first factor is greater than 0
+    (asserts! (> (unwrap! (element-at? factors u0) ERR_INVALID_BIN_FACTORS_LENGTH) u0) ERR_INVALID_FIRST_BIN_FACTOR)
+
+    ;; Assert center factor is equal to PRICE_SCALE_BPS
+    (asserts! (is-eq (unwrap! (element-at? factors u500) ERR_INVALID_BIN_FACTORS_LENGTH) PRICE_SCALE_BPS) ERR_INVALID_CENTER_BIN_FACTOR)
+
+    ;; Assert factors list is in ascending order
+    (try! (fold fold-are-bin-factors-ascending factors (ok u0)))
 
     ;; Add bin step to list with max length of 1000
     (var-set bin-steps (unwrap! (as-max-len? (append bin-steps-list step) u1000) ERR_BIN_STEP_LIMIT_REACHED))
@@ -792,7 +804,7 @@
       ;; Assert that caller is variable fees manager if variable fees manager is frozen
       (asserts! (or (is-eq variable-fees-manager caller) (not freeze-variable-fees-manager)) ERR_NOT_AUTHORIZED)
 
-      ;; Assert that config is greater than zero
+      ;; Assert that config is greater than 0
       (asserts! (> (len config) u0) ERR_INVALID_DYNAMIC_CONFIG)
 
       ;; Set dynamic config for pool
@@ -950,7 +962,7 @@
       ;; Freeze variable fees manager if freeze-variable-fees-manager is true
       (if freeze-variable-fees-manager (try! (contract-call? pool-trait set-freeze-variable-fees-manager)) false)
 
-      ;; Set dynamic config if unwrapped-dynamic-config is greater than zero
+      ;; Set dynamic config if unwrapped-dynamic-config is greater than 0
       (if (> (len unwrapped-dynamic-config) u0) (try! (contract-call? pool-trait set-dynamic-config unwrapped-dynamic-config)) false)
 
       ;; Update ID of last created pool, add pool to pools map, and add pool to unclaimed-protocol-fees map
@@ -1898,6 +1910,13 @@
 ;; Helper function for removing a verified pool code hash
 (define-private (verified-pool-code-hashes-not-removable (hash (buff 32)))
   (not (is-eq hash (var-get verified-pool-code-hashes-helper)))
+)
+
+;; Helper function to validate that bin-factors list is in ascending order
+(define-private (fold-are-bin-factors-ascending (factor uint) (result (response uint uint)))
+  (if (> factor (try! result))
+      (ok factor)
+      ERR_UNSORTED_BIN_FACTORS_LIST)
 )
 
 ;; Create pool symbol using x token and y token symbols
