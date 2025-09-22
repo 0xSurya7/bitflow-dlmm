@@ -202,8 +202,10 @@
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
     (bin-factors-list (unwrap! (map-get? bin-factors bin-step) ERR_NO_BIN_FACTORS))
     (bin-factor (unwrap! (element-at? bin-factors-list unsigned-bin-id) ERR_INVALID_BIN_FACTOR))
+    (bin-price (/ (* initial-price bin-factor) PRICE_SCALE_BPS))
   )
-    (ok (/ (* initial-price bin-factor) PRICE_SCALE_BPS))
+    (asserts! (> bin-price u0) ERR_INVALID_BIN_PRICE)
+    (ok bin-price)
   )
 )
 
@@ -935,6 +937,9 @@
 
       ;; Assert that bin step is valid
       (asserts! (is-some (index-of (var-get bin-steps) bin-step)) ERR_INVALID_BIN_STEP)
+
+      ;; Assert that bin price is valid at extremes
+      (try! (get-bin-price initial-price bin-step MIN_BIN_ID))
 
       ;; Create pool, set fees, and set variable fees cooldown
       (try! (contract-call? pool-trait create-pool x-token-contract y-token-contract CONTRACT_DEPLOYER fee-address caller 0 bin-step initial-price new-pool-id name symbol uri))
