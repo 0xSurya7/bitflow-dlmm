@@ -1064,6 +1064,9 @@
     (x-balance (get x-balance bin-balances))
     (y-balance (get y-balance bin-balances))
 
+    ;; Check if both initial bin balances are equal to 0
+    (initial-bin-balances-empty (and (is-eq x-balance u0) (is-eq y-balance u0)))
+
     ;; Get price at bin
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
@@ -1091,7 +1094,7 @@
     (updated-y-balance (- y-balance dy))
 
     ;; Calculate new active bin ID (default to bin-id if at the edge of the bin range)
-    (updated-active-bin-id (if (and (is-eq updated-y-balance u0) (> bin-id MIN_BIN_ID))
+    (updated-active-bin-id (if (and (or (is-eq updated-y-balance u0) initial-bin-balances-empty) (> bin-id MIN_BIN_ID))
                                (- bin-id 1)
                                bin-id))
 
@@ -1111,10 +1114,14 @@
       (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
       ;; Transfer dx + x-amount-fees-total x tokens from caller to pool-contract
-      (try! (contract-call? x-token-trait transfer (+ dx x-amount-fees-total) caller pool-contract none))
+      (if (not initial-bin-balances-empty)
+          (try! (contract-call? x-token-trait transfer (+ dx x-amount-fees-total) caller pool-contract none))
+          false)
 
       ;; Transfer dy y tokens from pool-contract to caller
-      (try! (contract-call? pool-trait pool-transfer y-token-trait dy caller))
+      (if (not initial-bin-balances-empty)
+          (try! (contract-call? pool-trait pool-transfer y-token-trait dy caller))
+          false)
 
       ;; Update unclaimed-protocol-fees for pool
       (if (> x-amount-fees-protocol u0)
@@ -1124,7 +1131,9 @@
           false)
 
       ;; Update bin balances
-      (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
+      (if (not initial-bin-balances-empty)
+          (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
+          false)
 
       ;; Set active bin ID
       (if (not (is-eq updated-active-bin-id active-bin-id))
@@ -1158,7 +1167,8 @@
           dx: dx,
           dy: dy,
           updated-x-balance: updated-x-balance,
-          updated-y-balance: updated-y-balance
+          updated-y-balance: updated-y-balance,
+          initial-bin-balances-empty: initial-bin-balances-empty
         }
       })
       (ok {in: updated-x-amount, out: dy})
@@ -1199,6 +1209,9 @@
     (x-balance (get x-balance bin-balances))
     (y-balance (get y-balance bin-balances))
 
+    ;; Check if both initial bin balances are equal to 0
+    (initial-bin-balances-empty (and (is-eq x-balance u0) (is-eq y-balance u0)))
+
     ;; Get price at bin
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
@@ -1226,7 +1239,7 @@
     (updated-y-balance (+ y-balance dy y-amount-fees-provider y-amount-fees-variable))
 
     ;; Calculate new active bin ID (default to bin-id if at the edge of the bin range)
-    (updated-active-bin-id (if (and (is-eq updated-x-balance u0) (< bin-id MAX_BIN_ID))
+    (updated-active-bin-id (if (and (or (is-eq updated-x-balance u0) initial-bin-balances-empty) (< bin-id MAX_BIN_ID))
                                (+ bin-id 1)
                                bin-id))
 
@@ -1246,10 +1259,14 @@
       (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
       ;; Transfer dy + y-amount-fees-total y tokens from caller to pool-contract
-      (try! (contract-call? y-token-trait transfer (+ dy y-amount-fees-total) caller pool-contract none))
+      (if (not initial-bin-balances-empty)
+          (try! (contract-call? y-token-trait transfer (+ dy y-amount-fees-total) caller pool-contract none))
+          false)
 
       ;; Transfer dx x tokens from pool-contract to caller
-      (try! (contract-call? pool-trait pool-transfer x-token-trait dx caller))
+      (if (not initial-bin-balances-empty)
+          (try! (contract-call? pool-trait pool-transfer x-token-trait dx caller))
+          false)
 
       ;; Update unclaimed-protocol-fees for pool
       (if (> y-amount-fees-protocol u0)
@@ -1259,7 +1276,9 @@
           false)
 
       ;; Update bin balances
-      (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
+      (if (not initial-bin-balances-empty)
+          (try! (contract-call? pool-trait update-bin-balances unsigned-bin-id updated-x-balance updated-y-balance))
+          false)
 
       ;; Set active bin ID
       (if (not (is-eq updated-active-bin-id active-bin-id))
@@ -1293,7 +1312,8 @@
           dy: dy,
           dx: dx,
           updated-x-balance: updated-x-balance,
-          updated-y-balance: updated-y-balance
+          updated-y-balance: updated-y-balance,
+          initial-bin-balances-empty: initial-bin-balances-empty
         }
       })
       (ok {in: updated-y-amount, out: dx})
