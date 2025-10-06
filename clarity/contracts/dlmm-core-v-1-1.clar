@@ -244,7 +244,7 @@
     (asserts! (> (unwrap! (element-at? factors u0) ERR_INVALID_BIN_FACTORS_LENGTH) u0) ERR_INVALID_FIRST_BIN_FACTOR)
 
     ;; Assert center factor is equal to PRICE_SCALE_BPS
-    (asserts! (is-eq (unwrap! (element-at? factors u500) ERR_INVALID_BIN_FACTORS_LENGTH) PRICE_SCALE_BPS) ERR_INVALID_CENTER_BIN_FACTOR)
+    (asserts! (is-eq (unwrap! (element-at? factors CENTER_BIN_ID) ERR_INVALID_BIN_FACTORS_LENGTH) PRICE_SCALE_BPS) ERR_INVALID_CENTER_BIN_FACTOR)
 
     ;; Assert factors list is in ascending order
     (try! (fold fold-are-bin-factors-ascending factors (ok u0)))
@@ -1113,9 +1113,9 @@
       ;; Assert that bin-id is equal to active-bin-id
       (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
-      ;; Transfer dx + x-amount-fees-total x tokens from caller to pool-contract
+      ;; Transfer updated-x-amount x tokens from caller to pool-contract
       (if (not initial-bin-balances-empty)
-          (try! (contract-call? x-token-trait transfer (+ dx x-amount-fees-total) caller pool-contract none))
+          (try! (contract-call? x-token-trait transfer updated-x-amount caller pool-contract none))
           false)
 
       ;; Transfer dy y tokens from pool-contract to caller
@@ -1258,9 +1258,9 @@
       ;; Assert that bin-id is equal to active-bin-id
       (asserts! (is-eq bin-id active-bin-id) ERR_NOT_ACTIVE_BIN)
 
-      ;; Transfer dy + y-amount-fees-total y tokens from caller to pool-contract
+      ;; Transfer updated-y-amount y tokens from caller to pool-contract
       (if (not initial-bin-balances-empty)
-          (try! (contract-call? y-token-trait transfer (+ dy y-amount-fees-total) caller pool-contract none))
+          (try! (contract-call? y-token-trait transfer updated-y-amount caller pool-contract none))
           false)
 
       ;; Transfer dx x tokens from pool-contract to caller
