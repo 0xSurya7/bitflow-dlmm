@@ -13,6 +13,11 @@
 (define-constant ERR_NO_ACTIVE_BIN_DATA (err u2006))
 (define-constant ERR_EMPTY_SWAPS_LIST (err u2007))
 (define-constant ERR_RESULTS_LIST_OVERFLOW (err u2008))
+(define-constant ERR_INVALID_BIN_ID (err u2009))
+
+;; Minimum and maximum bin IDs as signed ints
+(define-constant MIN_BIN_ID -500)
+(define-constant MAX_BIN_ID 500)
 
 ;; List used to swap through up to 350 bins via swap-x-for-y-simple-multi and swap-y-for-x-simple-multi
 (define-constant BIN_INDEX_RANGE (list 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
@@ -55,7 +60,7 @@
     (amount uint) (min-x-amount-total uint) (min-y-amount-total uint) (max-unfavorable-bins uint)
   )
   (let (
-    (initial-x-for-y (get x-for-y (unwrap! (element-at swaps u0) ERR_EMPTY_SWAPS_LIST)))
+    (initial-x-for-y (get x-for-y (unwrap! (element-at? swaps u0) ERR_EMPTY_SWAPS_LIST)))
     (x-amount-for-swap (if initial-x-for-y amount u0))
     (y-amount-for-swap (if initial-x-for-y u0 amount))
     (swap-result (try! (fold fold-swap-same-multi swaps (ok {x-token-trait: x-token-trait, y-token-trait: y-token-trait, results: (list ), x-amount-for-swap: x-amount-for-swap, y-amount-for-swap: y-amount-for-swap, x-amount: u0, y-amount: u0, unfavorable: u0}))))
@@ -63,7 +68,6 @@
     (y-amount-total (get y-amount swap-result))
     (unfavorable (get unfavorable swap-result))
  )
-    (asserts! (> (len swaps) u0) ERR_EMPTY_SWAPS_LIST)
     (asserts! (<= unfavorable max-unfavorable-bins) ERR_BIN_SLIPPAGE)
     (asserts! (>= x-amount-total min-x-amount-total) ERR_MINIMUM_X_AMOUNT)
     (asserts! (>= y-amount-total min-y-amount-total) ERR_MINIMUM_Y_AMOUNT)
@@ -147,10 +151,12 @@
     (pool-trait (get pool-trait swap))
     (x-token-trait (get x-token-trait swap))
     (y-token-trait (get y-token-trait swap))
+    (expected-bin-id (get expected-bin-id swap))
+    (expected-bin-id-check (asserts! (and (>= expected-bin-id MIN_BIN_ID) (<= expected-bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
     (amount (get amount swap))
     (x-for-y (get x-for-y swap))
     (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
-    (bin-id-delta (- active-bin-id (get expected-bin-id swap)))
+    (bin-id-delta (- active-bin-id expected-bin-id))
     (is-unfavorable (if x-for-y (< bin-id-delta 0) (> bin-id-delta 0)))
     (swap-result (if x-for-y
                      (try! (contract-call? .dlmm-core-v-1-1 swap-x-for-y pool-trait x-token-trait y-token-trait active-bin-id amount))
@@ -173,6 +179,8 @@
   (let (
       (result-data (unwrap! result ERR_NO_RESULT_DATA))
       (pool-trait (get pool-trait swap))
+      (expected-bin-id (get expected-bin-id swap))
+      (expected-bin-id-check (asserts! (and (>= expected-bin-id MIN_BIN_ID) (<= expected-bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
       (x-for-y (get x-for-y swap))
       (x-token-trait (get x-token-trait result-data))
       (y-token-trait (get y-token-trait result-data))
@@ -185,7 +193,7 @@
     (if (> amount-for-swap u0)
         (let (
           (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
-          (bin-id-delta (- active-bin-id (get expected-bin-id swap)))
+          (bin-id-delta (- active-bin-id expected-bin-id))
           (is-unfavorable (if x-for-y (< bin-id-delta 0) (> bin-id-delta 0)))
           (swap-result (if x-for-y
                            (try! (contract-call? .dlmm-core-v-1-1 swap-x-for-y pool-trait x-token-trait y-token-trait active-bin-id amount-for-swap))
@@ -222,6 +230,8 @@
   (let (
       (result-data (unwrap! result ERR_NO_RESULT_DATA))
       (pool-trait (get pool-trait swap))
+      (expected-bin-id (get expected-bin-id swap))
+      (expected-bin-id-check (asserts! (and (>= expected-bin-id MIN_BIN_ID) (<= expected-bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
       (x-token-trait (get x-token-trait result-data))
       (y-token-trait (get y-token-trait result-data))
       (x-amount-for-swap (get x-amount-for-swap result-data))
@@ -229,7 +239,7 @@
     (if (> x-amount-for-swap u0)
         (let (
           (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
-          (bin-id-delta (- active-bin-id (get expected-bin-id swap)))
+          (bin-id-delta (- active-bin-id expected-bin-id))
           (is-unfavorable (< bin-id-delta 0))
           (swap-result (try! (contract-call? .dlmm-core-v-1-1 swap-x-for-y pool-trait x-token-trait y-token-trait active-bin-id x-amount-for-swap)))
           (out (get out swap-result))
@@ -259,6 +269,8 @@
   (let (
       (result-data (unwrap! result ERR_NO_RESULT_DATA))
       (pool-trait (get pool-trait swap))
+      (expected-bin-id (get expected-bin-id swap))
+      (expected-bin-id-check (asserts! (and (>= expected-bin-id MIN_BIN_ID) (<= expected-bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
       (x-token-trait (get x-token-trait result-data))
       (y-token-trait (get y-token-trait result-data))
       (y-amount-for-swap (get y-amount-for-swap result-data))
@@ -266,7 +278,7 @@
     (if (> y-amount-for-swap u0)
         (let (
           (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
-          (bin-id-delta (- active-bin-id (get expected-bin-id swap)))
+          (bin-id-delta (- active-bin-id expected-bin-id))
           (is-unfavorable (> bin-id-delta 0))
           (swap-result (try! (contract-call? .dlmm-core-v-1-1 swap-y-for-x pool-trait x-token-trait y-token-trait active-bin-id y-amount-for-swap)))
           (out (get out swap-result))
@@ -294,6 +306,7 @@
     (result (response {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, x-amount-for-swap: uint, y-amount: uint} uint))
   )
   (let (
+      (bin-id-check (asserts! (and (>= bin-id MIN_BIN_ID) (<= bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
       (result-data (unwrap! result ERR_NO_RESULT_DATA))
       (pool-trait (get pool-trait result-data))
       (x-token-trait (get x-token-trait result-data))
@@ -325,6 +338,7 @@
     (result (response {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, y-amount-for-swap: uint, x-amount: uint} uint))
   )
   (let (
+      (bin-id-check (asserts! (and (>= bin-id MIN_BIN_ID) (<= bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
       (result-data (unwrap! result ERR_NO_RESULT_DATA))
       (pool-trait (get pool-trait result-data))
       (x-token-trait (get x-token-trait result-data))
