@@ -233,16 +233,20 @@
 
 ;; Get all pool data for variable fees
 (define-read-only (get-variable-fees-data)
-  (ok {
-    variable-fees-manager: (get variable-fees-manager (var-get pool-addresses)),
-    x-variable-fee: (get x-variable-fee (var-get pool-fees)),
-    y-variable-fee: (get y-variable-fee (var-get pool-fees)),
-    bin-change-count: (var-get bin-change-count),
-    last-variable-fees-update: (var-get last-variable-fees-update),
-    variable-fees-cooldown: (var-get variable-fees-cooldown),
-    freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
-    dynamic-config: (var-get dynamic-config)
-  })
+  (let (
+    (current-pool-fees (var-get pool-fees))
+  )
+    (ok {
+      variable-fees-manager: (get variable-fees-manager (var-get pool-addresses)),
+      x-variable-fee: (get x-variable-fee current-pool-fees),
+      y-variable-fee: (get y-variable-fee current-pool-fees),
+      bin-change-count: (var-get bin-change-count),
+      last-variable-fees-update: (var-get last-variable-fees-update),
+      variable-fees-cooldown: (var-get variable-fees-cooldown),
+      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+      dynamic-config: (var-get dynamic-config),
+    })
+  )
 )
 
 ;; Get active bin ID
