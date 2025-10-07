@@ -1363,40 +1363,40 @@
              (/ (* add-liquidity-value bin-shares) bin-liquidity-value)))
 
     ;; Calculate liquidity fees if adding liquidity to active bin based on ratio of bin balances
-    (x-amount-fees-liquidity (if (is-eq bin-id active-bin-id)
+    (add-liquidity-fees (if (and (is-eq bin-id active-bin-id) (> dlp u0))
       (let (
         (x-liquidity-fee (+ (get x-protocol-fee pool-data) (get x-provider-fee pool-data) (get x-variable-fee pool-data)))
+        (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
 
         ;; Calculate withdrawable x-amount without fees
         (x-amount-withdrawable (/ (* dlp (+ x-balance x-amount)) (+ bin-shares dlp)))
 
-        ;; Calculate max liquidity fee for x-amount
-        (max-x-amount-fees-liquidity (if (> x-amount-withdrawable x-amount)
-                                           (/ (* (- x-amount-withdrawable x-amount) x-liquidity-fee) FEE_SCALE_BPS)
-                                           u0))
-      )
-        ;; Calculate final liquidity fee for x-amount
-        (if (> x-amount max-x-amount-fees-liquidity) max-x-amount-fees-liquidity x-amount)
-      )
-      u0
-    ))
-    (y-amount-fees-liquidity (if (is-eq bin-id active-bin-id)
-      (let (
-        (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
-
         ;; Calculate withdrawable y-amount without fees
         (y-amount-withdrawable (/ (* dlp (+ y-balance y-amount)) (+ bin-shares dlp)))
 
-        ;; Calculate max liquidity fee for y-amount
-        (max-y-amount-fees-liquidity (if (> y-amount-withdrawable y-amount)
-                                           (/ (* (- y-amount-withdrawable y-amount) y-liquidity-fee) FEE_SCALE_BPS)
-                                           u0))
+        ;; Calculate max liquidity fee for x-amount and y-amount
+        (max-x-amount-fees-liquidity (if (and (> y-amount-withdrawable y-amount) (> x-amount x-amount-withdrawable))
+                                         (/ (* (- x-amount x-amount-withdrawable) x-liquidity-fee) FEE_SCALE_BPS)
+                                         u0))
+        (max-y-amount-fees-liquidity (if (and (> x-amount-withdrawable x-amount) (> y-amount y-amount-withdrawable))
+                                         (/ (* (- y-amount y-amount-withdrawable) y-liquidity-fee) FEE_SCALE_BPS)
+                                         u0))
       )
-        ;; Calculate final liquidity fee for y-amount
-        (if (> y-amount max-y-amount-fees-liquidity) max-y-amount-fees-liquidity y-amount)
+        ;; Calculate final liquidity fee for x-amount and y-amount
+        {
+          x-amount-fees-liquidity: (if (> x-amount max-x-amount-fees-liquidity) max-x-amount-fees-liquidity x-amount),
+          y-amount-fees-liquidity: (if (> y-amount max-y-amount-fees-liquidity) max-y-amount-fees-liquidity y-amount)
+        }
       )
-      u0
-    ))
+      {
+        x-amount-fees-liquidity: u0,
+        y-amount-fees-liquidity: u0
+      })
+    )
+
+    ;; Get x-amount-fees-liquidity and y-amount-fees-liquidity
+    (x-amount-fees-liquidity (get x-amount-fees-liquidity add-liquidity-fees))
+    (y-amount-fees-liquidity (get y-amount-fees-liquidity add-liquidity-fees))
 
     ;; Calculate final x and y amounts post fees
     (x-amount-post-fees (- x-amount x-amount-fees-liquidity))
@@ -1656,40 +1656,40 @@
              (/ (* add-liquidity-value bin-shares-b) bin-liquidity-value)))
 
     ;; Calculate liquidity fees if adding liquidity to active bin based on ratio of bin balances
-    (x-amount-fees-liquidity (if (is-eq to-bin-id active-bin-id)
+    (add-liquidity-fees (if (and (is-eq to-bin-id active-bin-id) (> dlp u0))
       (let (
         (x-liquidity-fee (+ (get x-protocol-fee pool-data) (get x-provider-fee pool-data) (get x-variable-fee pool-data)))
+        (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
 
         ;; Calculate withdrawable x-amount without fees
         (x-amount-withdrawable (/ (* dlp (+ x-balance-b x-amount)) (+ bin-shares-b dlp)))
 
-        ;; Calculate max liquidity fee for x-amount
-        (max-x-amount-fees-liquidity (if (> x-amount-withdrawable x-amount)
-                                           (/ (* (- x-amount-withdrawable x-amount) x-liquidity-fee) FEE_SCALE_BPS)
-                                           u0))
-      )
-        ;; Calculate final liquidity fee for x-amount
-        (if (> x-amount max-x-amount-fees-liquidity) max-x-amount-fees-liquidity x-amount)
-      )
-      u0
-    ))
-    (y-amount-fees-liquidity (if (is-eq to-bin-id active-bin-id)
-      (let (
-        (y-liquidity-fee (+ (get y-protocol-fee pool-data) (get y-provider-fee pool-data) (get y-variable-fee pool-data)))
-
         ;; Calculate withdrawable y-amount without fees
         (y-amount-withdrawable (/ (* dlp (+ y-balance-b y-amount)) (+ bin-shares-b dlp)))
 
-        ;; Calculate max liquidity fee for y-amount
-        (max-y-amount-fees-liquidity (if (> y-amount-withdrawable y-amount)
-                                           (/ (* (- y-amount-withdrawable y-amount) y-liquidity-fee) FEE_SCALE_BPS)
-                                           u0))
+        ;; Calculate max liquidity fee for x-amount and y-amount
+        (max-x-amount-fees-liquidity (if (and (> y-amount-withdrawable y-amount) (> x-amount x-amount-withdrawable))
+                                         (/ (* (- x-amount x-amount-withdrawable) x-liquidity-fee) FEE_SCALE_BPS)
+                                         u0))
+        (max-y-amount-fees-liquidity (if (and (> x-amount-withdrawable x-amount) (> y-amount y-amount-withdrawable))
+                                         (/ (* (- y-amount y-amount-withdrawable) y-liquidity-fee) FEE_SCALE_BPS)
+                                         u0))
       )
-        ;; Calculate final liquidity fee for y-amount
-        (if (> y-amount max-y-amount-fees-liquidity) max-y-amount-fees-liquidity y-amount)
+        ;; Calculate final liquidity fee for x-amount and y-amount
+        {
+          x-amount-fees-liquidity: (if (> x-amount max-x-amount-fees-liquidity) max-x-amount-fees-liquidity x-amount),
+          y-amount-fees-liquidity: (if (> y-amount max-y-amount-fees-liquidity) max-y-amount-fees-liquidity y-amount)
+        }
       )
-      u0
-    ))
+      {
+        x-amount-fees-liquidity: u0,
+        y-amount-fees-liquidity: u0
+      })
+    )
+
+    ;; Get x-amount-fees-liquidity and y-amount-fees-liquidity
+    (x-amount-fees-liquidity (get x-amount-fees-liquidity add-liquidity-fees))
+    (y-amount-fees-liquidity (get y-amount-fees-liquidity add-liquidity-fees))
 
     ;; Calculate final x and y amounts post fees for to-bin-id
     (x-amount-post-fees (- x-amount x-amount-fees-liquidity))
