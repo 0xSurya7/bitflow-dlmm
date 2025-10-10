@@ -101,7 +101,7 @@
 (define-data-var public-pool-creation bool false)
 
 ;; List of verified pool code hashes and helper var used to remove hashes
-(define-data-var verified-pool-code-hashes (list 10000 (buff 32)) (list 0x))
+(define-data-var verified-pool-code-hashes (list 10000 (buff 32)) (list ))
 (define-data-var verified-pool-code-hashes-helper (buff 32) 0x)
 
 ;; Define pools map
