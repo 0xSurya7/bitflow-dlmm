@@ -53,13 +53,14 @@
 (define-constant ERR_MATCHING_BIN_ID (err u1046))
 (define-constant ERR_NOT_ACTIVE_BIN (err u1047))
 (define-constant ERR_NO_BIN_SHARES (err u1048))
-(define-constant ERR_INVALID_VERIFIED_POOL_CODE_HASH (err u1049))
-(define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1050))
-(define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1051))
-(define-constant ERR_VERIFIED_POOL_CODE_HASH_NOT_IN_LIST (err u1052))
-(define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1053))
-(define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1054))
-(define-constant ERR_INVALID_DYNAMIC_CONFIG (err u1055))
+(define-constant ERR_INVALID_POOL_CODE_HASH (err u1049))
+(define-constant ERR_INVALID_VERIFIED_POOL_CODE_HASH (err u1050))
+(define-constant ERR_ALREADY_VERIFIED_POOL_CODE_HASH (err u1051))
+(define-constant ERR_VERIFIED_POOL_CODE_HASH_LIMIT_REACHED (err u1052))
+(define-constant ERR_VERIFIED_POOL_CODE_HASH_NOT_IN_LIST (err u1053))
+(define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1054))
+(define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1055))
+(define-constant ERR_INVALID_DYNAMIC_CONFIG (err u1056))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -219,9 +220,13 @@
   (ok (+ (* bin-price x-amount) y-amount))
 )
 
-;; Get pool verification status @NOTE use contract-hash?
+;; Get pool verification status
 (define-read-only (get-is-pool-verified (pool-trait <dlmm-pool-trait>))
-  (ok (is-some (index-of (var-get verified-pool-code-hashes) 0x)))
+  (let (
+    (pool-code-hash (unwrap! (contract-hash? (contract-of pool-trait)) ERR_INVALID_POOL_CODE_HASH))
+  )
+    (ok (is-some (index-of (var-get verified-pool-code-hashes) pool-code-hash)))
+  )
 )
 
 ;; Add a new bin step and its factors
@@ -886,8 +891,9 @@
     (symbol (unwrap! (create-symbol x-token-trait y-token-trait) ERR_INVALID_POOL_SYMBOL))
     (name (concat symbol "-LP"))
 
-    ;; Check if pool code hash is verified @NOTE use contract-hash?
-    (pool-verified-check (is-some (index-of (var-get verified-pool-code-hashes) 0x)))
+    ;; Check if pool code hash is verified
+    (pool-code-hash (unwrap! (contract-hash? (contract-of pool-trait)) ERR_INVALID_POOL_CODE_HASH))
+    (pool-verified-check (is-some (index-of (var-get verified-pool-code-hashes) pool-code-hash)))
 
     ;; Get token contracts
     (x-token-contract (contract-of x-token-trait))
