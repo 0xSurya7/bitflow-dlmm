@@ -380,21 +380,15 @@
         (reward-period-time-left (if reward-period-is-active
                                      (- current-reward-period-end-block stacks-block-height)
                                      u0))
-        (updated-reward-period-end-block (if reward-period-is-active
-                                             (if (> reward u0)
-                                                 current-reward-period-end-block
-                                                 stacks-block-height)
-                                             (if (> reward u0)
-                                                 (+ stacks-block-height FIXED_REWARD_PERIOD_BLOCKS)
-                                                 stacks-block-height)))
+        (updated-reward-period-end-block (if (> reward u0)
+                                             (+ stacks-block-height FIXED_REWARD_PERIOD_BLOCKS)
+                                             stacks-block-height))
         (current-remaining-rewards (if reward-period-is-active
                                        (* current-reward-per-block reward-period-time-left)
                                        u0))
-        (updated-remaining-rewards (if reward-period-is-active
-                                       (* reward reward-period-time-left)
-                                       (if (> reward u0)
-                                           (* reward FIXED_REWARD_PERIOD_BLOCKS)
-                                           u0)))
+        (updated-remaining-rewards (if (> reward u0)
+                                       (* reward FIXED_REWARD_PERIOD_BLOCKS)
+                                       u0))
         (current-total-rewards-reserved (var-get total-rewards-reserved))
       )
         (begin
