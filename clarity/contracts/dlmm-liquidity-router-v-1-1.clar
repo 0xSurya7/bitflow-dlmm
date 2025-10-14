@@ -11,6 +11,7 @@
 (define-constant ERR_EMPTY_POSITIONS_LIST (err u5005))
 (define-constant ERR_RESULTS_LIST_OVERFLOW (err u5006))
 (define-constant ERR_INVALID_BIN_ID (err u5007))
+(define-constant ERR_ACTIVE_BIN_TOLERANCE (err u5008))
 
 ;; Minimum and maximum bin IDs as signed ints
 (define-constant MIN_BIN_ID -500)
@@ -40,6 +41,25 @@
   )
 )
 
+;; Add liquidity to multiple bins in a single pool relative to the active bin using the same token pair
+(define-public (add-relative-liquidity-same-multi
+    (positions (list 350 {active-bin-id-offset: int, x-amount: uint, y-amount: uint, min-dlp: uint, max-x-liquidity-fee: uint, max-y-liquidity-fee: uint}))
+    (pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)
+    (active-bin-tolerance (optional {max-deviation: uint, expected-bin-id: int}))
+  )
+  (let (
+    (active-bin-id (unwrap! (contract-call? pool-trait get-active-bin-id) ERR_NO_ACTIVE_BIN_DATA))
+    (add-liquidity-result (try! (fold fold-add-relative-liquidity-same-multi positions (ok {pool-trait: pool-trait, x-token-trait: x-token-trait, y-token-trait: y-token-trait, active-bin-id: active-bin-id, results: (list )}))))
+    (active-bin-id-delta (if (is-some active-bin-tolerance)
+                             (abs-int (- active-bin-id (get expected-bin-id (unwrap-panic active-bin-tolerance))))
+                             u0))
+  )
+    (asserts! (> (len positions) u0) ERR_EMPTY_POSITIONS_LIST)
+    (asserts! (or (is-none active-bin-tolerance) (<= active-bin-id-delta (get max-deviation (unwrap-panic active-bin-tolerance)))) ERR_ACTIVE_BIN_TOLERANCE)
+    (ok {results: (get results add-liquidity-result), active-bin-id: active-bin-id, active-bin-id-delta: active-bin-id-delta})
+  )
+)
+
 ;; Withdraw liquidity from multiple bins in multiple pools
 (define-public (withdraw-liquidity-multi
     (positions (list 350 {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, min-x-amount: uint, min-y-amount: uint}))
@@ -65,13 +85,13 @@
 )
 
 ;; Withdraw liquidity from multiple bins in multiple pools using the same token pair
-(define-public (withdraw-same-liquidity-multi
+(define-public (withdraw-liquidity-same-multi
     (positions (list 350 {pool-trait: <dlmm-pool-trait>, bin-id: int, amount: uint, min-x-amount: uint, min-y-amount: uint}))
     (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)
     (min-x-amount-total uint) (min-y-amount-total uint)
   )
   (let (
-    (withdraw-liquidity-result (try! (fold fold-withdraw-same-liquidity-multi positions (ok {x-token-trait: x-token-trait, y-token-trait: y-token-trait, results: (list ), x-amount: u0, y-amount: u0}))))
+    (withdraw-liquidity-result (try! (fold fold-withdraw-liquidity-same-multi positions (ok {x-token-trait: x-token-trait, y-token-trait: y-token-trait, results: (list ), x-amount: u0, y-amount: u0}))))
     (x-amount-total (get x-amount withdraw-liquidity-result))
     (y-amount-total (get y-amount withdraw-liquidity-result))
   )
@@ -83,13 +103,13 @@
 )
 
 ;; Withdraw liquidity from multiple bins in multiple pools relative to the active bin using the same token pair
-(define-public (withdraw-same-relative-liquidity-multi
+(define-public (withdraw-relative-liquidity-same-multi
     (positions (list 350 {pool-trait: <dlmm-pool-trait>, active-bin-id-offset: int, amount: uint, min-x-amount: uint, min-y-amount: uint}))
     (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>)
     (min-x-amount-total uint) (min-y-amount-total uint)
   )
   (let (
-    (withdraw-liquidity-result (try! (fold fold-withdraw-same-relative-liquidity-multi positions (ok {x-token-trait: x-token-trait, y-token-trait: y-token-trait, results: (list ), x-amount: u0, y-amount: u0}))))
+    (withdraw-liquidity-result (try! (fold fold-withdraw-relative-liquidity-same-multi positions (ok {x-token-trait: x-token-trait, y-token-trait: y-token-trait, results: (list ), x-amount: u0, y-amount: u0}))))
     (x-amount-total (get x-amount withdraw-liquidity-result))
     (y-amount-total (get y-amount withdraw-liquidity-result))
   )
@@ -158,6 +178,26 @@
   )
 )
 
+;; Fold function to add liquidity to multiple bins in a single pool relative to the active bin using the same token pair
+(define-private (fold-add-relative-liquidity-same-multi
+    (position {active-bin-id-offset: int, x-amount: uint, y-amount: uint, min-dlp: uint, max-x-liquidity-fee: uint, max-y-liquidity-fee: uint})
+    (result (response {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, active-bin-id: int, results: (list 350 uint)} uint))
+  )
+  (let (
+    (result-data (unwrap! result ERR_NO_RESULT_DATA))
+    (pool-trait (get pool-trait result-data))
+    (x-token-trait (get x-token-trait result-data))
+    (y-token-trait (get y-token-trait result-data))
+    (active-bin-id (get active-bin-id result-data))
+    (bin-id (+ active-bin-id (get active-bin-id-offset position)))
+    (bin-id-check (asserts! (and (>= bin-id MIN_BIN_ID) (<= bin-id MAX_BIN_ID)) ERR_INVALID_BIN_ID))
+    (add-liquidity-result (try! (contract-call? .dlmm-core-v-1-1 add-liquidity pool-trait x-token-trait y-token-trait bin-id (get x-amount position) (get y-amount position) (get min-dlp position) (get max-x-liquidity-fee position) (get max-y-liquidity-fee position))))
+    (updated-results (unwrap! (as-max-len? (append (get results result-data) add-liquidity-result) u350) ERR_RESULTS_LIST_OVERFLOW))
+  )
+    (ok {pool-trait: pool-trait, x-token-trait: x-token-trait, y-token-trait: y-token-trait, active-bin-id: active-bin-id, results: updated-results})
+  )
+)
+
 ;; Fold function to withdraw liquidity from multiple bins in multiple pools
 (define-private (fold-withdraw-liquidity-multi
     (position {pool-trait: <dlmm-pool-trait>, x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, bin-id: int, amount: uint, min-x-amount: uint, min-y-amount: uint})
@@ -193,7 +233,7 @@
 )
 
 ;; Fold function to withdraw liquidity from multiple bins in multiple pools using the same token pair
-(define-private (fold-withdraw-same-liquidity-multi
+(define-private (fold-withdraw-liquidity-same-multi
     (position {pool-trait: <dlmm-pool-trait>, bin-id: int, amount: uint, min-x-amount: uint, min-y-amount: uint})
     (result (response {x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, results: (list 350 {x-amount: uint, y-amount: uint}), x-amount: uint, y-amount: uint} uint))
   )
@@ -213,7 +253,7 @@
 )
 
 ;; Fold function to withdraw liquidity from multiple bins in multiple pools relative to the active bin using the same token pair
-(define-private (fold-withdraw-same-relative-liquidity-multi
+(define-private (fold-withdraw-relative-liquidity-same-multi
     (position {pool-trait: <dlmm-pool-trait>, active-bin-id-offset: int, amount: uint, min-x-amount: uint, min-y-amount: uint})
     (result (response {x-token-trait: <sip-010-trait>, y-token-trait: <sip-010-trait>, results: (list 350 {x-amount: uint, y-amount: uint}), x-amount: uint, y-amount: uint} uint))
   )
@@ -270,4 +310,9 @@
   )
     (ok updated-result)
   )
+)
+
+;; Get absolute value of a signed int as uint
+(define-private (abs-int (value int))
+  (to-uint (if (>= value 0) value (- value)))
 )
