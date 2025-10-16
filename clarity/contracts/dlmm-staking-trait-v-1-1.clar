@@ -9,9 +9,9 @@
     (get-early-unstake-fee-address () (response principal uint))
     (get-early-unstake-fee () (response uint uint))
     (get-minimum-staking-duration () (response uint uint))
+    (get-reward-period-duration () (response uint uint))
     (get-total-lp-staked () (response uint uint))
     (get-total-rewards-claimed () (response uint uint))
-    (get-total-rewards-reserved () (response uint uint))
     (get-bin (uint) (response (optional {
       lp-staked: uint,
       reward-per-block: uint,
@@ -25,6 +25,7 @@
     }) uint))
     (get-user-data-at-bin (principal uint) (response (optional {
       lp-staked: uint,
+      accrued-rewards: uint,
       reward-index: uint,
       last-stake-height: uint
     }) uint))
@@ -33,8 +34,11 @@
       rewards-to-distribute: uint,
       reward-period-effective-block: uint
     } uint))
-    (get-unclaimed-rewards (principal int) (response uint uint))
-    (get-available-contract-balance () (response uint uint))
+    (get-claimable-rewards (principal int) (response {
+      pending-rewards: uint,
+      accrued-rewards: uint,
+      claimable-rewards: uint
+    } uint))
     (stake-lp-tokens (int uint) (response bool uint))
     (unstake-lp-tokens (int) (response bool uint))
     (early-unstake-lp-tokens (int) (response bool uint))
