@@ -434,8 +434,10 @@
         (updated-reward-period-end-block (if (> updated-reward-per-block u0)
                                              (+ stacks-block-height current-reward-period-duration)
                                              stacks-block-height))
-        
       )
+        ;; Assert updated-rewards-to-distribute is less than or equal to the contract's reward token balance
+        (asserts! (<= updated-rewards-to-distribute (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+
         ;; Update bin-data mapping
         (map-set bin-data unsigned-bin-id (merge current-bin-data {
           reward-per-block: updated-reward-per-block,
@@ -829,9 +831,8 @@
 
 ;; Get reward token balance for contract
 (define-private (get-reward-token-balance)
-  (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance (as-contract tx-sender))
-    ERR_CANNOT_GET_TOKEN_BALANCE
-  ))
+  (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance
+               (as-contract tx-sender)) ERR_CANNOT_GET_TOKEN_BALANCE))
 )
 
 ;; Transfer LP token
