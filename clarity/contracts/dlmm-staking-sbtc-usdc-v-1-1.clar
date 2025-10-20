@@ -188,7 +188,7 @@
         (ok {reward-index: (+ reward-index reward-index-delta), rewards-to-distribute: rewards-to-distribute, reward-period-effective-block: reward-period-effective-block})
       )
       ;; Return reward-index, rewards-to-distribute, and reward-period-effective-block
-      (ok {reward-index: reward-index, rewards-to-distribute: u0, reward-period-effective-block: last-reward-index-update})
+      (ok {reward-index: reward-index, rewards-to-distribute: u0, reward-period-effective-block: reward-period-effective-block})
     )
   )
 )
