@@ -1407,8 +1407,13 @@
     (y-amount-post-fees (- y-amount y-amount-fees-liquidity))
     (y-amount-post-fees-scaled (* y-amount-post-fees PRICE_SCALE_BPS))
 
+    ;; Calculate bin balances post fees
+    (x-balance-post-fees (+ x-balance x-amount-fees-liquidity))
+    (y-balance-post-fees-scaled (* (+ y-balance y-amount-fees-liquidity) PRICE_SCALE_BPS))
+
     ;; Get final liquidity value and calculate dlp post fees
     (add-liquidity-value-post-fees (unwrap! (get-liquidity-value x-amount-post-fees y-amount-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
+    (bin-liquidity-value-post-fees (unwrap! (get-liquidity-value x-balance-post-fees y-balance-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
     (dlp-post-fees (if (is-eq bin-shares u0)
       (let (
         (intended-dlp (sqrti add-liquidity-value-post-fees))
@@ -1418,9 +1423,9 @@
         (try! (contract-call? pool-trait pool-mint unsigned-bin-id burn-amount BURN_ADDRESS))
         (- intended-dlp burn-amount)
       )
-      (if (is-eq bin-liquidity-value u0)
+      (if (is-eq bin-liquidity-value-post-fees u0)
           (sqrti add-liquidity-value-post-fees)
-          (/ (* add-liquidity-value-post-fees bin-shares) bin-liquidity-value))))
+          (/ (* add-liquidity-value-post-fees bin-shares) bin-liquidity-value-post-fees))))
 
     ;; Calculate updated bin balances
     (updated-x-balance (+ x-balance x-amount))
@@ -1491,7 +1496,7 @@
           max-x-liquidity-fee: max-x-liquidity-fee,
           max-y-liquidity-fee: max-y-liquidity-fee,
           add-liquidity-value-post-fees: add-liquidity-value-post-fees,
-          bin-liquidity-value: bin-liquidity-value,
+          bin-liquidity-value-post-fees: bin-liquidity-value-post-fees,
           updated-x-balance: updated-x-balance,
           updated-y-balance: updated-y-balance,
           updated-bin-shares: (+ bin-shares dlp-post-fees)
