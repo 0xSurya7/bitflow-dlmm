@@ -61,6 +61,9 @@
 (define-constant ERR_VARIABLE_FEES_COOLDOWN (err u1054))
 (define-constant ERR_VARIABLE_FEES_MANAGER_FROZEN (err u1055))
 (define-constant ERR_INVALID_DYNAMIC_CONFIG (err u1056))
+(define-constant ERR_INVALID_CORE_MIGRATION_COOLDOWN (err u1057))
+(define-constant ERR_CORE_MIGRATION_COOLDOWN (err u1058))
+(define-constant ERR_CORE_ADDRESS_ALREADY_MIGRATED (err u1059))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -79,6 +82,16 @@
 ;; Maximum BPS
 (define-constant FEE_SCALE_BPS u10000)
 (define-constant PRICE_SCALE_BPS u100000000)
+
+;; Minimum core migration cooldown in seconds (1 week minimum)
+(define-constant MIN_CORE_MIGRATION_COOLDOWN u604800)
+
+;; Core migration address and execution time
+(define-data-var core-migration-address principal tx-sender)
+(define-data-var core-migration-execution-time uint u0)
+
+;; Core migration cooldown in seconds (2 weeks by default)
+(define-data-var core-migration-cooldown uint u1209600)
 
 ;; Admins list and helper var used to remove admins
 (define-data-var admins (list 5 principal) (list tx-sender))
@@ -121,6 +134,21 @@
 
 ;; Define swap-fee-exemptions map
 (define-map swap-fee-exemptions {address: principal, id: uint} bool)
+
+;; Get core migration address
+(define-read-only (get-core-migration-address)
+  (ok (var-get core-migration-address))
+)
+
+;; Get timestamp of core migration execution time
+(define-read-only (get-core-migration-execution-time)
+  (ok (var-get core-migration-execution-time))
+)
+
+;; Get core migration cooldown in seconds
+(define-read-only (get-core-migration-cooldown)
+  (ok (var-get core-migration-cooldown))
+)
 
 ;; Get admins list
 (define-read-only (get-admins)
@@ -226,6 +254,104 @@
     (pool-code-hash (unwrap! (contract-hash? (contract-of pool-trait)) ERR_INVALID_POOL_CODE_HASH))
   )
     (ok (is-some (index-of (var-get verified-pool-code-hashes) pool-code-hash)))
+  )
+)
+
+;; Set core migration address
+(define-public (set-core-migration-address (address principal))
+  (let (
+    (caller tx-sender)
+    (migration-execution-time (+ stacks-block-time (var-get core-migration-cooldown)))
+  )
+    (begin
+      ;; Assert caller is an admin
+      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+
+      ;; Assert that address is standard principal
+      (asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
+
+      ;; Set core-migration-address to address
+      (var-set core-migration-address address)
+
+      ;; Set core-migration-execution-time to migration-execution-time
+      (var-set core-migration-execution-time migration-execution-time)
+
+      ;; Print function data and return true
+      (print {
+        action: "set-core-migration-address",
+        caller: caller,
+        data: {
+          address: address,
+          migration-execution-time: migration-execution-time,
+          current-block-time: stacks-block-time
+        }
+      })
+      (ok true)
+    )
+  )
+)
+
+;; Set core migration cooldown in seconds
+(define-public (set-core-migration-cooldown (cooldown uint))
+  (let (
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert caller is an admin
+      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+
+      ;; Assert that cooldown is greater than or equal to MIN_CORE_MIGRATION_COOLDOWN
+      (asserts! (>= cooldown MIN_CORE_MIGRATION_COOLDOWN) ERR_INVALID_CORE_MIGRATION_COOLDOWN)
+
+      ;; Set core-migration-cooldown to cooldown
+      (var-set core-migration-cooldown cooldown)
+
+      ;; Print function data and return true
+      (print {action: "set-core-migration-cooldown", caller: caller, data: {cooldown: cooldown}})
+      (ok true)
+    )
+  )
+)
+
+;; Migrate core address for a pool
+(define-public (migrate-core-address (pool-trait <dlmm-pool-trait>))
+  (let (
+    ;; Gather all pool data
+    (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (current-core-migration-address (var-get core-migration-address))
+    (current-core-migration-execution-time (var-get core-migration-execution-time))
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert caller is an admin and pool is created and valid
+      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+      (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
+      (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
+
+      ;; Assert that core migration cooldown has passed
+      (asserts! (>= stacks-block-time current-core-migration-execution-time) ERR_CORE_MIGRATION_COOLDOWN)
+
+      ;; Assert that current-core-migration-address is not equal to the pool's current core address
+      (asserts! (not (is-eq current-core-migration-address (get core-address pool-data))) ERR_CORE_ADDRESS_ALREADY_MIGRATED)
+
+      ;; Set core address for pool
+      (try! (contract-call? pool-trait set-core-address current-core-migration-address))
+
+      ;; Print function data and return true
+      (print {
+        action: "migrate-core-address",
+        caller: caller,
+        data: {
+          pool-id: (get pool-id pool-data),
+          pool-name: (get pool-name pool-data),
+          pool-contract: (contract-of pool-trait),
+          current-core-migration-address: current-core-migration-address,
+          current-core-migration-execution-time: current-core-migration-execution-time,
+          current-block-time: stacks-block-time
+        }
+      })
+      (ok true)
+    )
   )
 )
 
@@ -1848,6 +1974,11 @@
     (print {action: "remove-admin", caller: caller, data: {admin: admin}})
     (ok true)
   )
+)
+
+;; Migrate core address for multiple pools
+(define-public (migrate-core-address-multi (pool-traits (list 120 <dlmm-pool-trait>)))
+  (ok (map migrate-core-address pool-traits))
 )
 
 ;; Set swap fee exemption for multiple addresses across multiple pools

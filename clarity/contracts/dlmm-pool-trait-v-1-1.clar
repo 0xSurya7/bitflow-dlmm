@@ -90,6 +90,7 @@
     (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
     (get-user-bins (principal) (response (list 1001 uint) uint))
     (set-pool-uri ((string-ascii 256)) (response bool uint))
+    (set-core-address (principal) (response bool uint))
     (set-variable-fees-manager (principal) (response bool uint))
     (set-fee-address (principal) (response bool uint))
     (set-active-bin-id (int) (response bool uint))
