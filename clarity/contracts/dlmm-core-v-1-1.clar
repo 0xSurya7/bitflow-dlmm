@@ -75,15 +75,15 @@
 (define-constant NUM_OF_BINS u1001)
 (define-constant CENTER_BIN_ID (/ NUM_OF_BINS u2))
 
-;; Minimum and maximum bin IDs as signed ints
+;; Min and max bin IDs as signed ints
 (define-constant MIN_BIN_ID -500)
 (define-constant MAX_BIN_ID 500)
 
-;; Maximum BPS
+;; Max BPS
 (define-constant FEE_SCALE_BPS u10000)
 (define-constant PRICE_SCALE_BPS u100000000)
 
-;; Minimum core migration cooldown in seconds (1 week minimum)
+;; Min core migration cooldown in seconds (1 week min)
 (define-constant MIN_CORE_MIGRATION_COOLDOWN u604800)
 
 ;; Core migration address and execution time
@@ -104,10 +104,10 @@
 (define-data-var bin-steps (list 1000 uint) (list ))
 (define-map bin-factors uint (list 1001 uint))
 
-;; Minimum shares required to mint into the active bin when creating a pool
+;; Min shares required to mint into the active bin when creating a pool
 (define-data-var minimum-bin-shares uint u10000)
 
-;; Minimum shares required to burn from the active bin when creating a pool
+;; Min shares required to burn from the active bin when creating a pool
 (define-data-var minimum-burnt-shares uint u1000)
 
 ;; Data var used to enable or disable pool creation by anyone
@@ -195,12 +195,12 @@
   (ok (map-get? bin-factors step))
 )
 
-;; Get minimum shares required to mint for the active bin when creating a pool
+;; Get min shares required to mint for the active bin when creating a pool
 (define-read-only (get-minimum-bin-shares)
   (ok (var-get minimum-bin-shares))
 )
 
-;; Get minimum shares required to burn for the active bin when creating a pool
+;; Get min shares required to burn for the active bin when creating a pool
 (define-read-only (get-minimum-burnt-shares)
   (ok (var-get minimum-burnt-shares))
 )
@@ -270,7 +270,7 @@
       ;; Assert that address is standard principal
       (asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set core-migration-address to address
@@ -306,7 +306,7 @@
       ;; Assert that cooldown is greater than or equal to MIN_CORE_MIGRATION_COOLDOWN
       (asserts! (>= cooldown MIN_CORE_MIGRATION_COOLDOWN) ERR_INVALID_CORE_MIGRATION_COOLDOWN)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set core-migration-cooldown to cooldown
@@ -340,7 +340,7 @@
       ;; Assert that current-core-migration-address is not equal to the pool's current core address
       (asserts! (not (is-eq current-core-migration-address (get core-address pool-data))) ERR_CORE_ADDRESS_ALREADY_MIGRATED)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set core address for pool
@@ -389,7 +389,7 @@
     ;; Assert factors list is in ascending order
     (try! (fold fold-are-bin-factors-ascending factors (ok u0)))
 
-    ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+    ;; Transfer 1 uSTX from caller to BURN_ADDRESS
     (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
     ;; Add bin step to list with max length of 1000
@@ -404,7 +404,7 @@
   )
 )
 
-;; Set minimum shares required to mint and burn for the active bin when creating a pool
+;; Set min shares required to mint and burn for the active bin when creating a pool
 (define-public (set-minimum-shares (min-bin uint) (min-burnt uint))
   (let (
     (caller tx-sender)
@@ -417,7 +417,7 @@
       ;; Assert that min-bin is greater than min-burnt
       (asserts! (> min-bin min-burnt) ERR_INVALID_MIN_BURNT_SHARES)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Update minimum-bin-shares and minimum-burnt-shares
@@ -447,7 +447,7 @@
       ;; Assert caller is an admin
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set public-pool-creation to status
@@ -473,7 +473,7 @@
     ;; Assert that hash length is 32
     (asserts! (is-eq (len hash) u32) ERR_INVALID_VERIFIED_POOL_CODE_HASH)
 
-    ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+    ;; Transfer 1 uSTX from caller to BURN_ADDRESS
     (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
     ;; Add code hash to verified pool code hashes list with max length of 10000
@@ -495,7 +495,7 @@
     (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
     (asserts! (is-some (index-of verified-pool-code-hashes-list hash)) ERR_VERIFIED_POOL_CODE_HASH_NOT_IN_LIST)
 
-    ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+    ;; Transfer 1 uSTX from caller to BURN_ADDRESS
     (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
     ;; Set verified-pool-code-hashes-helper to hash to remove and filter verified-pool-code-hashes to remove hash
@@ -525,7 +525,7 @@
       ;; Assert that address is standard principal
       (asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Update swap-fee-exemptions mapping
@@ -625,7 +625,7 @@
       ;; Assert that uri length is greater than 0
       (asserts! (> (len uri) u0) ERR_INVALID_POOL_URI)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set pool uri for pool
@@ -661,7 +661,7 @@
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set pool status for pool
@@ -703,7 +703,7 @@
       ;; Assert that address is standard principal
       (asserts! (is-standard manager) ERR_INVALID_PRINCIPAL)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set variable fees manager for pool
@@ -741,7 +741,7 @@
       ;; Assert that address is standard principal
       (asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set fee address for pool
@@ -785,13 +785,13 @@
       ;; Assert that caller is variable fees manager if variable fees manager is frozen
       (asserts! (or (is-eq variable-fees-manager caller) (not freeze-variable-fees-manager)) ERR_NOT_AUTHORIZED)
 
-      ;; Assert x-fee + x-protocol-fee + x-provider-fee is less than maximum FEE_SCALE_BPS
+      ;; Assert x-fee + x-protocol-fee + x-provider-fee is less than max FEE_SCALE_BPS
       (asserts! (< (+ x-fee x-protocol-fee x-provider-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
 
-      ;; Assert y-fee + y-protocol-fee + y-provider-fee is less than maximum FEE_SCALE_BPS
+      ;; Assert y-fee + y-protocol-fee + y-provider-fee is less than max FEE_SCALE_BPS
       (asserts! (< (+ y-fee y-protocol-fee y-provider-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set variable fees for pool
@@ -832,10 +832,10 @@
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
 
-      ;; Assert protocol-fee + provider-fee + x-variable-fee is less than maximum FEE_SCALE_BPS
+      ;; Assert protocol-fee + provider-fee + x-variable-fee is less than max FEE_SCALE_BPS
       (asserts! (< (+ protocol-fee provider-fee x-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set x fees for pool
@@ -873,10 +873,10 @@
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
 
-      ;; Assert protocol-fee + provider-fee + y-variable-fee is less than maximum FEE_SCALE_BPS
+      ;; Assert protocol-fee + provider-fee + y-variable-fee is less than max FEE_SCALE_BPS
       (asserts! (< (+ protocol-fee provider-fee y-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set y fees for pool
@@ -913,7 +913,7 @@
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set variable fees cooldown for pool
@@ -952,7 +952,7 @@
       ;; Assert that variable fees manager is not frozen
       (asserts! (not freeze-variable-fees-manager) ERR_VARIABLE_FEES_MANAGER_FROZEN)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set freeze variable fees manager for pool
@@ -994,7 +994,7 @@
       ;; Assert that config is greater than 0
       (asserts! (> (len config) u0) ERR_INVALID_DYNAMIC_CONFIG)
 
-      ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+      ;; Transfer 1 uSTX from caller to BURN_ADDRESS
       (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
       ;; Set dynamic config for pool
@@ -1115,10 +1115,10 @@
       ;; Assert that x-amount-active-bin and y-amount-active-bin are greater than 0
       (asserts! (and (> x-amount-active-bin u0) (> y-amount-active-bin u0)) ERR_INVALID_AMOUNT)
 
-      ;; Assert that dlp minted meets minimum bin shares required
+      ;; Assert that dlp minted meets min bin shares required
       (asserts! (>= dlp (var-get minimum-bin-shares)) ERR_MINIMUM_LP_AMOUNT)
 
-      ;; Assert that burn-amount-active-bin meets minimum shares required to burn
+      ;; Assert that burn-amount-active-bin meets min shares required to burn
       (asserts! (>= burn-amount-active-bin (var-get minimum-burnt-shares)) ERR_MINIMUM_BURN_AMOUNT)
 
       ;; Assert that dlp is greater than or equal to 0 after subtracting burn amount
@@ -1132,7 +1132,7 @@
       (asserts! (> (len symbol) u0) ERR_INVALID_POOL_SYMBOL)
       (asserts! (> (len name) u0) ERR_INVALID_POOL_NAME)
 
-      ;; Assert that fees are less than maximum BPS
+      ;; Assert that fees are less than max BPS
       (asserts! (< (+ x-protocol-fee x-provider-fee x-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
       (asserts! (< (+ y-protocol-fee y-provider-fee y-variable-fee) FEE_SCALE_BPS) ERR_INVALID_FEE)
 
@@ -1257,7 +1257,7 @@
     ;; Get price at bin
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
-    ;; Calculate maximum x-amount with fees
+    ;; Calculate max x-amount with fees
     (swap-fee-total (+ protocol-fee provider-fee variable-fee))
     (max-x-amount (/ (+ (* y-balance PRICE_SCALE_BPS) (- bin-price u1)) bin-price))
     (updated-max-x-amount (if (> swap-fee-total u0) (/ (* max-x-amount FEE_SCALE_BPS) (- FEE_SCALE_BPS swap-fee-total)) max-x-amount))
@@ -1402,7 +1402,7 @@
     ;; Get price at bin
     (bin-price (unwrap! (get-bin-price initial-price bin-step bin-id) ERR_INVALID_BIN_PRICE))
 
-    ;; Calculate maximum y-amount with fees
+    ;; Calculate max y-amount with fees
     (swap-fee-total (+ protocol-fee provider-fee variable-fee))
     (max-y-amount (/ (+ (* x-balance bin-price) (- PRICE_SCALE_BPS u1)) PRICE_SCALE_BPS))
     (updated-max-y-amount (if (> swap-fee-total u0) (/ (* max-y-amount FEE_SCALE_BPS) (- FEE_SCALE_BPS swap-fee-total)) max-y-amount))
@@ -1597,10 +1597,10 @@
     ;; Get final liquidity value and calculate dlp post fees
     (add-liquidity-value-post-fees (unwrap! (get-liquidity-value x-amount-post-fees y-amount-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
     (bin-liquidity-value-post-fees (unwrap! (get-liquidity-value x-balance-post-fees y-balance-post-fees-scaled bin-price) ERR_INVALID_LIQUIDITY_VALUE))
+    (burn-amount (if (is-eq bin-shares u0) (var-get minimum-burnt-shares) u0))
     (dlp-post-fees (if (is-eq bin-shares u0)
       (let (
         (intended-dlp (sqrti add-liquidity-value-post-fees))
-        (burn-amount (var-get minimum-burnt-shares))
       )
         (asserts! (>= intended-dlp (var-get minimum-bin-shares)) ERR_MINIMUM_LP_AMOUNT)
         (try! (contract-call? pool-trait pool-mint unsigned-bin-id burn-amount BURN_ADDRESS))
@@ -1674,6 +1674,7 @@
           y-amount: y-amount-post-fees,
           x-amount-fees-liquidity: x-amount-fees-liquidity,
           y-amount-fees-liquidity: y-amount-fees-liquidity,
+          burn-amount: burn-amount,
           dlp: dlp-post-fees,
           min-dlp: min-dlp,
           max-x-liquidity-fee: max-x-liquidity-fee,
@@ -1682,7 +1683,7 @@
           bin-liquidity-value-post-fees: bin-liquidity-value-post-fees,
           updated-x-balance: updated-x-balance,
           updated-y-balance: updated-y-balance,
-          updated-bin-shares: (+ bin-shares dlp-post-fees)
+          updated-bin-shares: (+ bin-shares dlp-post-fees burn-amount)
         }
       })
       (ok dlp-post-fees)
@@ -2001,7 +2002,7 @@
     (asserts! (is-some (index-of admins-list caller)) ERR_NOT_AUTHORIZED)
     (asserts! (is-none (index-of admins-list admin)) ERR_ALREADY_ADMIN)
 
-    ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+    ;; Transfer 1 uSTX from caller to BURN_ADDRESS
     (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
     ;; Add admin to list with max length of 5
@@ -2026,7 +2027,7 @@
     ;; Assert contract deployer cannot be removed
     (asserts! (not (is-eq admin CONTRACT_DEPLOYER)) ERR_CANNOT_REMOVE_CONTRACT_DEPLOYER)
 
-    ;; Transfer 1 uSTX from caller to BURN_ADDRESS (post condition check)
+    ;; Transfer 1 uSTX from caller to BURN_ADDRESS
     (try! (stx-transfer? u1 caller BURN_ADDRESS))
 
     ;; Set admin-helper to admin to remove and filter admins-list to remove admin
@@ -2037,114 +2038,6 @@
     (print {action: "remove-admin", caller: caller, data: {admin: admin}})
     (ok true)
   )
-)
-
-;; Migrate core address for multiple pools
-(define-public (migrate-core-address-multi (pool-traits (list 120 <dlmm-pool-trait>)))
-  (ok (map migrate-core-address pool-traits))
-)
-
-;; Set swap fee exemption for multiple addresses across multiple pools
-(define-public (set-swap-fee-exemption-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (addresses (list 120 principal))
-    (exempts (list 120 bool))
-  )
-  (ok (map set-swap-fee-exemption pool-traits addresses exempts))
-)
-
-;; Claim protocol fees for multiple pools
-(define-public (claim-protocol-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (x-token-traits (list 120 <sip-010-trait>))
-    (y-token-traits (list 120 <sip-010-trait>))
-  )
-  (ok (map claim-protocol-fees pool-traits x-token-traits y-token-traits))
-)
-
-;; Set pool uri for multiple pools
-(define-public (set-pool-uri-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (uris (list 120 (string-ascii 256)))
-  )
-  (ok (map set-pool-uri pool-traits uris))
-)
-
-;; Set pool status for multiple pools
-(define-public (set-pool-status-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (statuses (list 120 bool))
-  )
-  (ok (map set-pool-status pool-traits statuses))
-)
-
-;; Set variable fees manager for multiple pools
-(define-public (set-variable-fees-manager-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (managers (list 120 principal))
-  )
-  (ok (map set-variable-fees-manager pool-traits managers))
-)
-
-;; Set fee address for multiple pools
-(define-public (set-fee-address-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (addresses (list 120 principal))
-  )
-  (ok (map set-fee-address pool-traits addresses))
-)
-
-;; Set variable fees for multiple pools
-(define-public (set-variable-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (x-fees (list 120 uint))
-    (y-fees (list 120 uint))
-  )
-  (ok (map set-variable-fees pool-traits x-fees y-fees))
-)
-
-;; Set x fees for multiple pools
-(define-public (set-x-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (protocol-fees (list 120 uint))
-    (provider-fees (list 120 uint))
-  )
-  (ok (map set-x-fees pool-traits protocol-fees provider-fees))
-)
-
-;; Set y fees for multiple pools
-(define-public (set-y-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (protocol-fees (list 120 uint))
-    (provider-fees (list 120 uint))
-  )
-  (ok (map set-y-fees pool-traits protocol-fees provider-fees))
-)
-
-;; Set variable fees cooldown for multiple pools
-(define-public (set-variable-fees-cooldown-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (cooldowns (list 120 uint))
-  )
-  (ok (map set-variable-fees-cooldown pool-traits cooldowns))
-)
-
-;; Set freeze variable fees manager for multiple pools
-(define-public (set-freeze-variable-fees-manager-multi (pool-traits (list 120 <dlmm-pool-trait>)))
-  (ok (map set-freeze-variable-fees-manager pool-traits))
-)
-
-;; Reset variable fees for multiple pools
-(define-public (reset-variable-fees-multi (pool-traits (list 120 <dlmm-pool-trait>)))
-  (ok (map reset-variable-fees pool-traits))
-)
-
-;; Set dynamic config for multiple pools
-(define-public (set-dynamic-config-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (configs (list 120 (buff 4096)))
-  )
-  (ok (map set-dynamic-config pool-traits configs))
 )
 
 ;; Helper function for removing an admin

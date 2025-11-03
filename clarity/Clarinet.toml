@@ -55,6 +55,11 @@ path = "contracts/dlmm-liquidity-router-v-1-1.clar"
 clarity_version = 3
 epoch = "3"
 
+[contracts.dlmm-core-multi-helper-v-1-1]
+path = "contracts/dlmm-core-multi-helper-v-1-1.clar"
+clarity_version = 3
+epoch = "3"
+
 [contracts.mock-sbtc-token]
 path = "contracts/mocks/mock-sbtc-token.clar"
 clarity_version = 3
