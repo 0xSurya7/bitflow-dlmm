@@ -514,7 +514,7 @@
       )
 
       ;; Transfer amount LP tokens from caller to contract
-      (try! (transfer-lp-token unsigned-bin-id amount caller (as-contract tx-sender)))
+      (try! (transfer-lp-token unsigned-bin-id amount caller (unwrap-panic (as-contract? () tx-sender))))
 
       ;; Print function data and return true
       (print {
@@ -578,7 +578,7 @@
       )
 
       ;; Transfer lp-to-unstake LP tokens from contract to caller
-      (try! (as-contract (transfer-lp-token unsigned-bin-id lp-to-unstake tx-sender caller)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake tx-sender caller))))
 
       ;; Print function data and return true
       (print {
@@ -647,11 +647,11 @@
       )
 
       ;; Transfer lp-to-unstake-user LP tokens from contract to caller
-      (try! (as-contract (transfer-lp-token unsigned-bin-id lp-to-unstake-user tx-sender caller)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-user tx-sender caller))))
 
       ;; Transfer lp-to-unstake-fees LP tokens from contract to early-unstake-fee-address
       (if (> lp-to-unstake-fees u0)
-          (try! (as-contract (transfer-lp-token unsigned-bin-id lp-to-unstake-fees tx-sender (var-get early-unstake-fee-address))))
+          (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-fees tx-sender (var-get early-unstake-fee-address)))))
           false)
 
       ;; Print function data and return true
@@ -690,7 +690,7 @@
       (unwrap-panic (update-reward-index unsigned-bin-id))
 
       ;; Transfer claimable-rewards rewards token from contract to caller
-      (try! (as-contract (transfer-reward-token claimable-rewards tx-sender caller)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token claimable-rewards tx-sender caller))))
 
       ;; Update user-data-at-bin mapping
       (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
@@ -725,7 +725,7 @@
       (asserts! (<= amount (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
       ;; Transfer amount rewards token from contract to recipient
-      (try! (as-contract (transfer-reward-token amount tx-sender recipient)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token amount tx-sender recipient))))
 
       ;; Print function data and return true
       (print {action: "withdraw-rewards", caller: caller, data: {amount: amount, recipient: recipient}})
@@ -832,7 +832,7 @@
 ;; Get reward token balance for contract
 (define-private (get-reward-token-balance)
   (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance
-               (as-contract tx-sender)) ERR_CANNOT_GET_TOKEN_BALANCE))
+               (unwrap-panic (as-contract? () tx-sender))) ERR_CANNOT_GET_TOKEN_BALANCE))
 )
 
 ;; Transfer LP token

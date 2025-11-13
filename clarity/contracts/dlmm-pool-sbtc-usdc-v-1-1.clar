@@ -151,7 +151,7 @@
       fee-address: (get fee-address current-pool-addresses),
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
-      pool-token: (as-contract tx-sender),
+      pool-token: (unwrap-panic (as-contract? () tx-sender)),
       bin-step: (var-get bin-step),
       initial-price: (var-get initial-price),
       active-bin-id: (var-get active-bin-id),
@@ -547,7 +547,7 @@
       (asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
       ;; Try to transfer amount of token from pool contract to recipient
-      (try! (as-contract (contract-call? token-trait transfer amount tx-sender recipient none)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (contract-call? token-trait transfer amount tx-sender recipient none))))
 
       ;; Print function data and return true
       (print {action: "pool-transfer", data: {token: token-contract, amount: amount, recipient: recipient}})

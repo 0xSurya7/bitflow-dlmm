@@ -87,7 +87,7 @@
 (define-constant MIN_CORE_MIGRATION_COOLDOWN u604800)
 
 ;; Core migration address and execution time
-(define-data-var core-migration-address principal (as-contract tx-sender))
+(define-data-var core-migration-address principal (unwrap-panic (as-contract? () tx-sender)))
 (define-data-var core-migration-execution-time uint u0)
 
 ;; Core migration cooldown in seconds (2 weeks by default)
