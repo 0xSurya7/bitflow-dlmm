@@ -1,7 +1,7 @@
 
 # mock-sbtc-token
 
-[`mock-sbtc-token.clar`](..\contracts\mocks\mock-sbtc-token.clar)
+[`mock-sbtc-token.clar`](../contracts/mocks/mock-sbtc-token.clar)
 
 Mock sBTC token for testing
 
@@ -43,7 +43,7 @@ Mock sBTC token for testing
 
 ### transfer
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L12)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L12)
 
 `(define-public (transfer ((amount uint) (from principal) (to principal) (memo (optional (buff 34)))) (response bool uint))`
 
@@ -74,7 +74,7 @@ Mock sBTC token for testing
 
 ### get-name
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L19)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L19)
 
 `(define-read-only (get-name () (response (string-ascii 9) none))`
 
@@ -95,7 +95,7 @@ Mock sBTC token for testing
 
 ### get-symbol
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L23)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L23)
 
 `(define-read-only (get-symbol () (response (string-ascii 4) none))`
 
@@ -116,7 +116,7 @@ Mock sBTC token for testing
 
 ### get-decimals
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L27)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L27)
 
 `(define-read-only (get-decimals () (response uint none))`
 
@@ -137,7 +137,7 @@ Mock sBTC token for testing
 
 ### get-balance
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L31)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L31)
 
 `(define-read-only (get-balance ((who principal)) (response uint none))`
 
@@ -162,7 +162,7 @@ Mock sBTC token for testing
 
 ### get-total-supply
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L35)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L35)
 
 `(define-read-only (get-total-supply () (response uint none))`
 
@@ -183,7 +183,7 @@ Mock sBTC token for testing
 
 ### get-token-uri
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L39)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L39)
 
 `(define-read-only (get-token-uri () (response (optional none) none))`
 
@@ -204,7 +204,7 @@ Mock sBTC token for testing
 
 ### mint
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L43)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L43)
 
 `(define-public (mint ((amount uint) (to principal)) (response bool uint))`
 
@@ -251,7 +251,7 @@ Mock sBTC token for testing
 (define-constant contract-owner tx-sender)
 ```
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L6)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L6)
 
 ### err-owner-only
 
@@ -263,7 +263,7 @@ Mock sBTC token for testing
 (define-constant err-owner-only (err u100))
 ```
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L8)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L8)
 
 ### err-not-token-owner
 
@@ -275,7 +275,7 @@ Mock sBTC token for testing
 (define-constant err-not-token-owner (err u101))
 ```
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L9)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L9)
 
 ### err-insufficient-balance
 
@@ -287,5 +287,5 @@ Mock sBTC token for testing
 (define-constant err-insufficient-balance (err u102))
 ```
 
-[View in file](..\contracts\mocks\mock-sbtc-token.clar#L10)
+[View in file](../contracts/mocks/mock-sbtc-token.clar#L10)
   

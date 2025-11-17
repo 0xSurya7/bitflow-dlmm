@@ -45,16 +45,20 @@ genesis:
       balance: "100000000000000"
       sbtc-balance: "1000000000"
   contracts:
+    - genesis
+    - lockup
+    - bns
+    - cost-voting
     - costs
     - pox
+    - costs-2
     - pox-2
+    - costs-3
     - pox-3
     - pox-4
-    - lockup
-    - costs-2
-    - costs-3
-    - cost-voting
-    - bns
+    - signers
+    - signers-voting
+    - costs-4
 plan:
   batches:
     - id: 0
@@ -65,58 +69,81 @@ plan:
             path: contracts/external/sip-010-trait-ft-standard-v-1-1.clar
             clarity-version: 3
         - emulated-contract-publish:
+            contract-name: token-stx-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/external/token-stx-v-1-1.clar
+            clarity-version: 3
+      epoch: "3.0"
+    - id: 1
+      transactions:
+        - emulated-contract-publish:
             contract-name: dlmm-pool-trait-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/dlmm-pool-trait-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: dlmm-core-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/dlmm-core-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: dlmm-core-multi-helper-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-core-multi-helper-v-1-1.clar
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: dlmm-liquidity-router-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/dlmm-liquidity-router-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: sip-013-trait-sft-standard-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/external/sip-013-trait-sft-standard-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: sip-013-transfer-many-trait-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/external/sip-013-transfer-many-trait-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: dlmm-pool-sbtc-usdc-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/dlmm-pool-sbtc-usdc-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: dlmm-staking-trait-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-staking-trait-v-1-1.clar
+            clarity-version: 4
+        - emulated-contract-publish:
+            contract-name: dlmm-staking-sbtc-usdc-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-staking-sbtc-usdc-v-1-1.clar
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: dlmm-swap-router-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/dlmm-swap-router-v-1-1.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: mock-pool
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mocks/mock-pool.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: mock-random-token
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mocks/mock-random-token.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: mock-sbtc-token
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mocks/mock-sbtc-token.clar
-            clarity-version: 3
+            clarity-version: 4
         - emulated-contract-publish:
             contract-name: mock-usdc-token
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/mocks/mock-usdc-token.clar
-            clarity-version: 3
-      epoch: "3.0"
+            clarity-version: 4
+      epoch: "3.3"

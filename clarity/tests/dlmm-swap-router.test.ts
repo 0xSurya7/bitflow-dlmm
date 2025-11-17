@@ -31,11 +31,11 @@ describe('DLMM Swap Helper Functions', () => {
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: 0,
+        expectedBinId: 0,
         amount: 1000000n, // 0.01 BTC
+        minReceived: 1n,
         xForY: true
       }];
-      const minReceived = 1n;
       const maxUnfavorableBins = 5n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -43,13 +43,13 @@ describe('DLMM Swap Helper Functions', () => {
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       
       expect(finalXBalance).toBeLessThan(initialXBalance);
       expect(finalYBalance).toBe(initialYBalance + received);
@@ -62,20 +62,21 @@ describe('DLMM Swap Helper Functions', () => {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 500000n, // 0.005 BTC
+          minReceived: 1n,
           xForY: true
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 1,
+          expectedBinId: 1,
           amount: 500000n, // 0.005 BTC
+          minReceived: 1n,
           xForY: true
         }
       ];
-      const minReceived = 1n;
       const maxUnfavorableBins = 10n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -83,13 +84,13 @@ describe('DLMM Swap Helper Functions', () => {
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       
       expect(finalXBalance).toBe(initialXBalance - 1000000n); // Total amount swapped
       expect(finalYBalance).toBe(initialYBalance + received);
@@ -102,28 +103,30 @@ describe('DLMM Swap Helper Functions', () => {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 300000n, // 0.003 BTC
+          minReceived: 1n,
           xForY: true
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 1,
+          expectedBinId: 1,
           amount: 300000n, // 0.003 BTC
+          minReceived: 1n,
           xForY: true
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 2,
+          expectedBinId: 2,
           amount: 300000n, // 0.003 BTC
+          minReceived: 1n,
           xForY: true
         }
       ];
-      const minReceived = 1n;
       const maxUnfavorableBins = 10n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -131,13 +134,13 @@ describe('DLMM Swap Helper Functions', () => {
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       
       expect(finalXBalance).toBe(initialXBalance - 900000n); // Total amount swapped (3 * 300000n)
       expect(finalYBalance).toBe(initialYBalance + received);
@@ -150,20 +153,21 @@ describe('DLMM Swap Helper Functions', () => {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 400000n, // 0.004 BTC
+          minReceived: 1n,
           xForY: true
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 600000n, // 0.006 BTC
+          minReceived: 1n,
           xForY: true
         }
       ];
-      const minReceived = 1n;
       const maxUnfavorableBins = 5n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -171,13 +175,13 @@ describe('DLMM Swap Helper Functions', () => {
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       
       expect(finalXBalance).toBe(initialXBalance - 1000000n); // Total amount swapped (400000n + 600000n)
       expect(finalYBalance).toBe(initialYBalance + received);
@@ -189,11 +193,11 @@ describe('DLMM Swap Helper Functions', () => {
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: 0,
+        expectedBinId: 0,
         amount: 50000000n, // 50 USDC
+        minReceived: 1n,
         xForY: false
       }];
-      const minReceived = 1n;
       const maxUnfavorableBins = 5n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -201,13 +205,13 @@ describe('DLMM Swap Helper Functions', () => {
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       
       expect(finalXBalance).toBe(initialXBalance + received);
       expect(finalYBalance).toBeLessThan(initialYBalance);
@@ -219,16 +223,15 @@ describe('DLMM Swap Helper Functions', () => {
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: 0,
+        expectedBinId: 0,
         amount: 1000000n,
+        minReceived: 999999999999n, // Unreasonably high minimum
         xForY: true
       }];
-      const minReceived = 999999999999n; // Unreasonably high minimum
       const maxUnfavorableBins = 5n;
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -236,20 +239,21 @@ describe('DLMM Swap Helper Functions', () => {
     });
 
     it('should fail when unfavorable bins exceed maximum', async () => {
+      // For X for Y, bins with ID > active bin are unfavorable
+      const activeBinId = rovOk(sbtcUsdcPool.getActiveBinId());
       const swaps = [{
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: -10, // Very unfavorable bin for X for Y swap
+        expectedBinId: Number(activeBinId) + 10, // 10 bins higher = very unfavorable for X for Y
         amount: 1000000n,
+        minReceived: 1n,
         xForY: true
       }];
-      const minReceived = 1n;
-      const maxUnfavorableBins = 5n; // Lower than the unfavorable bin count
+      const maxUnfavorableBins = 5n; // Lower than the unfavorable bin count (10)
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -259,12 +263,10 @@ describe('DLMM Swap Helper Functions', () => {
     it('should revert on empty swap list', async () => {
       // test will fail
       const swaps: any[] = [];
-      const minReceived = 0n;
       const maxUnfavorableBins = 5n;
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
 
@@ -277,17 +279,16 @@ describe('DLMM Swap Helper Functions', () => {
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: 0,
+        expectedBinId: 0,
         amount: 0n,
+        minReceived: 0n,
         xForY: true
       }];
-      const minReceived = 0n;
       const maxUnfavorableBins = 5n;
       
       // This should fail at the core swap level with invalid amount
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -296,22 +297,23 @@ describe('DLMM Swap Helper Functions', () => {
     });
 
     it('should calculate unfavorable bins correctly for X for Y swaps', async () => {
-      // For X for Y swaps, bins with ID less than active bin are unfavorable
-      // bin-id-delta = active-bin-id - bin-id, unfavorable when bin-id-delta > 0
+      // For X for Y swaps, bins with ID greater than active bin are unfavorable
+      // bin-id-delta = active-bin-id - expected-bin-id, unfavorable when bin-id-delta < 0
+      // This means expected-bin-id > active-bin-id is unfavorable
+      const activeBinId = rovOk(sbtcUsdcPool.getActiveBinId());
       const swaps = [{
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: -3, // active-bin(0) - (-3) = 3, unfavorable since 3 > 0
+        expectedBinId: Number(activeBinId) + 3, // 3 bins higher than active = unfavorable
         amount: 1000000n,
+        minReceived: 1n,
         xForY: true
       }];
-      const minReceived = 1n;
       const maxUnfavorableBins = 2n; // Should fail as unfavorable count is 3
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -319,22 +321,23 @@ describe('DLMM Swap Helper Functions', () => {
     });
 
     it('should calculate unfavorable bins correctly for Y for X swaps', async () => {
-      // For Y for X swaps, bins with ID greater than active bin are unfavorable  
-      // bin-id-delta = active-bin-id - bin-id, unfavorable when bin-id-delta < 0
+      // For Y for X swaps, bins with ID less than active bin are unfavorable  
+      // bin-id-delta = active-bin-id - expected-bin-id, unfavorable when bin-id-delta > 0
+      // This means expected-bin-id < active-bin-id is unfavorable
+      const activeBinId = rovOk(sbtcUsdcPool.getActiveBinId());
       const swaps = [{
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: 3, // active-bin(0) - 3 = -3, unfavorable since -3 < 0
+        expectedBinId: Number(activeBinId) - 3, // 3 bins lower than active = unfavorable
         amount: 50000000n,
+        minReceived: 1n,
         xForY: false
       }];
-      const minReceived = 1n;
       const maxUnfavorableBins = 2n; // Should fail as unfavorable count is 3
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -342,34 +345,36 @@ describe('DLMM Swap Helper Functions', () => {
     });
 
     it('should handle mixed favorable and unfavorable swaps', async () => {
+      const activeBinId = rovOk(sbtcUsdcPool.getActiveBinId());
       const swaps = [
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0, // Favorable (active bin)
+          expectedBinId: Number(activeBinId), // Favorable (active bin)
           amount: 500000n,
+          minReceived: 1n,
           xForY: true
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 2, // Unfavorable (2 bins away)
+          expectedBinId: Number(activeBinId) + 2, // Unfavorable (2 bins above active for X for Y)
           amount: 500000n,
+          minReceived: 1n,
           xForY: true
         }
       ];
-      const minReceived = 1n;
       const maxUnfavorableBins = 3n; // Should pass as total unfavorable is 2
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       expect(received).toBeGreaterThan(0n);
     });
 
@@ -388,16 +393,15 @@ describe('DLMM Swap Helper Functions', () => {
         poolTrait: mockPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: 0,
+        expectedBinId: 0,
         amount: 1000000n,
+        minReceived: 1n,
         xForY: true
       }];
-      const minReceived = 1n;
       const maxUnfavorableBins = 5n;
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
 
@@ -405,20 +409,21 @@ describe('DLMM Swap Helper Functions', () => {
     });
 
     it('should handle edge case with extremely large unfavorable bin count', async () => {
+      // For X for Y, bins with ID > active bin are unfavorable
+      const activeBinId = rovOk(sbtcUsdcPool.getActiveBinId());
       const swaps = [{
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: -500, // Very far from active bin to maximize unfavorable count
+        expectedBinId: Number(activeBinId) + 500, // Very far above active bin = very unfavorable
         amount: 1000000n,
+        minReceived: 1n,
         xForY: true
       }];
-      const minReceived = 1n;
       const maxUnfavorableBins = 1n; // Very low threshold
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -431,11 +436,11 @@ describe('DLMM Swap Helper Functions', () => {
         poolTrait: sbtcUsdcPool.identifier,
         xTokenTrait: mockSbtcToken.identifier,
         yTokenTrait: mockUsdcToken.identifier,
-        binId: i - 5, // Range from -5 to 4
+        expectedBinId: i - 5, // Range from -5 to 4
         amount: 100000n, // 0.001 BTC each
+        minReceived: 1n,
         xForY: true
       }));
-      const minReceived = 1n;
       const maxUnfavorableBins = 50n; // High threshold to allow all swaps
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -443,13 +448,13 @@ describe('DLMM Swap Helper Functions', () => {
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       
       expect(finalXBalance).toBe(initialXBalance - 1000000n); // Total: 10 * 100000n
       expect(finalYBalance).toBe(initialYBalance + received);
@@ -462,29 +467,30 @@ describe('DLMM Swap Helper Functions', () => {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 500000n, // 0.005 BTC
+          minReceived: 0n,
           xForY: true
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 25000000n, // 25 USDC
+          minReceived: 0n,
           xForY: false
         }
       ];
-      const minReceived = 0n; // Allow any amount since we're doing opposite swaps
       const maxUnfavorableBins = 5n;
       
       const response = txOk(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
-      const received = cvToValue(response.result);
+      const result = cvToValue(response.result);
+      const received = result.results.reduce((sum: bigint, r: {in: bigint, out: bigint}) => sum + r.out, 0n);
       expect(received).toBeGreaterThanOrEqual(0n);
     });
 
@@ -497,17 +503,16 @@ describe('DLMM Swap Helper Functions', () => {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockRandomToken.identifier, // Using random token
           yTokenTrait: mockUsdcToken.identifier,
-          binId: 0,
+          expectedBinId: 0,
           amount: 500000n,
+          minReceived: 0n,
           xForY: true
         }
       ];
-      const minReceived = 0n;
       const maxUnfavorableBins = 5n;
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       
@@ -523,17 +528,16 @@ describe('DLMM Swap Helper Functions', () => {
           poolTrait: sbtcUsdcPool.identifier,
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockRandomToken.identifier, // Using random token
-          binId: 0,
+          expectedBinId: 0,
           amount: 500000n,
+          minReceived: 0n,
           xForY: true
         }
       ];
-      const minReceived = 0n;
       const maxUnfavorableBins = 5n;
       
       const response = txErr(dlmmSwapRouter.swapMulti(
         swaps,
-        minReceived,
         maxUnfavorableBins
       ), alice);
       

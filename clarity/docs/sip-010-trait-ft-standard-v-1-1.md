@@ -1,7 +1,7 @@
 
 # sip-010-trait-ft-standard-v-1-1
 
-[`sip-010-trait-ft-standard-v-1-1.clar`](..\contracts\external\sip-010-trait-ft-standard-v-1-1.clar)
+[`sip-010-trait-ft-standard-v-1-1.clar`](../contracts/external/sip-010-trait-ft-standard-v-1-1.clar)
 
 sip-010-trait-ft-standard-v-1-1
 

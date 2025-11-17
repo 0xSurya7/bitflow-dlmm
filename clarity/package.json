@@ -17,16 +17,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@clarigen/cli": "3.0.0",
-    "@clarigen/core": "3.0.0",
-    "@clarigen/test": "3.0.0",
-    "@hirosystems/clarinet-sdk": "3.2.0",
-    "@stacks/transactions": "^6.13.0",
-    "chokidar-cli": "^3.0.0",
-    "typescript": "^5.6.0",
-    "vite": "^6.1.0",
-    "vitest": "^3.0.0",
-    "vitest-environment-clarinet": "^2.3.0"
+    "@clarigen/cli": "4.0.0",
+    "@clarigen/core": "4.0.0",
+    "@clarigen/test": "4.0.0",
+    "@stacks/clarinet-sdk": "3.9.2",
+    "@stacks/transactions": "7.3.0",
+    "chokidar-cli": "3.0.0",
+    "typescript": "5.9.2",
+    "vite": "7.1.3",
+    "vitest": "^4.0.7",
+    "vitest-environment-clarinet": "3.0.2"
   },
   "devDependencies": {
     "prettier": "^3.6.2"

@@ -1,7 +1,7 @@
 
 # mock-random-token
 
-[`mock-random-token.clar`](..\contracts\mocks\mock-random-token.clar)
+[`mock-random-token.clar`](../contracts/mocks/mock-random-token.clar)
 
 Mock random Token
 
@@ -48,7 +48,7 @@ This token is NOT whitelisted in the system and is used for negative testing
 
 ### get-name
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L21)
+[View in file](../contracts/mocks/mock-random-token.clar#L21)
 
 `(define-read-only (get-name () (response (string-ascii 32) none))`
 
@@ -68,7 +68,7 @@ SIP-010 functions
 
 ### get-symbol
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L24)
+[View in file](../contracts/mocks/mock-random-token.clar#L24)
 
 `(define-read-only (get-symbol () (response (string-ascii 32) none))`
 
@@ -88,7 +88,7 @@ SIP-010 functions
 
 ### get-decimals
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L27)
+[View in file](../contracts/mocks/mock-random-token.clar#L27)
 
 `(define-read-only (get-decimals () (response uint none))`
 
@@ -108,7 +108,7 @@ SIP-010 functions
 
 ### get-balance
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L30)
+[View in file](../contracts/mocks/mock-random-token.clar#L30)
 
 `(define-read-only (get-balance ((user principal)) (response uint none))`
 
@@ -132,7 +132,7 @@ SIP-010 functions
 
 ### get-total-supply
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L33)
+[View in file](../contracts/mocks/mock-random-token.clar#L33)
 
 `(define-read-only (get-total-supply () (response uint none))`
 
@@ -152,7 +152,7 @@ SIP-010 functions
 
 ### get-token-uri
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L36)
+[View in file](../contracts/mocks/mock-random-token.clar#L36)
 
 `(define-read-only (get-token-uri () (response (optional (string-utf8 256)) none))`
 
@@ -172,7 +172,7 @@ SIP-010 functions
 
 ### transfer
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L40)
+[View in file](../contracts/mocks/mock-random-token.clar#L40)
 
 `(define-public (transfer ((amount uint) (sender principal) (recipient principal) (memo (optional (buff 34)))) (response bool uint))`
 
@@ -205,7 +205,7 @@ Transfer function
 
 ### mint
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L50)
+[View in file](../contracts/mocks/mock-random-token.clar#L50)
 
 `(define-public (mint ((amount uint) (recipient principal)) (response bool uint))`
 
@@ -233,7 +233,7 @@ Mint function - anyone can mint for testing
 
 ### burn
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L57)
+[View in file](../contracts/mocks/mock-random-token.clar#L57)
 
 `(define-public (burn ((amount uint) (owner principal)) (response bool uint))`
 
@@ -275,7 +275,7 @@ Token metadata
 (define-data-var token-name (string-ascii 32) "random Token")
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L15)
+[View in file](../contracts/mocks/mock-random-token.clar#L15)
 
 ### token-symbol
 
@@ -287,7 +287,7 @@ Token metadata
 (define-data-var token-symbol (string-ascii 32) "UNWL")
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L16)
+[View in file](../contracts/mocks/mock-random-token.clar#L16)
 
 ### token-uri
 
@@ -299,7 +299,7 @@ Token metadata
 (define-data-var token-uri (optional (string-utf8 256)) (some u"https://random.token"))
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L17)
+[View in file](../contracts/mocks/mock-random-token.clar#L17)
 
 ### token-decimals
 
@@ -311,7 +311,7 @@ uint
 (define-data-var token-decimals uint u6)
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L18)
+[View in file](../contracts/mocks/mock-random-token.clar#L18)
 
 ## Constants
 
@@ -325,7 +325,7 @@ Error constants
 (define-constant ERR_NOT_AUTHORIZED (err u1))
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L10)
+[View in file](../contracts/mocks/mock-random-token.clar#L10)
 
 ### ERR_INVALID_AMOUNT
 
@@ -337,7 +337,7 @@ Error constants
 (define-constant ERR_INVALID_AMOUNT (err u2))
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L11)
+[View in file](../contracts/mocks/mock-random-token.clar#L11)
 
 ### ERR_INVALID_PRINCIPAL
 
@@ -349,5 +349,5 @@ Error constants
 (define-constant ERR_INVALID_PRINCIPAL (err u3))
 ```
 
-[View in file](..\contracts\mocks\mock-random-token.clar#L12)
+[View in file](../contracts/mocks/mock-random-token.clar#L12)
   

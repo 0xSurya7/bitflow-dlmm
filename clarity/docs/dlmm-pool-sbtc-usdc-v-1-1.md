@@ -1,13 +1,14 @@
 
 # dlmm-pool-sbtc-usdc-v-1-1
 
-[`dlmm-pool-sbtc-usdc-v-1-1.clar`](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar)
+[`dlmm-pool-sbtc-usdc-v-1-1.clar`](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar)
 
 dlmm-pool-sbtc-usdc-v-1-1
 
 **Public functions:**
 
 - [`set-pool-uri`](#set-pool-uri)
+- [`set-core-address`](#set-core-address)
 - [`set-variable-fees-manager`](#set-variable-fees-manager)
 - [`set-fee-address`](#set-fee-address)
 - [`set-active-bin-id`](#set-active-bin-id)
@@ -42,6 +43,7 @@ dlmm-pool-sbtc-usdc-v-1-1
 - [`get-pool-for-swap`](#get-pool-for-swap)
 - [`get-pool-for-add`](#get-pool-for-add)
 - [`get-pool-for-withdraw`](#get-pool-for-withdraw)
+- [`get-variable-fees-data`](#get-variable-fees-data)
 - [`get-active-bin-id`](#get-active-bin-id)
 - [`get-bin-balances`](#get-bin-balances)
 - [`get-user-bins`](#get-user-bins)
@@ -76,15 +78,15 @@ dlmm-pool-sbtc-usdc-v-1-1
 
 **Constants**
 
-- [`ERR_NOT_AUTHORIZED_SIP_013`](#err_not_authorized_sip_013)
+- [`ERR_INSUFFICIENT_BALANCE_SIP_013`](#err_insufficient_balance_sip_013)
+- [`ERR_MATCHING_PRINCIPALS_SIP_013`](#err_matching_principals_sip_013)
 - [`ERR_INVALID_AMOUNT_SIP_013`](#err_invalid_amount_sip_013)
-- [`ERR_INVALID_PRINCIPAL_SIP_013`](#err_invalid_principal_sip_013)
+- [`ERR_NOT_AUTHORIZED_SIP_013`](#err_not_authorized_sip_013)
 - [`ERR_NOT_AUTHORIZED`](#err_not_authorized)
 - [`ERR_INVALID_AMOUNT`](#err_invalid_amount)
 - [`ERR_INVALID_PRINCIPAL`](#err_invalid_principal)
 - [`ERR_NOT_POOL_CONTRACT_DEPLOYER`](#err_not_pool_contract_deployer)
 - [`ERR_MAX_NUMBER_OF_BINS`](#err_max_number_of_bins)
-- [`CORE_ADDRESS`](#core_address)
 - [`CONTRACT_DEPLOYER`](#contract_deployer)
 
 
@@ -92,7 +94,7 @@ dlmm-pool-sbtc-usdc-v-1-1
 
 ### get-name
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L94)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L96)
 
 `(define-read-only (get-name () (response (string-ascii 32) none))`
 
@@ -113,7 +115,7 @@ Get token name
 
 ### get-symbol
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L99)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L101)
 
 `(define-read-only (get-symbol () (response (string-ascii 32) none))`
 
@@ -134,7 +136,7 @@ Get token symbol
 
 ### get-decimals
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L104)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L106)
 
 `(define-read-only (get-decimals ((token-id uint)) (response uint none))`
 
@@ -159,7 +161,7 @@ Get token decimals
 
 ### get-token-uri
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L109)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L111)
 
 `(define-read-only (get-token-uri ((token-id uint)) (response (optional (string-ascii 256)) none))`
 
@@ -184,7 +186,7 @@ SIP 013 function to get token uri
 
 ### get-total-supply
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L114)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L116)
 
 `(define-read-only (get-total-supply ((token-id uint)) (response uint none))`
 
@@ -209,7 +211,7 @@ SIP 013 function to get total token supply by ID
 
 ### get-overall-supply
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L119)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L121)
 
 `(define-read-only (get-overall-supply () (response uint none))`
 
@@ -230,7 +232,7 @@ SIP 013 function to get overall token supply
 
 ### get-balance
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L124)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L126)
 
 `(define-read-only (get-balance ((token-id uint) (user principal)) (response uint none))`
 
@@ -256,7 +258,7 @@ SIP 013 function to get token balance for an user by ID
 
 ### get-overall-balance
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L129)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L131)
 
 `(define-read-only (get-overall-balance ((user principal)) (response uint none))`
 
@@ -281,7 +283,7 @@ SIP 013 function to get overall token balance for an user
 
 ### get-pool
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L134)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L136)
 
 `(define-read-only (get-pool () (response (tuple (active-bin-id int) (bin-change-count uint) (bin-step uint) (core-address principal) (creation-height uint) (dynamic-config (buff 4096)) (fee-address principal) (freeze-variable-fees-manager bool) (initial-price uint) (last-variable-fees-update uint) (pool-created bool) (pool-id uint) (pool-name (string-ascii 32)) (pool-symbol (string-ascii 32)) (pool-token principal) (pool-uri (string-ascii 256)) (variable-fees-cooldown uint) (variable-fees-manager principal) (x-protocol-fee uint) (x-provider-fee uint) (x-token principal) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-token principal) (y-variable-fee uint)) none))`
 
@@ -304,12 +306,12 @@ Get all pool data
       pool-uri: (get pool-uri current-pool-info),
       pool-created: (get pool-created current-pool-info),
       creation-height: (get creation-height current-pool-info),
-      core-address: CORE_ADDRESS,
+      core-address: (get core-address current-pool-addresses),
       variable-fees-manager: (get variable-fees-manager current-pool-addresses),
       fee-address: (get fee-address current-pool-addresses),
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
-      pool-token: (as-contract tx-sender),
+      pool-token: current-contract,
       bin-step: (var-get bin-step),
       initial-price: (var-get initial-price),
       active-bin-id: (var-get active-bin-id),
@@ -335,7 +337,7 @@ Get all pool data
 
 ### get-pool-for-swap
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L172)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L174)
 
 `(define-read-only (get-pool-for-swap ((is-x-for-y bool)) (response (tuple (active-bin-id int) (bin-step uint) (fee-address principal) (initial-price uint) (pool-id uint) (pool-name (string-ascii 32)) (protocol-fee uint) (provider-fee uint) (variable-fee uint) (x-token principal) (y-token principal)) none))`
 
@@ -378,7 +380,7 @@ Get all pool data for swapping
 
 ### get-pool-for-add
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L195)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L197)
 
 `(define-read-only (get-pool-for-add () (response (tuple (active-bin-id int) (bin-step uint) (initial-price uint) (pool-id uint) (pool-name (string-ascii 32)) (x-protocol-fee uint) (x-provider-fee uint) (x-token principal) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-token principal) (y-variable-fee uint)) none))`
 
@@ -419,7 +421,7 @@ Get all pool data for adding liquidity
 
 ### get-pool-for-withdraw
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L220)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L222)
 
 `(define-read-only (get-pool-for-withdraw () (response (tuple (pool-id uint) (pool-name (string-ascii 32)) (x-token principal) (y-token principal)) none))`
 
@@ -448,9 +450,43 @@ Get all pool data for withdrawing liquidity
 
 
 
+### get-variable-fees-data
+
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L237)
+
+`(define-read-only (get-variable-fees-data () (response (tuple (bin-change-count uint) (dynamic-config (buff 4096)) (freeze-variable-fees-manager bool) (last-variable-fees-update uint) (variable-fees-cooldown uint) (variable-fees-manager principal) (x-variable-fee uint) (y-variable-fee uint)) none))`
+
+Get all pool data for variable fees
+
+<details>
+  <summary>Source code:</summary>
+
+```clarity
+(define-read-only (get-variable-fees-data)
+  (let (
+    (current-pool-fees (var-get pool-fees))
+  )
+    (ok {
+      variable-fees-manager: (get variable-fees-manager (var-get pool-addresses)),
+      x-variable-fee: (get x-variable-fee current-pool-fees),
+      y-variable-fee: (get y-variable-fee current-pool-fees),
+      bin-change-count: (var-get bin-change-count),
+      last-variable-fees-update: (var-get last-variable-fees-update),
+      variable-fees-cooldown: (var-get variable-fees-cooldown),
+      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+      dynamic-config: (var-get dynamic-config),
+    })
+  )
+)
+```
+</details>
+
+
+
+
 ### get-active-bin-id
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L235)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L255)
 
 `(define-read-only (get-active-bin-id () (response int none))`
 
@@ -471,7 +507,7 @@ Get active bin ID
 
 ### get-bin-balances
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L240)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L260)
 
 `(define-read-only (get-bin-balances ((id uint)) (response (tuple (bin-shares uint) (x-balance uint) (y-balance uint)) none))`
 
@@ -496,11 +532,11 @@ Get balance data at a bin
 
 ### get-user-bins
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L245)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L265)
 
 `(define-read-only (get-user-bins ((user principal)) (response (list 1001 uint) none))`
 
-Get a list of bins a user has a position in
+Get a list of bins an user has a position in
 
 <details>
   <summary>Source code:</summary>
@@ -521,7 +557,7 @@ Get a list of bins a user has a position in
 
 ### set-pool-uri
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L250)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L270)
 
 `(define-public (set-pool-uri ((uri (string-ascii 256))) (response bool uint))`
 
@@ -537,7 +573,7 @@ Set pool uri via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-info (merge (var-get pool-info) {
         pool-uri: uri
       }))
@@ -555,9 +591,46 @@ Set pool uri via DLMM Core
 | --- | --- | 
 | uri | (string-ascii 256) |
 
+### set-core-address
+
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L286)
+
+`(define-public (set-core-address ((address principal)) (response bool uint))`
+
+Set core address via DLMM Core
+
+<details>
+  <summary>Source code:</summary>
+
+```clarity
+(define-public (set-core-address (address principal))
+  (let (
+    (current-pool-addresses (var-get pool-addresses))
+    (caller contract-caller)
+  )
+    (begin
+      ;; Assert that caller is core address before setting var
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+      (var-set pool-addresses (merge current-pool-addresses {
+        core-address: address
+      }))
+      (ok true)
+    )
+  )
+)
+```
+</details>
+
+
+**Parameters:**
+
+| Name | Type | 
+| --- | --- | 
+| address | principal |
+
 ### set-variable-fees-manager
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L266)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L303)
 
 `(define-public (set-variable-fees-manager ((manager principal)) (response bool uint))`
 
@@ -569,12 +642,13 @@ Set variable fees manager via DLMM Core
 ```clarity
 (define-public (set-variable-fees-manager (manager principal))
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge (var-get pool-addresses) {
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+      (var-set pool-addresses (merge current-pool-addresses {
         variable-fees-manager: manager
       }))
       (ok true)
@@ -593,7 +667,7 @@ Set variable fees manager via DLMM Core
 
 ### set-fee-address
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L282)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L320)
 
 `(define-public (set-fee-address ((address principal)) (response bool uint))`
 
@@ -605,12 +679,13 @@ Set fee address via DLMM Core
 ```clarity
 (define-public (set-fee-address (address principal))
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge (var-get pool-addresses) {
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+      (var-set pool-addresses (merge current-pool-addresses {
         fee-address: address
       }))
       (ok true)
@@ -629,7 +704,7 @@ Set fee address via DLMM Core
 
 ### set-active-bin-id
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L298)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L337)
 
 `(define-public (set-active-bin-id ((id int)) (response bool uint))`
 
@@ -645,7 +720,7 @@ Set active bin ID via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set active-bin-id id)
       (var-set bin-change-count (+ (var-get bin-change-count) u1))
       (ok true)
@@ -664,7 +739,7 @@ Set active bin ID via DLMM Core
 
 ### set-x-fees
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L313)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L352)
 
 `(define-public (set-x-fees ((protocol-fee uint) (provider-fee uint)) (response bool uint))`
 
@@ -680,7 +755,7 @@ Set x fees via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-fees (merge (var-get pool-fees) {
         x-protocol-fee: protocol-fee,
         x-provider-fee: provider-fee
@@ -702,7 +777,7 @@ Set x fees via DLMM Core
 
 ### set-y-fees
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L330)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L369)
 
 `(define-public (set-y-fees ((protocol-fee uint) (provider-fee uint)) (response bool uint))`
 
@@ -718,7 +793,7 @@ Set y fees via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-fees (merge (var-get pool-fees) {
         y-protocol-fee: protocol-fee,
         y-provider-fee: provider-fee
@@ -740,7 +815,7 @@ Set y fees via DLMM Core
 
 ### set-variable-fees
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L347)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L386)
 
 `(define-public (set-variable-fees ((x-fee uint) (y-fee uint)) (response bool uint))`
 
@@ -756,7 +831,7 @@ Set variable fees via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-fees (merge (var-get pool-fees) {
         x-variable-fee: x-fee,
         y-variable-fee: y-fee
@@ -780,7 +855,7 @@ Set variable fees via DLMM Core
 
 ### set-variable-fees-cooldown
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L366)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L405)
 
 `(define-public (set-variable-fees-cooldown ((cooldown uint)) (response bool uint))`
 
@@ -796,7 +871,7 @@ Set variable fees cooldown via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set variable-fees-cooldown cooldown)
       (ok true)
     )
@@ -814,7 +889,7 @@ Set variable fees cooldown via DLMM Core
 
 ### set-freeze-variable-fees-manager
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L380)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L419)
 
 `(define-public (set-freeze-variable-fees-manager () (response bool uint))`
 
@@ -830,7 +905,7 @@ Set freeze variable fees manager via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set freeze-variable-fees-manager true)
       (ok true)
     )
@@ -844,7 +919,7 @@ Set freeze variable fees manager via DLMM Core
 
 ### set-dynamic-config
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L394)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L433)
 
 `(define-public (set-dynamic-config ((config (buff 4096))) (response bool uint))`
 
@@ -860,7 +935,7 @@ Set dynamic config via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set dynamic-config config)
       (ok true)
     )
@@ -878,7 +953,7 @@ Set dynamic config via DLMM Core
 
 ### update-bin-balances
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L408)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L447)
 
 `(define-public (update-bin-balances ((bin-id uint) (x-balance uint) (y-balance uint)) (response bool uint))`
 
@@ -894,7 +969,7 @@ Update bin balances via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (map-set balances-at-bin bin-id (merge (unwrap-panic (get-bin-balances bin-id)) {x-balance: x-balance, y-balance: y-balance}))
 
       ;; Print function data and return true
@@ -917,7 +992,7 @@ Update bin balances via DLMM Core
 
 ### update-bin-balances-on-withdraw
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L425)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L464)
 
 `(define-public (update-bin-balances-on-withdraw ((bin-id uint) (x-balance uint) (y-balance uint) (bin-shares uint)) (response bool uint))`
 
@@ -933,7 +1008,7 @@ Update bin balances when withdrawing liquidity via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (map-set balances-at-bin bin-id {x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares})
 
       ;; Print function data and return true
@@ -957,7 +1032,7 @@ Update bin balances when withdrawing liquidity via DLMM Core
 
 ### transfer
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L442)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L481)
 
 `(define-public (transfer ((token-id uint) (amount uint) (sender principal) (recipient principal)) (response bool uint))`
 
@@ -974,14 +1049,14 @@ SIP 013 transfer function that transfers pool token
 	)
     (begin
       ;; Assert that caller is sender and sender is not recipient
-      (asserts! (is-eq caller sender) ERR_NOT_AUTHORIZED_SIP_013)
-      (asserts! (not (is-eq sender recipient)) ERR_INVALID_PRINCIPAL_SIP_013)
+      (asserts! (or (is-eq caller sender) (is-eq contract-caller sender)) ERR_NOT_AUTHORIZED_SIP_013)
+      (asserts! (not (is-eq sender recipient)) ERR_MATCHING_PRINCIPALS_SIP_013)
 
       ;; Assert that addresses are standard principals and amount is valid
-      (asserts! (is-standard sender) ERR_INVALID_PRINCIPAL_SIP_013)
-      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL_SIP_013)
+      (asserts! (is-standard sender) ERR_INVALID_PRINCIPAL)
+      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
       (asserts! (> amount u0) ERR_INVALID_AMOUNT_SIP_013)
-      (asserts! (<= amount sender-balance) ERR_INVALID_AMOUNT_SIP_013)
+      (asserts! (<= amount sender-balance) ERR_INSUFFICIENT_BALANCE_SIP_013)
 
       ;; Try to transfer pool token
       (try! (ft-transfer? pool-token amount sender recipient))
@@ -1014,7 +1089,7 @@ SIP 013 transfer function that transfers pool token
 
 ### transfer-memo
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L476)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L515)
 
 `(define-public (transfer-memo ((token-id uint) (amount uint) (sender principal) (recipient principal) (memo (buff 34))) (response bool uint))`
 
@@ -1047,7 +1122,7 @@ SIP 013 transfer function that transfers pool token with memo
 
 ### transfer-many
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L485)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L524)
 
 `(define-public (transfer-many ((transfers (list 200 (tuple (amount uint) (recipient principal) (sender principal) (token-id uint))))) (response bool uint))`
 
@@ -1072,7 +1147,7 @@ SIP 013 transfer function that transfers many pool token
 
 ### transfer-many-memo
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L490)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L529)
 
 `(define-public (transfer-many-memo ((transfers (list 200 (tuple (amount uint) (memo (buff 34)) (recipient principal) (sender principal) (token-id uint))))) (response bool uint))`
 
@@ -1097,7 +1172,7 @@ SIP 013 transfer function that transfers many pool token with memo
 
 ### pool-transfer
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L495)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L534)
 
 `(define-public (pool-transfer ((token-trait trait_reference) (amount uint) (recipient principal)) (response bool uint))`
 
@@ -1114,7 +1189,7 @@ Transfer tokens from this pool contract via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before transferring tokens
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
       ;; Assert that recipient address is standard principal
       (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
@@ -1123,7 +1198,7 @@ Transfer tokens from this pool contract via DLMM Core
       (asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
       ;; Try to transfer amount of token from pool contract to recipient
-      (try! (as-contract (contract-call? token-trait transfer amount tx-sender recipient none)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (contract-call? token-trait transfer amount tx-sender recipient none))))
 
       ;; Print function data and return true
       (print {action: "pool-transfer", data: {token: token-contract, amount: amount, recipient: recipient}})
@@ -1145,7 +1220,7 @@ Transfer tokens from this pool contract via DLMM Core
 
 ### pool-mint
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L521)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L560)
 
 `(define-public (pool-mint ((id uint) (amount uint) (user principal)) (response bool uint))`
 
@@ -1161,7 +1236,7 @@ Mint pool token to an user via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before minting tokens
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
       ;; Assert that user is standard principal and amount is greater than 0
       (asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
@@ -1196,7 +1271,7 @@ Mint pool token to an user via DLMM Core
 
 ### pool-burn
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L550)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L589)
 
 `(define-public (pool-burn ((id uint) (amount uint) (user principal)) (response bool uint))`
 
@@ -1213,7 +1288,7 @@ Burn pool token from an user via DLMM Core
   )
     (begin
       ;; Assert that caller is core address before burning tokens
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
       ;; Assert that user is standard principal and amount is valid
       (asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
@@ -1249,7 +1324,7 @@ Burn pool token from an user via DLMM Core
 
 ### create-pool
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L581)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L620)
 
 `(define-public (create-pool ((x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (fee-addr principal) (core-caller principal) (active-bin int) (step uint) (price uint) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))) (response bool uint))`
 
@@ -1266,11 +1341,12 @@ Create pool using this pool contract via DLMM Core
     (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))
   )
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address and core caller is contract deployer before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
       (asserts! (is-eq core-caller CONTRACT_DEPLOYER) ERR_NOT_POOL_CONTRACT_DEPLOYER)
       (var-set pool-info (merge (var-get pool-info) {
         pool-id: id,
@@ -1280,7 +1356,7 @@ Create pool using this pool contract via DLMM Core
         pool-created: true,
         creation-height: burn-block-height
       }))
-      (var-set pool-addresses (merge (var-get pool-addresses) {
+      (var-set pool-addresses (merge current-pool-addresses {
         variable-fees-manager: variable-fees-mgr,
         fee-address: fee-addr,
         x-token: x-token-contract,
@@ -1316,7 +1392,7 @@ Create pool using this pool contract via DLMM Core
 
 ### fold-transfer-many
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L617)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L657)
 
 `(define-private (fold-transfer-many ((item (tuple (amount uint) (recipient principal) (sender principal) (token-id uint))) (previous-response (response bool uint))) (response bool uint))`
 
@@ -1342,7 +1418,7 @@ Helper function to transfer many pool token
 
 ### fold-transfer-many-memo
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L622)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L662)
 
 `(define-private (fold-transfer-many-memo ((item (tuple (amount uint) (memo (buff 34)) (recipient principal) (sender principal) (token-id uint))) (previous-response (response bool uint))) (response bool uint))`
 
@@ -1368,7 +1444,7 @@ Helper function to transfer many pool token with memo
 
 ### get-balance-or-default
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L627)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L667)
 
 `(define-private (get-balance-or-default ((id uint) (user principal)) uint)`
 
@@ -1394,7 +1470,7 @@ Helper function to get token balance for an user by ID
 
 ### update-user-balance
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L632)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L672)
 
 `(define-private (update-user-balance ((id uint) (user principal) (balance uint)) (response bool uint))`
 
@@ -1438,7 +1514,7 @@ Update user balances via pool
 
 ### tag-pool-token-id
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L654)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L694)
 
 `(define-private (tag-pool-token-id ((id (tuple (owner principal) (token-id uint)))) (response bool uint))`
 
@@ -1474,7 +1550,7 @@ Tag pool token
 (define-map balances-at-bin uint {x-balance: uint, y-balance: uint, bin-shares: uint})
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L87)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L89)
 
 ### user-balance-at-bin
 
@@ -1484,7 +1560,7 @@ Tag pool token
 (define-map user-balance-at-bin {id: uint, user: principal} uint)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L89)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L91)
 
 ### user-bins
 
@@ -1494,7 +1570,7 @@ Tag pool token
 (define-map user-bins principal (list 1001 uint))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L91)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L93)
 
 ## Variables
 
@@ -1522,21 +1598,23 @@ Define all pool data vars and maps
 })
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L28)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L28)
 
 ### pool-addresses
 
-(tuple (fee-address principal) (variable-fees-manager principal) (x-token principal) (y-token principal))
+(tuple (core-address principal) (fee-address principal) (variable-fees-manager principal) (x-token principal) (y-token principal))
 
 
 
 ```clarity
 (define-data-var pool-addresses {
+  core-address: principal,
   variable-fees-manager: principal,
   fee-address: principal,
   x-token: principal,
   y-token: principal
 } {
+  core-address: .dlmm-core-v-1-1,
   variable-fees-manager: tx-sender,
   fee-address: tx-sender,
   x-token: tx-sender,
@@ -1544,7 +1622,7 @@ Define all pool data vars and maps
 })
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L44)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L44)
 
 ### bin-step
 
@@ -1556,7 +1634,7 @@ uint
 (define-data-var bin-step uint u0)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L56)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L58)
 
 ### initial-price
 
@@ -1568,7 +1646,7 @@ uint
 (define-data-var initial-price uint u0)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L58)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L60)
 
 ### active-bin-id
 
@@ -1580,7 +1658,7 @@ int
 (define-data-var active-bin-id int 0)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L60)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L62)
 
 ### pool-fees
 
@@ -1606,7 +1684,7 @@ int
 })
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L62)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L64)
 
 ### bin-change-count
 
@@ -1618,7 +1696,7 @@ uint
 (define-data-var bin-change-count uint u0)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L78)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L80)
 
 ### last-variable-fees-update
 
@@ -1630,7 +1708,7 @@ uint
 (define-data-var last-variable-fees-update uint u0)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L80)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L82)
 
 ### variable-fees-cooldown
 
@@ -1642,7 +1720,7 @@ uint
 (define-data-var variable-fees-cooldown uint u0)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L81)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L83)
 
 ### freeze-variable-fees-manager
 
@@ -1654,7 +1732,7 @@ bool
 (define-data-var freeze-variable-fees-manager bool false)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L83)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L85)
 
 ### dynamic-config
 
@@ -1666,21 +1744,33 @@ bool
 (define-data-var dynamic-config (buff 4096) 0x)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L85)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L87)
 
 ## Constants
 
-### ERR_NOT_AUTHORIZED_SIP_013
+### ERR_INSUFFICIENT_BALANCE_SIP_013
 
 
 
 Error constants
 
 ```clarity
-(define-constant ERR_NOT_AUTHORIZED_SIP_013 (err u4))
+(define-constant ERR_INSUFFICIENT_BALANCE_SIP_013 (err u1))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L14)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L14)
+
+### ERR_MATCHING_PRINCIPALS_SIP_013
+
+
+
+
+
+```clarity
+(define-constant ERR_MATCHING_PRINCIPALS_SIP_013 (err u2))
+```
+
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L15)
 
 ### ERR_INVALID_AMOUNT_SIP_013
 
@@ -1689,22 +1779,22 @@ Error constants
 
 
 ```clarity
-(define-constant ERR_INVALID_AMOUNT_SIP_013 (err u1))
+(define-constant ERR_INVALID_AMOUNT_SIP_013 (err u3))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L15)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L16)
 
-### ERR_INVALID_PRINCIPAL_SIP_013
+### ERR_NOT_AUTHORIZED_SIP_013
 
 
 
 
 
 ```clarity
-(define-constant ERR_INVALID_PRINCIPAL_SIP_013 (err u5))
+(define-constant ERR_NOT_AUTHORIZED_SIP_013 (err u4))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L16)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L17)
 
 ### ERR_NOT_AUTHORIZED
 
@@ -1716,7 +1806,7 @@ Error constants
 (define-constant ERR_NOT_AUTHORIZED (err u3001))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L17)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L18)
 
 ### ERR_INVALID_AMOUNT
 
@@ -1728,7 +1818,7 @@ Error constants
 (define-constant ERR_INVALID_AMOUNT (err u3002))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L18)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L19)
 
 ### ERR_INVALID_PRINCIPAL
 
@@ -1740,7 +1830,7 @@ Error constants
 (define-constant ERR_INVALID_PRINCIPAL (err u3003))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L19)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L20)
 
 ### ERR_NOT_POOL_CONTRACT_DEPLOYER
 
@@ -1752,7 +1842,7 @@ Error constants
 (define-constant ERR_NOT_POOL_CONTRACT_DEPLOYER (err u3004))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L20)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L21)
 
 ### ERR_MAX_NUMBER_OF_BINS
 
@@ -1764,29 +1854,17 @@ Error constants
 (define-constant ERR_MAX_NUMBER_OF_BINS (err u3005))
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L21)
-
-### CORE_ADDRESS
-
-
-
-DLMM Core address and contract deployer address
-
-```clarity
-(define-constant CORE_ADDRESS .dlmm-core-v-1-1)
-```
-
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L24)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L22)
 
 ### CONTRACT_DEPLOYER
 
 
 
-
+Contract deployer address
 
 ```clarity
 (define-constant CONTRACT_DEPLOYER tx-sender)
 ```
 
-[View in file](..\contracts\dlmm-pool-sbtc-usdc-v-1-1.clar#L25)
+[View in file](../contracts/dlmm-pool-sbtc-usdc-v-1-1.clar#L25)
   

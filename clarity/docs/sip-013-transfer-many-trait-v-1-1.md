@@ -1,7 +1,7 @@
 
 # sip-013-transfer-many-trait-v-1-1
 
-[`sip-013-transfer-many-trait-v-1-1.clar`](..\contracts\external\sip-013-transfer-many-trait-v-1-1.clar)
+[`sip-013-transfer-many-trait-v-1-1.clar`](../contracts/external/sip-013-transfer-many-trait-v-1-1.clar)
 
 sip-013-transfer-many-trait-v-1-1
 

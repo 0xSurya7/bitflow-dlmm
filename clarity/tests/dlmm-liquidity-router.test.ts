@@ -36,15 +36,16 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: 0, // Active bin - can add both X and Y
         xAmount: 5000000n, // 0.05 BTC
         yAmount: 2500000000n, // 2500 USDC
+        minDlp: 1n,
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
-      const minDlp = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -53,8 +54,11 @@ describe('DLMM Liquidity Router Functions', () => {
       
       expect(finalXBalance).toBeLessThan(initialXBalance);
       expect(finalYBalance).toBeLessThan(initialYBalance);
-      expect(lpReceived).toBeGreaterThan(0n);
-      expect(lpReceived).toBeGreaterThanOrEqual(minDlp);
+      // lpReceived is an array of results, one per position
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived.length).toBe(1);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
+      expect(lpReceived[0]).toBeGreaterThanOrEqual(positions[0].minDlp);
     });
 
     it('should successfully add liquidity to multiple bins in same pool', async () => {
@@ -66,6 +70,9 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: -1, // Below active bin - only Y tokens
           xAmount: 0n, // No X tokens for bins below active
           yAmount: 1250000000n, // 1250 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -74,16 +81,17 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 0, // Active bin - both X and Y tokens
           xAmount: 2500000n, // 0.025 BTC
           yAmount: 1250000000n, // 1250 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         }
       ];
-      const minDlp = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -92,7 +100,10 @@ describe('DLMM Liquidity Router Functions', () => {
       
       expect(finalXBalance).toBeLessThan(initialXBalance);
       expect(finalYBalance).toBeLessThan(initialYBalance);
-      expect(lpReceived).toBeGreaterThan(0n);
+      // lpReceived is an array of results, one per position
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived.length).toBeGreaterThan(0);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
     });
 
     it('should successfully add liquidity to three bins across different ranges', async () => {
@@ -104,6 +115,9 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: -2, // Below active bin - only Y tokens
           xAmount: 0n, // No X tokens for bins below active
           yAmount: 750000000n, // 750 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -112,6 +126,9 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 0, // Active bin - both X and Y tokens
           xAmount: 1500000n, // 0.015 BTC
           yAmount: 750000000n, // 750 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -120,16 +137,17 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 2, // Above active bin - only X tokens
           xAmount: 1500000n, // 0.015 BTC
           yAmount: 0n, // No Y tokens for bins above active
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         }
       ];
-      const minDlp = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -138,7 +156,10 @@ describe('DLMM Liquidity Router Functions', () => {
       
       expect(finalXBalance).toBeLessThan(initialXBalance);
       expect(finalYBalance).toBeLessThan(initialYBalance);
-      expect(lpReceived).toBeGreaterThan(0n);
+      // lpReceived is an array of results, one per position
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived.length).toBeGreaterThan(0);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
     });
 
     it('should add liquidity to the same bin multiple times', async () => {
@@ -150,6 +171,9 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 0, // Active bin - can add both X and Y
           xAmount: 2000000n, // 0.02 BTC
           yAmount: 1000000000n, // 1000 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -158,16 +182,17 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 0, // Active bin - can add both X and Y
           xAmount: 3000000n, // 0.03 BTC
           yAmount: 1500000000n, // 1500 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         }
       ];
-      const minDlp = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -177,7 +202,10 @@ describe('DLMM Liquidity Router Functions', () => {
       // Should use total amounts: 5000000n BTC and 2500000000n USDC
       expect(finalXBalance).toBeLessThan(initialXBalance);
       expect(finalYBalance).toBeLessThan(initialYBalance);
-      expect(lpReceived).toBeGreaterThan(0n);
+      // lpReceived is an array of results, one per position
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived.length).toBeGreaterThan(0);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
     });
 
     it('should fail when minimum LP amount not met', async () => {
@@ -188,24 +216,24 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: 0, // Active bin - can add both X and Y
         xAmount: 1000n, // Very small amount
         yAmount: 500000n, // Very small amount
+        minDlp: 999999999999n, // Unreasonably high minimum
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
-      const minDlp = 999999999999n; // Unreasonably high minimum
       
       const response = txErr(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmLiquidityRouter.ERR_MINIMUM_LP_AMOUNT);
+      // The error comes from the core contract, not the router
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MINIMUM_LP_AMOUNT);
     });
 
     it('should revert on empty positions list when adding liquidity', async () => {
       const positions: any[] = [];
-      const minDlp = 0n;
       
       const response = txErr(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       // will add specific error when it is set
@@ -220,13 +248,14 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: 0, // Active bin - can add both X and Y
         xAmount: 0n,
         yAmount: 0n,
+        minDlp: 0n,
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
-      const minDlp = 0n;
       
       // This should fail at the core add-liquidity level with invalid amount
       const response = txErr(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       // The error should propagate from the dlmm-core add-liquidity function
@@ -246,16 +275,17 @@ describe('DLMM Liquidity Router Functions', () => {
           xAmount: binId >= 0 ? 500000n : 0n, // 0.005 BTC each for valid bins
           // Only add Y tokens to bins <= 0 (active bin and below)
           yAmount: binId <= 0 ? 250000000n : 0n, // 250 USDC each for valid bins
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         };
       });
-      const minDlp = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
@@ -264,7 +294,10 @@ describe('DLMM Liquidity Router Functions', () => {
       
       expect(finalXBalance).toBeLessThan(initialXBalance);
       expect(finalYBalance).toBeLessThan(initialYBalance);
-      expect(lpReceived).toBeGreaterThan(0n);
+      // lpReceived is an array of results, one per position
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived.length).toBeGreaterThan(0);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
     });
 
     it('should document ERR_NO_RESULT_DATA error condition for add-liquidity', async () => {
@@ -278,17 +311,21 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: 0, // Active bin - can add both X and Y
         xAmount: 5000000n,
         yAmount: 2500000000n,
+        minDlp: 1n,
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
-      const minDlp = 1n;
       
       // In normal circumstances this should succeed
       // ERR_NO_RESULT_DATA would require internal fold failure
       const response = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        positions,
-        minDlp
+        positions
       ), alice);
       
-      expect(cvToValue(response.result)).toBeGreaterThan(0n);
+      const lpReceived = cvToValue(response.result);
+      // result is an array of LP amounts
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
     });
   });
 
@@ -303,6 +340,9 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: -1, // Below active bin - only Y tokens
           xAmount: 0n, // No X tokens for bins below active
           yAmount: 2500000000n, // 2500 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -311,6 +351,9 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 0, // Active bin - both X and Y tokens
           xAmount: 5000000n, // 0.05 BTC
           yAmount: 2500000000n, // 2500 USDC
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -319,9 +362,12 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 1, // Above active bin - only X tokens
           xAmount: 5000000n, // 0.05 BTC
           yAmount: 0n, // No Y tokens for bins above active
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         }
       ];
-      txOk(dlmmLiquidityRouter.addLiquidityMulti(positions, 1n), alice);
+      txOk(dlmmLiquidityRouter.addLiquidityMulti(positions), alice);
     });
 
     it('should successfully withdraw liquidity from single bin', async () => {
@@ -331,27 +377,28 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockUsdcToken.identifier,
         binId: 0,
         amount: 1000000n, // 1M LP tokens
+        minXAmount: 1n,
+        minYAmount: 1n,
       }];
-      const minXAmount = 1n;
-      const minYAmount = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
       const result = cvToValue(response.result);
       
+      // result is an array of {xAmount, yAmount} tuples
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(1);
       expect(finalXBalance).toBeGreaterThan(initialXBalance);
       expect(finalYBalance).toBeGreaterThan(initialYBalance);
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBeGreaterThan(0n);
+      expect(result[0].xAmount).toBeGreaterThan(0n);
+      expect(result[0].yAmount).toBeGreaterThan(0n);
     });
 
     it('should successfully withdraw liquidity from multiple bins', async () => {
@@ -362,6 +409,8 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: -1,
           amount: 500000n, // 500K LP tokens
+          minXAmount: 0n, // Bin -1 only has Y tokens
+          minYAmount: 1n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -369,28 +418,31 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: 0,
           amount: 500000n, // 500K LP tokens
+          minXAmount: 1n,
+          minYAmount: 1n,
         }
       ];
-      const minXAmount = 1n;
-      const minYAmount = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
       const result = cvToValue(response.result);
       
+      // result is an array of {xAmount, yAmount} tuples
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(2);
       expect(finalXBalance).toBeGreaterThan(initialXBalance);
       expect(finalYBalance).toBeGreaterThan(initialYBalance);
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBeGreaterThan(0n);
+      expect(result[0].xAmount).toBe(0n); // Bin -1 only has Y
+      expect(result[0].yAmount).toBeGreaterThan(0n);
+      expect(result[1].xAmount).toBeGreaterThan(0n);
+      expect(result[1].yAmount).toBeGreaterThan(0n);
     });
 
     it('should successfully withdraw from three different bins', async () => {
@@ -401,6 +453,8 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: -1,
           amount: 300000n, // 300K LP tokens
+          minXAmount: 0n, // Bin -1 only has Y
+          minYAmount: 1n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -408,6 +462,8 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: 0,
           amount: 300000n, // 300K LP tokens
+          minXAmount: 1n,
+          minYAmount: 1n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -415,28 +471,30 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: 1,
           amount: 300000n, // 300K LP tokens
+          minXAmount: 1n,
+          minYAmount: 0n, // Bin 1 only has X
         }
       ];
-      const minXAmount = 1n;
-      const minYAmount = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
       const result = cvToValue(response.result);
       
+      // result is an array of {xAmount, yAmount} tuples
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(positions.length);
       expect(finalXBalance).toBeGreaterThan(initialXBalance);
       expect(finalYBalance).toBeGreaterThan(initialYBalance);
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBeGreaterThan(0n);
+      result.forEach((r: any) => {
+        expect(r.xAmount + r.yAmount).toBeGreaterThan(0n);
+      });
     });
 
     it('should withdraw from the same bin multiple times', async () => {
@@ -456,26 +514,31 @@ describe('DLMM Liquidity Router Functions', () => {
           amount: 300000n, // 300K LP tokens
         }
       ];
-      const minXAmount = 1n;
-      const minYAmount = 1n;
+      // Add minXAmount and minYAmount to each position
+      positions.forEach((pos: any) => {
+        if (!pos.minXAmount) pos.minXAmount = 1n;
+        if (!pos.minYAmount) pos.minYAmount = 1n;
+      });
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
       const result = cvToValue(response.result);
       
+      // result is an array of {xAmount, yAmount} tuples
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(positions.length);
       expect(finalXBalance).toBeGreaterThan(initialXBalance);
       expect(finalYBalance).toBeGreaterThan(initialYBalance);
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBeGreaterThan(0n);
+      result.forEach((r: any) => {
+        expect(r.xAmount + r.yAmount).toBeGreaterThan(0n);
+      });
     });
 
     it('should fail when minimum X amount not met', async () => {
@@ -485,17 +548,16 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockUsdcToken.identifier,
         binId: 0,
         amount: 100000n, // Small amount
+        minXAmount: 999999999999n, // Unreasonably high minimum
+        minYAmount: 1n,
       }];
-      const minXAmount = 999999999999n; // Unreasonably high minimum
-      const minYAmount = 1n;
       
       const response = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmLiquidityRouter.ERR_MINIMUM_X_AMOUNT);
+      // The error comes from the core contract, not the router
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MINIMUM_X_AMOUNT);
     });
 
     it('should fail when minimum Y amount not met', async () => {
@@ -505,29 +567,24 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockUsdcToken.identifier,
         binId: 0,
         amount: 100000n, // Small amount
+        minXAmount: 1n,
+        minYAmount: 999999999999n, // Unreasonably high minimum
       }];
-      const minXAmount = 1n;
-      const minYAmount = 999999999999n; // Unreasonably high minimum
       
       const response = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmLiquidityRouter.ERR_MINIMUM_Y_AMOUNT);
+      // The error comes from the core contract, not the router
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MINIMUM_Y_AMOUNT);
     });
 
     it('should not allow empty positions list when withdrawing liquidity', async () => {
       // this test will fail
       const positions: any[] = [];
-      const minXAmount = 0n;
-      const minYAmount = 0n;
       
       const response = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
 
       // will add specific error code when it's set
@@ -542,15 +599,13 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockUsdcToken.identifier,
         binId: 0,
         amount: 0n,
+        minXAmount: 0n,
+        minYAmount: 0n,
       }];
-      const minXAmount = 0n;
-      const minYAmount = 0n;
       
       // This should fail at the core withdraw-liquidity level with invalid amount
       const response = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       // The error should propagate from the dlmm-core withdraw-liquidity function
@@ -567,6 +622,8 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: -1, // Has Y token liquidity
           amount: 100000n, // 100K LP tokens
+          minXAmount: 0n, // Bin -1 only has Y
+          minYAmount: 1n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -574,6 +631,8 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: 0, // Has both X and Y token liquidity
           amount: 100000n, // 100K LP tokens
+          minXAmount: 1n,
+          minYAmount: 1n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -581,28 +640,30 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: 1, // Has X token liquidity
           amount: 100000n, // 100K LP tokens
+          minXAmount: 1n,
+          minYAmount: 0n, // Bin 1 only has X
         }
       ];
-      const minXAmount = 1n;
-      const minYAmount = 1n;
       
       const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const response = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
       const result = cvToValue(response.result);
       
+      // result is an array of {xAmount, yAmount} tuples
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(positions.length);
       expect(finalXBalance).toBeGreaterThan(initialXBalance);
       expect(finalYBalance).toBeGreaterThan(initialYBalance);
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBeGreaterThan(0n);
+      result.forEach((r: any) => {
+        expect(r.xAmount + r.yAmount).toBeGreaterThan(0n);
+      });
     });
 
     it('should handle edge case with different bin ranges and their min amounts logic', async () => {
@@ -616,6 +677,8 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: -1, // Should set min-x-amount = 0, min-y-amount = 1
           amount: 500000n,
+          minXAmount: 0n, // Bin -1 only has Y
+          minYAmount: 1n,
         },
         {
           poolTrait: sbtcUsdcPool.identifier,
@@ -623,20 +686,22 @@ describe('DLMM Liquidity Router Functions', () => {
           yTokenTrait: mockUsdcToken.identifier,
           binId: 1, // Should set min-x-amount = 1, min-y-amount = 0
           amount: 500000n,
+          minXAmount: 1n,
+          minYAmount: 0n, // Bin 1 only has X
         }
       ];
-      const minXAmount = 1n;
-      const minYAmount = 1n;
       
       const response = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        positions,
-        minXAmount,
-        minYAmount
+        positions
       ), alice);
       
       const result = cvToValue(response.result);
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBeGreaterThan(0n);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(2);
+      expect(result[0].xAmount).toBe(0n); // Bin -1 only has Y
+      expect(result[0].yAmount).toBeGreaterThan(0n);
+      expect(result[1].xAmount).toBeGreaterThan(0n);
+      expect(result[1].yAmount).toBe(0n); // Bin 1 only has X
     });
   });
 
@@ -651,16 +716,19 @@ describe('DLMM Liquidity Router Functions', () => {
           binId: 5, // Above active bin - only X tokens
           xAmount: 5000000n, // 0.05 BTC
           yAmount: 0n, // No Y tokens for bins above active
+          minDlp: 1n,
+          maxXLiquidityFee: 1000000n,
+          maxYLiquidityFee: 1000000n,
         }
       ];
       
       const addResponse = txOk(dlmmLiquidityRouter.addLiquidityMulti(
-        addPositions,
-        1n
+        addPositions
       ), alice);
       
       const lpReceived = cvToValue(addResponse.result);
-      expect(lpReceived).toBeGreaterThan(0n);
+      expect(Array.isArray(lpReceived)).toBe(true);
+      expect(lpReceived[0]).toBeGreaterThan(0n);
       
       // Then withdraw part of the liquidity
       const withdrawPositions = [
@@ -669,7 +737,9 @@ describe('DLMM Liquidity Router Functions', () => {
           xTokenTrait: mockSbtcToken.identifier,
           yTokenTrait: mockUsdcToken.identifier,
           binId: 5,
-          amount: lpReceived / 2n, // Withdraw half
+          amount: lpReceived[0] / 2n, // Withdraw half
+          minXAmount: 1n, // Expect X tokens since bin 5 is above active
+          minYAmount: 0n, // Don't expect Y tokens since bin 5 is above active
         }
       ];
       
@@ -677,19 +747,19 @@ describe('DLMM Liquidity Router Functions', () => {
       const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
       
       const withdrawResponse = txOk(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        withdrawPositions,
-        1n, // Expect X tokens since bin 5 is above active
-        0n  // Don't expect Y tokens since bin 5 is above active
+        withdrawPositions
       ), alice);
       
       const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
       const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
       const result = cvToValue(withdrawResponse.result);
       
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(1);
       expect(finalXBalance).toBeGreaterThan(initialXBalance);
       expect(finalYBalance).toBe(initialYBalance); // No Y tokens from bin 5
-      expect(result.xAmount).toBeGreaterThan(0n);
-      expect(result.yAmount).toBe(0n); // No Y tokens from bin 5
+      expect(result[0].xAmount).toBeGreaterThan(0n);
+      expect(result[0].yAmount).toBe(0n); // No Y tokens from bin 5
     });
 
     it('should handle edge cases with both functions using mock pool failures', async () => {
@@ -704,16 +774,16 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: 0, // Active bin - can add both X and Y
         xAmount: 5000000n,
         yAmount: 2500000000n,
+        minDlp: 1n,
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
       
       const addResponse = txErr(dlmmLiquidityRouter.addLiquidityMulti(
-        addPositions,
-        1n
+        addPositions
       ), alice);
       
       expect(cvToValue(addResponse.result)).toBe(errors.dlmmCore.ERR_NO_POOL_DATA);
-      // Should get an error from the underlying operation
-      // expect(cvToValue(addResponse.result)).toBeGreaterThan(0n);
       
       // Test withdraw liquidity with failing pool
       const withdrawPositions = [{
@@ -722,16 +792,15 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockUsdcToken.identifier,
         binId: 0, // Active bin
         amount: 1000000n,
+        minXAmount: 1n,
+        minYAmount: 1n,
       }];
       
       const withdrawResponse = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        withdrawPositions,
-        1n,
-        1n
+        withdrawPositions
       ), alice);
       
-      // Should get an error from the underlying operation
-      // expect(cvToValue(withdrawResponse.result)).toBeGreaterThan(0n);
+      // The error comes from the core contract when pool doesn't exist
       expect(cvToValue(withdrawResponse.result)).toBe(errors.dlmmCore.ERR_NO_POOL_DATA);
     });
 
@@ -748,11 +817,13 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: activeBinId, // Active bin
         xAmount: 5000000n, // 0.05 BTC
         yAmount: 2500000000n, // 2500 USDC
+        minDlp: 1n,
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
       
       const response = txErr(dlmmLiquidityRouter.addLiquidityMulti(
-        addPositions,
-        1n
+        addPositions
       ), alice);
       
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_X_TOKEN);
@@ -771,11 +842,13 @@ describe('DLMM Liquidity Router Functions', () => {
         binId: activeBinId, // Active bin
         xAmount: 5000000n, // 0.05 BTC
         yAmount: 2500000000n, // 2500 USDC
+        minDlp: 1n,
+        maxXLiquidityFee: 1000000n,
+        maxYLiquidityFee: 1000000n,
       }];
       
       const response = txErr(dlmmLiquidityRouter.addLiquidityMulti(
-        addPositions,
-        1n
+        addPositions
       ), alice);
       
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_Y_TOKEN);
@@ -792,7 +865,9 @@ describe('DLMM Liquidity Router Functions', () => {
         activeBinId, // Active bin
         10000000n, // 0.1 BTC
         5000000000n, // 5000 USDC
-        1n
+        1n,
+        1000000n, // max-x-liquidity-fee
+        1000000n  // max-y-liquidity-fee
       ), alice);
 
       const withdrawPositions = [{
@@ -801,12 +876,12 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockUsdcToken.identifier,
         binId: activeBinId, // Active bin
         amount: 1000000n,
+        minXAmount: 1n,
+        minYAmount: 1n,
       }];
       
       const response = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        withdrawPositions,
-        1n,
-        1n
+        withdrawPositions
       ), alice);
       
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_X_TOKEN);
@@ -822,7 +897,9 @@ describe('DLMM Liquidity Router Functions', () => {
         activeBinId, // Active bin
         10000000n, // 0.1 BTC
         5000000000n, // 5000 USDC
-        1n
+        1n,
+        1000000n, // max-x-liquidity-fee
+        1000000n  // max-y-liquidity-fee
       ), alice);
 
       const withdrawPositions = [{
@@ -831,12 +908,12 @@ describe('DLMM Liquidity Router Functions', () => {
         yTokenTrait: mockRandomToken.identifier, // Using random token
         binId: activeBinId, // Active bin
         amount: 1000000n,
+        minXAmount: 1n,
+        minYAmount: 1n,
       }];
       
       const response = txErr(dlmmLiquidityRouter.withdrawLiquidityMulti(
-        withdrawPositions,
-        1n,
-        1n
+        withdrawPositions
       ), alice);
       
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_Y_TOKEN);

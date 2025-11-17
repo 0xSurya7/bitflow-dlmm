@@ -152,7 +152,7 @@
       fee-address: (get fee-address current-pool-addresses),
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
-      pool-token: (as-contract tx-sender),
+      pool-token: current-contract,
       bin-step: (var-get bin-step),
       initial-price: (var-get initial-price),
       active-bin-id: (var-get active-bin-id),
@@ -236,6 +236,24 @@
     })
   )
 )
+(define-read-only (get-variable-fees-data)
+  (let (
+    (current-pool-fees (var-get pool-fees))
+    (current-pool-addresses (var-get pool-addresses))
+  )
+    (ok {
+      variable-fees-manager: (get variable-fees-manager current-pool-addresses),
+      x-variable-fee: (get x-variable-fee current-pool-fees),
+      y-variable-fee: (get y-variable-fee current-pool-fees),
+      bin-change-count: (var-get bin-change-count),
+      last-variable-fees-update: (var-get last-variable-fees-update),
+      variable-fees-cooldown: (var-get variable-fees-cooldown),
+      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+      dynamic-config: (var-get dynamic-config)
+    })
+  )
+)
+
 (define-read-only (get-active-bin-id)
   (begin
     (asserts! (not (var-get revert)) (err u42))
@@ -288,7 +306,8 @@
 (define-public (pool-transfer (token-trait <sip-010-trait>) (amount uint) (recipient principal))
   (begin
     (asserts! (is-eq contract-caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-    (as-contract (contract-call? token-trait transfer amount tx-sender recipient none))))
+    (try! (as-contract? ((with-all-assets-unsafe)) (try! (contract-call? token-trait transfer amount tx-sender recipient none))))
+    (ok true)))
 
 (define-public (create-pool
     (x-token-contract principal) (y-token-contract principal)
@@ -331,6 +350,7 @@
 
 ;; Stub functions for other core functions
 (define-public (set-pool-uri (uri (string-ascii 256))) (ok true))
+(define-public (set-core-address (address principal)) (ok true))
 (define-public (set-variable-fees-manager (manager principal)) (ok true))
 (define-public (set-fee-address (address principal)) (ok true))
 (define-public (set-x-fees (protocol-fee uint) (provider-fee uint)) (ok true))

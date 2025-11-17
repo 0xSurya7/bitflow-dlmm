@@ -11,7 +11,7 @@ import {
   mockRandomToken,
 } from "./helpers";
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { accounts } from './clarigen-types'; 
 import {
   cvToValue,
@@ -21,6 +21,17 @@ import { txErr, txOk, rovOk } from '@clarigen/test';
 
 
 describe('DLMM Core Contract', () => {
+  // Initialize expected bin steps before all tests that need them
+  const initializeBinSteps = async () => {
+    const expectedBinSteps = [1n, 5n, 10n, 20n, 25n];
+    const currentBinSteps = rovOk(dlmmCore.getBinSteps());
+    for (const binStep of expectedBinSteps) {
+      if (!currentBinSteps.includes(binStep)) {
+        const factors = generateBinFactors();
+        txOk(dlmmCore.addBinStep(binStep, factors), deployer);
+      }
+    }
+  };
 
   describe('Admin Management', () => {
     it('Deployer should be the only admin at deploy', async () => {
@@ -136,6 +147,8 @@ describe('DLMM Core Contract', () => {
   });
 
   describe('Bin Step Management', () => { ///////////////////////////////////////////////////////////////////
+    beforeEach(initializeBinSteps);
+
     it('Should allow admin to add valid bin step', async () => {
       const binStep = 100n;
       const factors = generateBinFactors();
@@ -193,6 +206,8 @@ describe('DLMM Core Contract', () => {
   });
 
   describe('Read-Only Functions', () => { ///////////////////////////////////////////////////////////////////
+    beforeEach(initializeBinSteps);
+    
     it('should return current admins list', async () => {
       const result = rovOk(dlmmCore.getAdmins());
       expect(result).toEqual([deployer]);
@@ -224,6 +239,8 @@ describe('DLMM Core Contract', () => {
   });
 
   describe('Utility Functions', () => {
+    beforeEach(initializeBinSteps);
+    
     it('should convert between signed and unsigned bin IDs', async () => {
       const testBinId = 250n;
       
@@ -235,7 +252,8 @@ describe('DLMM Core Contract', () => {
     });
 
     it('should calculate bin price correctly', async () => {
-      const initialPrice = 1000000n;
+      // Ensure bin step 25 exists (should be initialized above)
+      const initialPrice = 100000000n; // PRICE_SCALE_BPS
       const binStep = 25n;
       const binId = 0n;
       
@@ -254,6 +272,8 @@ describe('DLMM Core Contract', () => {
   });
 
   describe('Settings Management', () => {
+    beforeEach(initializeBinSteps);
+    
     it('should allow admin to set public pool creation', async () => {
       txOk(dlmmCore.setPublicPoolCreation(true), deployer);
     });
@@ -287,6 +307,7 @@ describe('DLMM Core Contract', () => {
         25n,          // bin step (25 basis points)
         900n,         // variable fees cooldown
         false,        // freeze variable fees manager
+        null,         // dynamic-config (optional)
         deployer,     // fee address
         "https://bitflow.finance/dlmm", // uri
         true          // status
@@ -312,6 +333,7 @@ describe('DLMM Core Contract', () => {
         25n,          // bin step (25 basis points)
         900n,         // variable fees cooldown
         false,        // freeze variable fees manager
+        null,         // dynamic-config (optional)
         deployer,     // fee address
         "https://bitflow.finance/dlmm", // uri
         true          // status

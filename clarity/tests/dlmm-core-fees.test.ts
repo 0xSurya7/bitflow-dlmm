@@ -3,6 +3,7 @@ import {
   bob,
   deployer,
   dlmmCore,
+  dlmmCoreMultiHelper,
   errors,
   sbtcUsdcPool,
   mockSbtcToken,
@@ -33,7 +34,7 @@ describe('DLMM Core Fee Management Tests', () => {
       expect(unclaimedFees).toStrictEqual({ xFee: 0n, yFee: 0n });
     });
 
-    it.skip('Should allow admin to claim protocol fees when available', async () => {
+    it('Should allow admin to claim protocol fees when available', async () => {
       // @audit fix this
       // First do some swaps to generate protocol fees
       const swapAmount = 1000000n; // 0.01 BTC
@@ -135,17 +136,15 @@ describe('DLMM Core Fee Management Tests', () => {
       ), alice);
       
       // Claim fees for multiple pools (using the same pool for simplicity)
-      txOk(dlmmCore.claimProtocolFeesMulti(
+      txOk(dlmmCoreMultiHelper.claimProtocolFeesMulti(
         [sbtcUsdcPool.identifier],
         [mockSbtcToken.identifier],
         [mockUsdcToken.identifier]
       ), deployer);
       
-      // Verify fees were claimed (but due to contract bug, unclaimed counter isn't reset)
       const poolId = 1n;
       const unclaimedFees = rovOk(dlmmCore.getUnclaimedProtocolFeesById(poolId))!;
-      const expectedFee = (1000000n * 1000n) / 10000n; // 10% of swap
-      expect(unclaimedFees.xFee).toBe(expectedFee); // Bug: should be 0 but contract doesn't reset
+      expect(unclaimedFees.xFee).toBe(0n); // Bug: should be 0 but contract doesn't reset
     });
   });
 
@@ -221,7 +220,7 @@ describe('DLMM Core Fee Management Tests', () => {
       const protocolFees = [200n]; // 0.2%
       const providerFees = [1800n];  // 1.8%
       
-      txOk(dlmmCore.setXFeesMulti(
+      txOk(dlmmCoreMultiHelper.setXFeesMulti(
         [sbtcUsdcPool.identifier],
         protocolFees,
         providerFees
@@ -348,7 +347,7 @@ describe('DLMM Core Fee Management Tests', () => {
       const xFees = [250n];
       const yFees = [350n];
       
-      txOk(dlmmCore.setVariableFeesMulti(
+      txOk(dlmmCoreMultiHelper.setVariableFeesMulti(
         [sbtcUsdcPool.identifier],
         xFees,
         yFees
@@ -497,7 +496,9 @@ describe('DLMM Core Fee Management Tests', () => {
         activeBinId,
         xAmount,
         yAmount,
-        1n // min DLP
+        1n, // min DLP
+        1000000n, // max-x-liquidity-fee
+        1000000n  // max-y-liquidity-fee
       ), alice);
 
       const addLiquidityEvents = getAddLiquidityEventData(response);
@@ -523,7 +524,9 @@ describe('DLMM Core Fee Management Tests', () => {
         nonActiveBinId,
         xAmount,
         0n, // Only X tokens for positive bin
-        1n // min DLP
+        1n, // min DLP
+        1000000n, // max-x-liquidity-fee
+        1000000n  // max-y-liquidity-fee
       ), alice);
       
       const addLiquidityEvents = getAddLiquidityEventData(response);

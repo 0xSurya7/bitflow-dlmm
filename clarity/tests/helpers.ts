@@ -15,6 +15,7 @@ export const bob = accounts.wallet_2.address;
 export const charlie = accounts.wallet_3.address;
 
 export const dlmmCore = contracts.dlmmCoreV11;
+export const dlmmCoreMultiHelper = contracts.dlmmCoreMultiHelperV11;
 export const dlmmSwapRouter = contracts.dlmmSwapRouterV11;
 export const dlmmLiquidityRouter = contracts.dlmmLiquidityRouterV11;
 export const sbtcUsdcPool = contracts.dlmmPoolSbtcUsdcV11;
@@ -88,6 +89,7 @@ export function createTestPool() {
     25n,          // bin step (25 basis points)
     900n,         // variable fees cooldown
     false,        // freeze variable fees manager
+    null,         // dynamic-config (optional)
     deployer,     // fee address
     "https://bitflow.finance/dlmm", // uri
     true          // status
@@ -131,7 +133,9 @@ export function addLiquidityToBins(
       bin,
       _xAmount,
       _yAmount,
-      minDlp
+      minDlp,
+      1000000n, // max-x-liquidity-fee
+      1000000n  // max-y-liquidity-fee
     ), caller);
 
     output.push({
@@ -198,11 +202,30 @@ export function bulkAddLiquidityToBins(
 }
 
 export function generateBinFactors(numEntries: number = Number(dlmmCore.constants.NUM_OF_BINS), startValue: bigint = 1000000n): bigint[] {
-  return Array.from({ length: numEntries }, (_, i) => startValue + BigInt(i));
+  const CENTER_BIN_ID = 500; // NUM_OF_BINS / 2 = 1001 / 2 = 500
+  const PRICE_SCALE_BPS = 100000000n;
+  // Calculate starting value so that index CENTER_BIN_ID equals PRICE_SCALE_BPS
+  // If we want factors[i] = baseValue + i, and factors[CENTER_BIN_ID] = PRICE_SCALE_BPS
+  // Then: baseValue + CENTER_BIN_ID = PRICE_SCALE_BPS
+  // So: baseValue = PRICE_SCALE_BPS - CENTER_BIN_ID
+  const baseValue = PRICE_SCALE_BPS - BigInt(CENTER_BIN_ID);
+  const factors: bigint[] = [];
+  
+  for (let i = 0; i < numEntries; i++) {
+    factors.push(baseValue + BigInt(i));
+  }
+  
+  return factors;
 }
 
 export function setupTestEnvironment() {
   setupTokens();
+  
+  // Register bin-step 25 before creating pool
+  const binStep = 25n;
+  const factors = generateBinFactors();
+  txOk(dlmmCore.addBinStep(binStep, factors), deployer);
+  
   createTestPool();
 
   const xAmountPerBin = 5000000n;    // 0.05 BTC

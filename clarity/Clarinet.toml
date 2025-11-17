@@ -7,8 +7,8 @@ cache_dir = ".cache"
 
 [contracts.sip-010-trait-ft-standard-v-1-1]
 path = "contracts/external/sip-010-trait-ft-standard-v-1-1.clar"
-clarity_version = 4
-epoch = "3.3"
+clarity_version = 3
+epoch = "3.0"
 
 [contracts.sip-013-trait-sft-standard-v-1-1]
 path = "contracts/external/sip-013-trait-sft-standard-v-1-1.clar"
@@ -22,8 +22,8 @@ epoch = "3.3"
 
 [contracts.token-stx-v-1-1]
 path = "contracts/external/token-stx-v-1-1.clar"
-clarity_version = 4
-epoch = "3.3"
+clarity_version = 3
+epoch = "3.0"
 
 [contracts.dlmm-pool-trait-v-1-1]
 path = "contracts/dlmm-pool-trait-v-1-1.clar"
@@ -42,6 +42,11 @@ epoch = "3.3"
 
 [contracts.dlmm-staking-sbtc-usdc-v-1-1]
 path = "contracts/dlmm-staking-sbtc-usdc-v-1-1.clar"
+clarity_version = 4
+epoch = "3.3"
+
+[contracts.dlmm-pool-sbtc-usdc-v-1-1]
+path = "contracts/dlmm-pool-sbtc-usdc-v-1-1.clar"
 clarity_version = 4
 epoch = "3.3"
 

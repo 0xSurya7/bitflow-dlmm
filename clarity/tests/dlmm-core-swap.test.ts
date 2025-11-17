@@ -16,6 +16,13 @@ import {
   cvToValue,
 } from '@clarigen/core';
 import { txErr, txOk, rovOk } from '@clarigen/test';
+import {
+  captureBinState,
+  captureUserState,
+  captureProtocolFeesState,
+  checkSwapXForYInvariants,
+  checkSwapYForXInvariants,
+} from "./invariants";
 
 let addBulkLiquidityOutput: { bin: bigint; xAmount: bigint; yAmount: bigint; liquidity: bigint;}[];
 
@@ -45,10 +52,12 @@ describe('DLMM Core Swap Functions', () => {
     it('should successfully swap X for Y with valid parameters', async () => {
       const binId = 0n; // Active bin
       const xAmount = 1000000n; // 0.01 BTC
+      const poolId = 1n;
       
-      // Check initial balances
-      const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
-      const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
+      // Capture state before swap
+      const beforeBin = captureBinState(binId);
+      const beforeUser = captureUserState(alice);
+      const beforeFees = captureProtocolFeesState(poolId);
       
       const response = txOk(dlmmCore.swapXForY(
         sbtcUsdcPool.identifier,
@@ -58,14 +67,32 @@ describe('DLMM Core Swap Functions', () => {
         xAmount
       ), alice);
       
+      // Capture state after swap
+      const afterBin = captureBinState(binId);
+      const afterUser = captureUserState(alice);
+      const afterFees = captureProtocolFeesState(poolId);
+      const swapResult = cvToValue(response.result);
+
       // Check balances changed correctly
-      const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
-      const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const swappedInTokens = cvToValue(response.result);
+      expect(afterUser.xTokenBalance).toBeLessThan(beforeUser.xTokenBalance);
+      expect(afterUser.yTokenBalance).toBe(beforeUser.yTokenBalance + swapResult.out);
+      expect(afterUser.xTokenBalance).toBe(beforeUser.xTokenBalance - xAmount);
       
-      expect(finalXBalance).toBeLessThan(initialXBalance);
-      expect(finalYBalance).toBe(initialYBalance + swappedInTokens);
-      expect(finalXBalance).toBe(initialXBalance - xAmount);
+      // Check invariants
+      const invariantCheck = checkSwapXForYInvariants(
+        beforeBin,
+        afterBin,
+        beforeUser,
+        afterUser,
+        beforeFees,
+        afterFees,
+        xAmount,
+        swapResult
+      );
+      
+      if (!invariantCheck.passed) {
+        throw new Error(`Invariant violations: ${invariantCheck.errors.join('; ')}`);
+      }
     });
 
     it('should fail when pool fails to execute get-pool', async () => {
@@ -86,11 +113,13 @@ describe('DLMM Core Swap Functions', () => {
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NO_POOL_DATA);
     });
 
-    it('should fail when x-amount exceeds maximum allowed', async () => {
-      const binId = 0n;
-      const xAmount = 999999999999n; // Very large amount
+    it('should cap x-amount to maximum allowed when amount exceeds maximum', async () => {
+      const binId = 0n; // Active bin
+      const xAmount = 999999999999n; // Very large amount that exceeds maximum
       
-      const response = txErr(dlmmCore.swapXForY(
+      // The contract doesn't error on large amounts - it caps them to the maximum
+      // This test verifies the swap succeeds with the capped amount
+      const response = txOk(dlmmCore.swapXForY(
         sbtcUsdcPool.identifier,
         mockSbtcToken.identifier,
         mockUsdcToken.identifier,
@@ -98,7 +127,12 @@ describe('DLMM Core Swap Functions', () => {
         xAmount
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MAXIMUM_X_AMOUNT);
+      const swapResult = cvToValue(response.result);
+      // Verify the swap succeeded (amount was capped, not errored)
+      expect(swapResult.out).toBeGreaterThan(0n);
+      expect(swapResult.in).toBeGreaterThan(0n);
+      // The in amount should be less than or equal to the requested amount (capped)
+      expect(swapResult.in).toBeLessThanOrEqual(xAmount);
     });
 
     it('should handle zero x-amount', async () => {
@@ -132,10 +166,11 @@ describe('DLMM Core Swap Functions', () => {
     });
 
     it('should handle swaps in bins with no liquidity', async () => {
-      const binId = 100n; // Bin without liquidity
+      const binId = 100n; // Bin without liquidity (not the active bin)
       const xAmount = 1n;
       
-      /// the check for active bin is done after the active bin check
+      // The contract checks if bin-id equals active-bin-id first, before checking maximum amount
+      // Since binId (100) != activeBinId (0), it returns ERR_NOT_ACTIVE_BIN
       const response = txErr(dlmmCore.swapXForY(
         sbtcUsdcPool.identifier,
         mockSbtcToken.identifier,
@@ -144,7 +179,7 @@ describe('DLMM Core Swap Functions', () => {
         xAmount
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MAXIMUM_X_AMOUNT);
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NOT_ACTIVE_BIN);
     });
   });
 
@@ -152,10 +187,12 @@ describe('DLMM Core Swap Functions', () => {
     it('should successfully swap Y for X with valid parameters', async () => {
       const binId = 0n; // Active bin
       const yAmount = 50000000n; // 50 USDC
+      const poolId = 1n;
       
-      // Check initial balances
-      const initialXBalance = rovOk(mockSbtcToken.getBalance(alice));
-      const initialYBalance = rovOk(mockUsdcToken.getBalance(alice));
+      // Capture state before swap
+      const beforeBin = captureBinState(binId);
+      const beforeUser = captureUserState(alice);
+      const beforeFees = captureProtocolFeesState(poolId);
       
       const response = txOk(dlmmCore.swapYForX(
         sbtcUsdcPool.identifier,
@@ -165,14 +202,32 @@ describe('DLMM Core Swap Functions', () => {
         yAmount
       ), alice);
       
-      // Check balances changed correctly
-      const finalXBalance = rovOk(mockSbtcToken.getBalance(alice));
-      const finalYBalance = rovOk(mockUsdcToken.getBalance(alice));
-      const swappedInTokens = cvToValue(response.result);
+      // Capture state after swap
+      const afterBin = captureBinState(binId);
+      const afterUser = captureUserState(alice);
+      const afterFees = captureProtocolFeesState(poolId);
+      const swapResult = cvToValue(response.result);
 
-      expect(finalXBalance).toBe(initialXBalance + swappedInTokens);
-      expect(finalYBalance).toBeLessThan(initialYBalance);
-      expect(finalYBalance).toBe(initialYBalance - yAmount);
+      // Check balances changed correctly
+      expect(afterUser.xTokenBalance).toBe(beforeUser.xTokenBalance + swapResult.out);
+      expect(afterUser.yTokenBalance).toBeLessThan(beforeUser.yTokenBalance);
+      expect(afterUser.yTokenBalance).toBe(beforeUser.yTokenBalance - yAmount);
+      
+      // Check invariants
+      const invariantCheck = checkSwapYForXInvariants(
+        beforeBin,
+        afterBin,
+        beforeUser,
+        afterUser,
+        beforeFees,
+        afterFees,
+        yAmount,
+        swapResult
+      );
+      
+      if (!invariantCheck.passed) {
+        throw new Error(`Invariant violations: ${invariantCheck.errors.join('; ')}`);
+      }
     });
 
     it('Should fail when pool reverts on get-pool call', async () => {
@@ -193,11 +248,13 @@ describe('DLMM Core Swap Functions', () => {
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NO_POOL_DATA);
     });
 
-    it('Should fail when y-amount exceeds maximum allowed', async () => {
-      const binId = 0n;
-      const yAmount = 999999999999n; // Very large amount
+    it('should cap y-amount to maximum allowed when amount exceeds maximum', async () => {
+      const binId = 0n; // Active bin
+      const yAmount = 999999999999n; // Very large amount that exceeds maximum
       
-      const response = txErr(dlmmCore.swapYForX(
+      // The contract doesn't error on large amounts - it caps them to the maximum
+      // This test verifies the swap succeeds with the capped amount
+      const response = txOk(dlmmCore.swapYForX(
         sbtcUsdcPool.identifier,
         mockSbtcToken.identifier,
         mockUsdcToken.identifier,
@@ -205,14 +262,20 @@ describe('DLMM Core Swap Functions', () => {
         yAmount
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MAXIMUM_Y_AMOUNT);
+      const swapResult = cvToValue(response.result);
+      // Verify the swap succeeded (amount was capped, not errored)
+      expect(swapResult.out).toBeGreaterThan(0n);
+      expect(swapResult.in).toBeGreaterThan(0n);
+      // The in amount should be less than or equal to the requested amount (capped)
+      expect(swapResult.in).toBeLessThanOrEqual(yAmount);
     });
 
     it('should handle swaps in bins with no liquidity', async () => {
-      const binId = 100n; // Bin without liquidity
+      const binId = 100n; // Bin without liquidity (not the active bin)
       const yAmount = 1n;
       
-      /// the check for active bin is done after the active bin check
+      // The contract checks if bin-id equals active-bin-id first, before checking maximum amount
+      // Since binId (100) != activeBinId (0), it returns ERR_NOT_ACTIVE_BIN
       const response = txErr(dlmmCore.swapYForX(
         sbtcUsdcPool.identifier,
         mockSbtcToken.identifier,
@@ -221,7 +284,7 @@ describe('DLMM Core Swap Functions', () => {
         yAmount
       ), alice);
       
-      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_MAXIMUM_Y_AMOUNT);
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NOT_ACTIVE_BIN);
     });
 
     it('Should handle zero y-amount', async () => {
