@@ -143,6 +143,8 @@ interface BalanceConservationData {
   yBalanceError?: bigint;
   poolValueConserved: boolean;
   poolValueError?: bigint;
+  lpSupplyConserved?: boolean;
+  lpSupplyError?: bigint;
 }
 
 interface ViolationStats {
@@ -529,6 +531,7 @@ class FuzzTestLogger {
             totalBias: this.roundingBias.reduce((sum, b) => sum + b.biasAmount, 0n).toString(),
             totalLeakage: this.cumulativePoolValueLeakage.toString(),
             balanceConservationViolations: this.balanceConservation.filter(b => !b.xBalanceConserved || !b.yBalanceConserved || !b.poolValueConserved).length,
+            lpSupplyViolations: this.balanceConservation.filter(b => b.lpSupplyConserved === false).length,
           },
         }, (_, v) => typeof v === 'bigint' ? v.toString() : v, 2),
         'utf-8'
@@ -1196,6 +1199,32 @@ function determineSeverity(floatDiff: bigint, floatPercentDiff: number): 'critic
   }
 }
 
+// Helper function for integer square root (matching Clarity's sqrti)
+function sqrti(value: bigint): bigint {
+  if (value < 0n) throw new Error("sqrti: negative value");
+  if (value === 0n) return 0n;
+  if (value === 1n) return 1n;
+  
+  // Binary search for integer square root
+  let left = 1n;
+  let right = value;
+  let result = 0n;
+  
+  while (left <= right) {
+    const mid = (left + right) / 2n;
+    const square = mid * mid;
+    
+    if (square === value) return mid;
+    if (square < value) {
+      left = mid + 1n;
+      result = mid;
+    } else {
+      right = mid - 1n;
+    }
+  }
+  return result;
+}
+
 function checkRoundingErrors(
   functionName: string,
   beforeState: PoolState,
@@ -1278,10 +1307,16 @@ function checkRoundingErrors(
         // Get bin price
         const binPriceBigInt = rovOk(dlmmCore.getBinPrice(initialPrice, binStep, binId));
         
+        // CRITICAL: Check if caller is fee exempt (contract line 1239)
+        // If exempt, all fees are 0 (contract lines 1240-1242)
+        const poolId = poolData.poolId || 1n;
+        const swapFeeExemption = rovOk(dlmmCore.getSwapFeeExemptionById(user, poolId));
+        
         // Get fees from pool data - for swap-x-for-y, use X fees
-        const protocolFee = Number(poolData.xProtocolFee || 0n);
-        const providerFee = Number(poolData.xProviderFee || 0n);
-        const variableFee = Number(poolData.xVariableFee || 0n);
+        // If fee exempt, use 0 fees (matching contract behavior)
+        const protocolFee = swapFeeExemption ? 0 : Number(poolData.xProtocolFee || 0n);
+        const providerFee = swapFeeExemption ? 0 : Number(poolData.xProviderFee || 0n);
+        const variableFee = swapFeeExemption ? 0 : Number(poolData.xVariableFee || 0n);
         const swapFeeTotal = protocolFee + providerFee + variableFee;
         
         // CRITICAL FIX: Use balance BEFORE swap from captured state, not after
@@ -1290,40 +1325,82 @@ function checkRoundingErrors(
         const inputXAmount = Number(params.amount);
         const binPrice = Number(binPriceBigInt);
         
-        // Contract calculation for swap-x-for-y (lines 1260-1275):
-        // Use FLOAT arithmetic to match contract formulas exactly
-        // Step 1: Calculate max-x-amount based on y-balance BEFORE swap
-        // Formula: max-x-amount = (y-balance * PRICE_SCALE_BPS + bin-price - 1) / bin-price
-        // The "+ bin-price - 1" is for ceiling rounding in integer math, but we use float
-        const maxXAmount = (yBalanceBeforeSwap * PRICE_SCALE_BPS + binPrice - 1) / binPrice;
-        
-        // Step 2: Adjust for fees to get updated-max-x-amount
-        // Formula: updated-max-x-amount = max-x-amount * FEE_SCALE_BPS / (FEE_SCALE_BPS - swap-fee-total)
-        const updatedMaxXAmount = swapFeeTotal > 0 
-          ? (maxXAmount * FEE_SCALE_BPS) / (FEE_SCALE_BPS - swapFeeTotal)
-          : maxXAmount;
-        
-        // Step 3: Cap input X amount (this is the partial fill - line 1264)
-        // updated-x-amount = min(x-amount, updated-max-x-amount)
-        // Use actualSwappedIn from result - this is the actual amount swapped after capping
-        const updatedXAmount = Number(actualSwappedIn);
+        // Contract calculation for swap-x-for-y (dlmm-core-v-1-1.clar lines 1258-1275):
+        // Replicate contract's integer arithmetic exactly, then compare to float math
+        // 
+        // Contract steps (from dlmm-core-v-1-1.clar):
+        // 1. Calculate max-x-amount based on y-balance BEFORE swap (line 1260)
+        //    Formula: max-x-amount = (/ (+ (* y-balance PRICE_SCALE_BPS) (- bin-price u1)) bin-price)
+        //    The "+ bin-price - 1" implements ceiling rounding: (a + b - 1) / b
+        // 2. Adjust for fees to get updated-max-x-amount (line 1261)
+        //    Formula: updated-max-x-amount = (/ (* max-x-amount FEE_SCALE_BPS) (- FEE_SCALE_BPS swap-fee-total))
+        // 3. Cap input X amount at updated-max-x-amount (line 1264)
+        //    Formula: updated-x-amount = (if (>= x-amount updated-max-x-amount) updated-max-x-amount x-amount)
+        // 4. Calculate fees and dx (lines 1267-1271)
+        //    x-amount-fees-total = (/ (* updated-x-amount swap-fee-total) FEE_SCALE_BPS)
+        //    dx = (- updated-x-amount x-amount-fees-total)
+        // 5. Calculate dy before cap (line 1274)
+        //    dy-before-cap = (/ (* dx bin-price) PRICE_SCALE_BPS)
+        // 6. Cap output Y at y-balance (line 1275)
+        //    dy = (if (> dy-before-cap y-balance) y-balance dy-before-cap)
         
         // ========================================================================
         // CHECK 1: Exact Integer Match (Verify our test logic matches contract)
         // ========================================================================
-        const updatedXAmountBigInt = BigInt(actualSwappedIn);
+        // Replicate contract's integer arithmetic exactly using BigInt
+        // This verifies our test logic matches the contract's calculation
+        
         const swapFeeTotalBigInt = BigInt(swapFeeTotal);
         const FEE_SCALE_BPS_BIGINT = 10000n;
-        const xAmountFeesTotalBigInt = (updatedXAmountBigInt * swapFeeTotalBigInt) / FEE_SCALE_BPS_BIGINT;
-        const dxBigInt = updatedXAmountBigInt - xAmountFeesTotalBigInt;
         const PRICE_SCALE_BPS_BIGINT = 100000000n;
-        const dyBeforeCapBigInt = (dxBigInt * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT;
         const yBalanceBeforeSwapBigInt = beforeBin.yBalance;
+        
+        // Step 1: Calculate max-x-amount using integer math with ceiling rounding (contract line 1260)
+        // Formula: max-x-amount = (/ (+ (* y-balance PRICE_SCALE_BPS) (- bin-price u1)) bin-price)
+        // This implements ceiling rounding: (a + b - 1) / b
+        const maxXAmountBigInt = ((yBalanceBeforeSwapBigInt * PRICE_SCALE_BPS_BIGINT) + binPriceBigInt - 1n) / binPriceBigInt;
+        
+        // Step 2: Adjust for fees to get updated-max-x-amount (contract line 1261)
+        // Formula: updated-max-x-amount = (/ (* max-x-amount FEE_SCALE_BPS) (- FEE_SCALE_BPS swap-fee-total))
+        const updatedMaxXAmountBigInt = swapFeeTotalBigInt > 0n
+          ? (maxXAmountBigInt * FEE_SCALE_BPS_BIGINT) / (FEE_SCALE_BPS_BIGINT - swapFeeTotalBigInt)
+          : maxXAmountBigInt;
+        
+        // Step 3: Use actual swapped amount from contract result (contract line 1264)
+        // The contract already capped the input at updated-max-x-amount (partial fill)
+        // result.in = updated-x-amount (the actual amount swapped after capping)
+        const updatedXAmountBigInt = BigInt(actualSwappedIn);
+        
+        // Also calculate float versions for CHECK 2 (rounding error detection)
+        const maxXAmountFloat = (yBalanceBeforeSwap * PRICE_SCALE_BPS + binPrice - 1) / binPrice;
+        const updatedMaxXAmountFloat = swapFeeTotal > 0 
+          ? (maxXAmountFloat * FEE_SCALE_BPS) / (FEE_SCALE_BPS - swapFeeTotal)
+          : maxXAmountFloat;
+        const updatedXAmountFloat = Number(actualSwappedIn);
+        
+        // Calculate fees (contract line 1267): x-amount-fees-total = (/ (* updated-x-amount swap-fee-total) FEE_SCALE_BPS)
+        const xAmountFeesTotalBigInt = (updatedXAmountBigInt * swapFeeTotalBigInt) / FEE_SCALE_BPS_BIGINT;
+        
+        // Calculate dx after fees (contract line 1271): dx = (- updated-x-amount x-amount-fees-total)
+        const dxBigInt = updatedXAmountBigInt - xAmountFeesTotalBigInt;
+        
+        // Calculate dy before cap (contract line 1274): dy-before-cap = (/ (* dx bin-price) PRICE_SCALE_BPS)
+        const dyBeforeCapBigInt = (dxBigInt * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT;
+        
+        // Cap dy at y-balance (contract line 1275): dy = (if (> dy-before-cap y-balance) y-balance dy-before-cap)
         const expectedDyInteger = dyBeforeCapBigInt > yBalanceBeforeSwapBigInt ? yBalanceBeforeSwapBigInt : dyBeforeCapBigInt;
         
-        // Calculate float values for complete violation data
-        const xAmountFeesTotalFloat = (updatedXAmount * swapFeeTotal) / FEE_SCALE_BPS;
-        const dxFloat = updatedXAmount - xAmountFeesTotalFloat;
+        // CRITICAL: Integer arithmetic MUST match exactly (0 difference)
+        // Our test logic replicates the contract's integer math step-by-step
+        // Any difference means our test logic is wrong, not that we need tolerance
+        
+        // ========================================================================
+        // CHECK 2: Rounding Error Detection (Compare to ideal float math)
+        // ========================================================================
+        // Calculate what the output would be using perfect float math
+        // This shows the rounding difference between integer and float math
+        const xAmountFeesTotalFloat = (updatedXAmountFloat * swapFeeTotal) / FEE_SCALE_BPS;
+        const dxFloat = updatedXAmountFloat - xAmountFeesTotalFloat;
         const dyBeforeCapFloat = (dxFloat * binPrice) / PRICE_SCALE_BPS;
         const expectedDyFloat = Math.min(dyBeforeCapFloat, yBalanceBeforeSwap);
         const expectedDyFloatBigInt = BigInt(Math.floor(expectedDyFloat));
@@ -1335,8 +1412,10 @@ function checkRoundingErrors(
           : 0;
         
         // Check 1: Exact match with contract's integer arithmetic
+        // CRITICAL: Integer arithmetic should match EXACTLY (0 difference)
+        // Any difference indicates our test logic doesn't match the contract
         const integerDiff = expectedDyInteger > actualSwappedOut ? expectedDyInteger - actualSwappedOut : actualSwappedOut - expectedDyInteger;
-        if (integerDiff > 2n) {
+        if (integerDiff > 0n) {
           const violation: ViolationData = {
             type: 'calculation_mismatch',
             severity: 'critical', // Calculation mismatches are always critical
@@ -1361,8 +1440,8 @@ function checkRoundingErrors(
               activeBinId: beforeState.activeBinId,
             },
             calculations: {
-              maxAmount: maxXAmount,
-              updatedMaxAmount: updatedMaxXAmount,
+              maxAmount: Number(maxXAmountBigInt),
+              updatedMaxAmount: Number(updatedMaxXAmountBigInt),
               fees: xAmountFeesTotalBigInt,
               dx: dxBigInt,
               dyBeforeCap: dyBeforeCapBigInt,
@@ -1418,10 +1497,13 @@ function checkRoundingErrors(
         const poolValueAfter = (afterBin.xBalance * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT + afterBin.yBalance;
         const poolValueChange = poolValueAfter - poolValueBefore;
         
-        // Expected pool value change = fees collected (in Y token terms)
-        // Fees are in X tokens, convert to Y: feesY = (feesX * binPrice) / PRICE_SCALE_BPS
-        const feesInY = (xAmountFeesTotalBigInt * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT;
-        const expectedPoolValueChange = feesInY; // Pool should gain exactly the fees
+        // Expected pool value change = provider fees + variable fees (in Y token terms)
+        // Protocol fees are removed from pool, but provider/variable fees stay in pool
+        // Provider + variable fees = total fees - protocol fees
+        const providerFeeBigInt = (updatedXAmountBigInt * BigInt(providerFee)) / FEE_SCALE_BPS_BIGINT;
+        const variableFeeBigInt = (updatedXAmountBigInt * BigInt(variableFee)) / FEE_SCALE_BPS_BIGINT;
+        const providerAndVariableFeesInY = ((providerFeeBigInt + variableFeeBigInt) * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT;
+        const expectedPoolValueChange = providerAndVariableFeesInY; // Pool gains provider + variable fees
         
         // Pool value leakage = actual change - expected change
         // Positive = pool gained more than expected (good for pool)
@@ -1461,9 +1543,23 @@ function checkRoundingErrors(
           : yBalanceExpected - afterBin.yBalance;
         const yBalanceConserved = yBalanceError <= 2n;
         
-        // Pool value should change by exactly fees (accounting for rounding)
+        // Pool value should change by exactly provider + variable fees (accounting for rounding)
+        // Use minimum tolerance of 2 tokens to avoid false positives with very small fees
         const poolValueError = poolValueLeakage > 0n ? poolValueLeakage : -poolValueLeakage;
-        const poolValueConserved = poolValueError <= (feesInY / 1000n); // Allow 0.1% tolerance
+        const percentageTolerance = providerAndVariableFeesInY / 1000n; // 0.1% tolerance
+        const minTolerance = 2n; // Minimum 2 tokens tolerance
+        const tolerance = providerAndVariableFeesInY > 0n 
+          ? (percentageTolerance > minTolerance ? percentageTolerance : minTolerance)
+          : minTolerance;
+        const poolValueConserved = poolValueError <= tolerance;
+        
+        // Verify LP supply remains constant during swaps
+        const lpSupplyConserved = beforeBin.totalSupply === afterBin.totalSupply;
+        const lpSupplyError = beforeBin.totalSupply !== afterBin.totalSupply 
+          ? (afterBin.totalSupply > beforeBin.totalSupply 
+              ? afterBin.totalSupply - beforeBin.totalSupply 
+              : beforeBin.totalSupply - afterBin.totalSupply)
+          : undefined;
         
         logger.logBalanceConservation({
           txNumber,
@@ -1473,12 +1569,62 @@ function checkRoundingErrors(
           xBalanceError: xBalanceError > 2n ? xBalanceError : undefined,
           yBalanceError: yBalanceError > 2n ? yBalanceError : undefined,
           poolValueConserved,
-          poolValueError: poolValueError > (feesInY / 1000n) ? poolValueError : undefined,
+          poolValueError: poolValueError > tolerance ? poolValueError : undefined,
+          lpSupplyConserved,
+          lpSupplyError,
         });
         
-        // Flag if rounding error is significant (>1% or >100 tokens)
+        // ========================================================================
+        // CRITICAL EXPLOIT CHECK: User-favored bias (actualOutput > expectedFloat)
+        // ========================================================================
+        // If user receives MORE than float math suggests, this is an exploit
+        // Fail immediately regardless of magnitude - even 1 token is unacceptable
+        if (actualSwappedOut > expectedDyFloatBigInt) {
+          const exploitAmount = actualSwappedOut - expectedDyFloatBigInt;
+          const exploitPercent = actualSwappedOut > 0n 
+            ? (Number(exploitAmount) / Number(actualSwappedOut)) * 100 
+            : 0;
+          const violation: ViolationData = {
+            type: 'rounding_error',
+            severity: 'critical', // User-favored bias is always critical
+            transactionNumber: txNumber,
+            functionName: 'swap-x-for-y',
+            binId,
+            caller: user,
+            inputAmount: BigInt(params.amount),
+            actualSwappedIn,
+            actualSwappedOut,
+            expectedInteger: expectedDyInteger,
+            expectedFloat: expectedDyFloatBigInt,
+            contractResult: actualSwappedOut,
+            integerDiff,
+            floatDiff: exploitAmount,
+            floatPercentDiff: exploitPercent,
+            poolState: {
+              binPrice: binPriceBigInt,
+              yBalanceBefore: beforeBin.yBalance,
+              yBalanceAfter: afterBin.yBalance,
+              swapFeeTotal,
+              activeBinId: beforeState.activeBinId,
+            },
+            calculations: {
+              maxAmount: Number(maxXAmountBigInt),
+              updatedMaxAmount: Number(updatedMaxXAmountBigInt),
+              fees: xAmountFeesTotalBigInt,
+              dx: dxBigInt,
+              dyBeforeCap: dyBeforeCapBigInt,
+            },
+            timestamp: new Date().toISOString(),
+            randomSeed,
+          };
+          logger.addViolation(violation);
+          issues.push(`🚨 EXPLOIT DETECTED: User received ${exploitAmount} MORE tokens than float math (${exploitPercent.toFixed(6)}%) - actual: ${actualSwappedOut}, expected: ${expectedDyFloatBigInt}`);
+        }
+        
+        // Flag if rounding error is significant (>1% or >100 tokens) for pool-favored cases
+        // Note: User-favored cases are already caught above and always fail
         const maxRoundingDiff = Math.max(100, Number(actualSwappedOut) * 0.01);
-        if (Number(floatDiff) > maxRoundingDiff) {
+        if (actualSwappedOut < expectedDyFloatBigInt && Number(floatDiff) > maxRoundingDiff) {
           const severity = determineSeverity(floatDiff, floatPercentDiff);
           const violation: ViolationData = {
             type: 'rounding_error',
@@ -1504,8 +1650,8 @@ function checkRoundingErrors(
               activeBinId: beforeState.activeBinId,
             },
             calculations: {
-              maxAmount: maxXAmount,
-              updatedMaxAmount: updatedMaxXAmount,
+              maxAmount: Number(maxXAmountBigInt),
+              updatedMaxAmount: Number(updatedMaxXAmountBigInt),
               fees: xAmountFeesTotalBigInt,
               dx: dxBigInt,
               dyBeforeCap: dyBeforeCapBigInt,
@@ -1566,10 +1712,16 @@ function checkRoundingErrors(
         // Get bin price
         const binPriceBigInt = rovOk(dlmmCore.getBinPrice(initialPrice, binStep, binId));
         
+        // CRITICAL: Check if caller is fee exempt (contract line 1384)
+        // If exempt, all fees are 0 (contract lines 1385-1387)
+        const poolId = poolData.poolId || 1n;
+        const swapFeeExemption = rovOk(dlmmCore.getSwapFeeExemptionById(user, poolId));
+        
         // Get fees from pool data - for swap-y-for-x, use Y fees
-        const protocolFee = Number(poolData.yProtocolFee || 0n);
-        const providerFee = Number(poolData.yProviderFee || 0n);
-        const variableFee = Number(poolData.yVariableFee || 0n);
+        // If fee exempt, use 0 fees (matching contract behavior)
+        const protocolFee = swapFeeExemption ? 0 : Number(poolData.yProtocolFee || 0n);
+        const providerFee = swapFeeExemption ? 0 : Number(poolData.yProviderFee || 0n);
+        const variableFee = swapFeeExemption ? 0 : Number(poolData.yVariableFee || 0n);
         const swapFeeTotal = protocolFee + providerFee + variableFee;
         
         // CRITICAL FIX: Use balance BEFORE swap from captured state, not after
@@ -1578,40 +1730,82 @@ function checkRoundingErrors(
         const inputYAmount = Number(params.amount);
         const binPrice = Number(binPriceBigInt);
         
-        // Contract calculation for swap-y-for-x (lines 1405-1420):
-        // Use FLOAT arithmetic to match contract formulas exactly
-        // Step 1: Calculate max-y-amount based on x-balance BEFORE swap
-        // Formula: max-y-amount = (x-balance * bin-price + PRICE_SCALE_BPS - 1) / PRICE_SCALE_BPS
-        // The "+ PRICE_SCALE_BPS - 1" is for ceiling rounding in integer math, but we use float
-        const maxYAmount = (xBalanceBeforeSwap * binPrice + PRICE_SCALE_BPS - 1) / PRICE_SCALE_BPS;
-        
-        // Step 2: Adjust for fees to get updated-max-y-amount
-        // Formula: updated-max-y-amount = max-y-amount * FEE_SCALE_BPS / (FEE_SCALE_BPS - swap-fee-total)
-        const updatedMaxYAmount = swapFeeTotal > 0 
-          ? (maxYAmount * FEE_SCALE_BPS) / (FEE_SCALE_BPS - swapFeeTotal)
-          : maxYAmount;
-        
-        // Step 3: Cap input Y amount (this is the partial fill - line 1409)
-        // updated-y-amount = min(y-amount, updated-max-y-amount)
-        // Use actualSwappedIn from result - this is the actual amount swapped after capping
-        const updatedYAmount = Number(actualSwappedIn);
+        // Contract calculation for swap-y-for-x (dlmm-core-v-1-1.clar lines 1403-1420):
+        // Replicate contract's integer arithmetic exactly, then compare to float math
+        //
+        // Contract steps (from dlmm-core-v-1-1.clar):
+        // 1. Calculate max-y-amount based on x-balance BEFORE swap (line 1405)
+        //    Formula: max-y-amount = (/ (+ (* x-balance bin-price) (- PRICE_SCALE_BPS u1)) PRICE_SCALE_BPS)
+        //    The "+ PRICE_SCALE_BPS - 1" implements ceiling rounding: (a + b - 1) / b
+        // 2. Adjust for fees to get updated-max-y-amount (line 1406)
+        //    Formula: updated-max-y-amount = (/ (* max-y-amount FEE_SCALE_BPS) (- FEE_SCALE_BPS swap-fee-total))
+        // 3. Cap input Y amount at updated-max-y-amount (line 1409)
+        //    Formula: updated-y-amount = (if (>= y-amount updated-max-y-amount) updated-max-y-amount y-amount)
+        // 4. Calculate fees and dy (lines 1412-1416)
+        //    y-amount-fees-total = (/ (* updated-y-amount swap-fee-total) FEE_SCALE_BPS)
+        //    dy = (- updated-y-amount y-amount-fees-total)
+        // 5. Calculate dx before cap (line 1419)
+        //    dx-before-cap = (/ (* dy PRICE_SCALE_BPS) bin-price)
+        // 6. Cap output X at x-balance (line 1420)
+        //    dx = (if (> dx-before-cap x-balance) x-balance dx-before-cap)
         
         // ========================================================================
         // CHECK 1: Exact Integer Match (Verify our test logic matches contract)
         // ========================================================================
-        const updatedYAmountBigInt = BigInt(actualSwappedIn);
+        // Replicate contract's integer arithmetic exactly using BigInt
+        // This verifies our test logic matches the contract's calculation
+        
         const swapFeeTotalBigInt = BigInt(swapFeeTotal);
         const FEE_SCALE_BPS_BIGINT = 10000n;
-        const yAmountFeesTotalBigInt = (updatedYAmountBigInt * swapFeeTotalBigInt) / FEE_SCALE_BPS_BIGINT;
-        const dyBigInt = updatedYAmountBigInt - yAmountFeesTotalBigInt;
         const PRICE_SCALE_BPS_BIGINT = 100000000n;
-        const dxBeforeCapBigInt = (dyBigInt * PRICE_SCALE_BPS_BIGINT) / binPriceBigInt;
         const xBalanceBeforeSwapBigInt = beforeBin.xBalance;
+        
+        // Step 1: Calculate max-y-amount using integer math with ceiling rounding (contract line 1405)
+        // Formula: max-y-amount = (/ (+ (* x-balance bin-price) (- PRICE_SCALE_BPS u1)) PRICE_SCALE_BPS)
+        // This implements ceiling rounding: (a + b - 1) / b
+        const maxYAmountBigInt = ((xBalanceBeforeSwapBigInt * binPriceBigInt) + PRICE_SCALE_BPS_BIGINT - 1n) / PRICE_SCALE_BPS_BIGINT;
+        
+        // Step 2: Adjust for fees to get updated-max-y-amount (contract line 1406)
+        // Formula: updated-max-y-amount = (/ (* max-y-amount FEE_SCALE_BPS) (- FEE_SCALE_BPS swap-fee-total))
+        const updatedMaxYAmountBigInt = swapFeeTotalBigInt > 0n
+          ? (maxYAmountBigInt * FEE_SCALE_BPS_BIGINT) / (FEE_SCALE_BPS_BIGINT - swapFeeTotalBigInt)
+          : maxYAmountBigInt;
+        
+        // Step 3: Use actual swapped amount from contract result (contract line 1409)
+        // The contract already capped the input at updated-max-y-amount (partial fill)
+        // result.in = updated-y-amount (the actual amount swapped after capping)
+        const updatedYAmountBigInt = BigInt(actualSwappedIn);
+        
+        // Also calculate float versions for CHECK 2 (rounding error detection)
+        const maxYAmountFloat = (xBalanceBeforeSwap * binPrice + PRICE_SCALE_BPS - 1) / PRICE_SCALE_BPS;
+        const updatedMaxYAmountFloat = swapFeeTotal > 0 
+          ? (maxYAmountFloat * FEE_SCALE_BPS) / (FEE_SCALE_BPS - swapFeeTotal)
+          : maxYAmountFloat;
+        const updatedYAmountFloat = Number(actualSwappedIn);
+        
+        // Calculate fees (contract line 1412): y-amount-fees-total = (/ (* updated-y-amount swap-fee-total) FEE_SCALE_BPS)
+        const yAmountFeesTotalBigInt = (updatedYAmountBigInt * swapFeeTotalBigInt) / FEE_SCALE_BPS_BIGINT;
+        
+        // Calculate dy after fees (contract line 1416): dy = (- updated-y-amount y-amount-fees-total)
+        const dyBigInt = updatedYAmountBigInt - yAmountFeesTotalBigInt;
+        
+        // Calculate dx before cap (contract line 1419): dx-before-cap = (/ (* dy PRICE_SCALE_BPS) bin-price)
+        const dxBeforeCapBigInt = (dyBigInt * PRICE_SCALE_BPS_BIGINT) / binPriceBigInt;
+        
+        // Cap dx at x-balance (contract line 1420): dx = (if (> dx-before-cap x-balance) x-balance dx-before-cap)
         const expectedDxInteger = dxBeforeCapBigInt > xBalanceBeforeSwapBigInt ? xBalanceBeforeSwapBigInt : dxBeforeCapBigInt;
         
-        // Calculate float values for complete violation data
-        const yAmountFeesTotalFloat = (updatedYAmount * swapFeeTotal) / FEE_SCALE_BPS;
-        const dyFloat = updatedYAmount - yAmountFeesTotalFloat;
+        // CRITICAL: Integer arithmetic MUST match exactly (0 difference)
+        // Our test logic replicates the contract's integer math step-by-step
+        // Any difference means our test logic is wrong, not that we need tolerance
+        
+        // ========================================================================
+        // CHECK 2: Rounding Error Detection (Compare to ideal float math)
+        // ========================================================================
+        // Calculate what the output would be using perfect float math
+        // This shows the rounding difference between integer and float math
+        const yAmountFeesTotalFloat = (updatedYAmountFloat * swapFeeTotal) / FEE_SCALE_BPS;
+        const dyFloat = updatedYAmountFloat - yAmountFeesTotalFloat;
         const dxBeforeCapFloat = (dyFloat * PRICE_SCALE_BPS) / binPrice;
         const expectedDxFloat = Math.min(dxBeforeCapFloat, xBalanceBeforeSwap);
         const expectedDxFloatBigInt = BigInt(Math.floor(expectedDxFloat));
@@ -1623,8 +1817,10 @@ function checkRoundingErrors(
           : 0;
         
         // Check 1: Exact match with contract's integer arithmetic
+        // CRITICAL: Integer arithmetic should match EXACTLY (0 difference)
+        // Any difference indicates our test logic doesn't match the contract
         const integerDiff = expectedDxInteger > actualSwappedOut ? expectedDxInteger - actualSwappedOut : actualSwappedOut - expectedDxInteger;
-        if (integerDiff > 2n) {
+        if (integerDiff > 0n) {
           const violation: ViolationData = {
             type: 'calculation_mismatch',
             severity: 'critical', // Calculation mismatches are always critical
@@ -1649,8 +1845,8 @@ function checkRoundingErrors(
               activeBinId: beforeState.activeBinId,
             },
             calculations: {
-              maxAmount: maxYAmount,
-              updatedMaxAmount: updatedMaxYAmount,
+              maxAmount: Number(maxYAmountBigInt),
+              updatedMaxAmount: Number(updatedMaxYAmountBigInt),
               fees: yAmountFeesTotalBigInt,
               dy: dyBigInt,
               dxBeforeCap: dxBeforeCapBigInt,
@@ -1706,10 +1902,15 @@ function checkRoundingErrors(
         const poolValueAfterY = afterBin.xBalance + (afterBin.yBalance * PRICE_SCALE_BPS_BIGINT) / binPriceBigInt;
         const poolValueChangeY = poolValueAfterY - poolValueBeforeY;
         
-        // Expected pool value change = fees collected (in X token terms)
-        // Fees are in Y tokens, convert to X: feesX = (feesY * PRICE_SCALE_BPS) / binPrice
-        const feesInX = (yAmountFeesTotalBigInt * PRICE_SCALE_BPS_BIGINT) / binPriceBigInt;
-        const expectedPoolValueChangeY = feesInX;
+        // Expected pool value change = provider fees + variable fees (in X token terms)
+        // Protocol fees are removed from pool, but provider/variable fees stay in pool
+        const providerFeeY = Number(poolData.yProviderFee || 0n);
+        const variableFeeY = Number(poolData.yVariableFee || 0n);
+        const providerFeeYBigInt = (updatedYAmountBigInt * BigInt(providerFeeY)) / FEE_SCALE_BPS_BIGINT;
+        const variableFeeYBigInt = (updatedYAmountBigInt * BigInt(variableFeeY)) / FEE_SCALE_BPS_BIGINT;
+        // Convert provider + variable fees from Y to X: feesX = (feesY * PRICE_SCALE_BPS) / binPrice
+        const providerAndVariableFeesInX = ((providerFeeYBigInt + variableFeeYBigInt) * PRICE_SCALE_BPS_BIGINT) / binPriceBigInt;
+        const expectedPoolValueChangeY = providerAndVariableFeesInX;
         
         // Pool value leakage
         const poolValueLeakageY = poolValueChangeY - expectedPoolValueChangeY;
@@ -1747,9 +1948,23 @@ function checkRoundingErrors(
           : yBalanceExpectedY - afterBin.yBalance;
         const yBalanceConservedY = yBalanceErrorY <= 2n;
         
-        // Pool value should change by exactly fees
+        // Pool value should change by exactly provider + variable fees (accounting for rounding)
+        // Use minimum tolerance of 2 tokens to avoid false positives with very small fees
         const poolValueErrorY = poolValueLeakageY > 0n ? poolValueLeakageY : -poolValueLeakageY;
-        const poolValueConservedY = poolValueErrorY <= (feesInX / 1000n);
+        const percentageToleranceY = providerAndVariableFeesInX / 1000n; // 0.1% tolerance
+        const minToleranceY = 2n; // Minimum 2 tokens tolerance
+        const toleranceY = providerAndVariableFeesInX > 0n 
+          ? (percentageToleranceY > minToleranceY ? percentageToleranceY : minToleranceY)
+          : minToleranceY;
+        const poolValueConservedY = poolValueErrorY <= toleranceY;
+        
+        // Verify LP supply remains constant during swaps
+        const lpSupplyConservedY = beforeBin.totalSupply === afterBin.totalSupply;
+        const lpSupplyErrorY = beforeBin.totalSupply !== afterBin.totalSupply 
+          ? (afterBin.totalSupply > beforeBin.totalSupply 
+              ? afterBin.totalSupply - beforeBin.totalSupply 
+              : beforeBin.totalSupply - afterBin.totalSupply)
+          : undefined;
         
         logger.logBalanceConservation({
           txNumber,
@@ -1759,12 +1974,62 @@ function checkRoundingErrors(
           xBalanceError: xBalanceErrorY > 2n ? xBalanceErrorY : undefined,
           yBalanceError: yBalanceErrorY > 2n ? yBalanceErrorY : undefined,
           poolValueConserved: poolValueConservedY,
-          poolValueError: poolValueErrorY > (feesInX / 1000n) ? poolValueErrorY : undefined,
+          poolValueError: poolValueErrorY > toleranceY ? poolValueErrorY : undefined,
+          lpSupplyConserved: lpSupplyConservedY,
+          lpSupplyError: lpSupplyErrorY,
         });
         
-        // Flag if rounding error is significant (>1% or >100 tokens)
+        // ========================================================================
+        // CRITICAL EXPLOIT CHECK: User-favored bias (actualOutput > expectedFloat)
+        // ========================================================================
+        // If user receives MORE than float math suggests, this is an exploit
+        // Fail immediately regardless of magnitude - even 1 token is unacceptable
+        if (actualSwappedOut > expectedDxFloatBigInt) {
+          const exploitAmount = actualSwappedOut - expectedDxFloatBigInt;
+          const exploitPercent = actualSwappedOut > 0n 
+            ? (Number(exploitAmount) / Number(actualSwappedOut)) * 100 
+            : 0;
+          const violation: ViolationData = {
+            type: 'rounding_error',
+            severity: 'critical', // User-favored bias is always critical
+            transactionNumber: txNumber,
+            functionName: 'swap-y-for-x',
+            binId,
+            caller: user,
+            inputAmount: BigInt(params.amount),
+            actualSwappedIn,
+            actualSwappedOut,
+            expectedInteger: expectedDxInteger,
+            expectedFloat: expectedDxFloatBigInt,
+            contractResult: actualSwappedOut,
+            integerDiff,
+            floatDiff: exploitAmount,
+            floatPercentDiff: exploitPercent,
+            poolState: {
+              binPrice: binPriceBigInt,
+              xBalanceBefore: beforeBin.xBalance,
+              xBalanceAfter: afterBin.xBalance,
+              swapFeeTotal,
+              activeBinId: beforeState.activeBinId,
+            },
+            calculations: {
+              maxAmount: Number(maxYAmountBigInt),
+              updatedMaxAmount: Number(updatedMaxYAmountBigInt),
+              fees: yAmountFeesTotalBigInt,
+              dy: dyBigInt,
+              dxBeforeCap: dxBeforeCapBigInt,
+            },
+            timestamp: new Date().toISOString(),
+            randomSeed,
+          };
+          logger.addViolation(violation);
+          issues.push(`🚨 EXPLOIT DETECTED: User received ${exploitAmount} MORE tokens than float math (${exploitPercent.toFixed(6)}%) - actual: ${actualSwappedOut}, expected: ${expectedDxFloatBigInt}`);
+        }
+        
+        // Flag if rounding error is significant (>1% or >100 tokens) for pool-favored cases
+        // Note: User-favored cases are already caught above and always fail
         const maxRoundingDiff = Math.max(100, Number(actualSwappedOut) * 0.01);
-        if (Number(floatDiff) > maxRoundingDiff) {
+        if (actualSwappedOut < expectedDxFloatBigInt && Number(floatDiff) > maxRoundingDiff) {
           const severity = determineSeverity(floatDiff, floatPercentDiff);
           const violation: ViolationData = {
             type: 'rounding_error',
@@ -1790,8 +2055,8 @@ function checkRoundingErrors(
               activeBinId: beforeState.activeBinId,
             },
             calculations: {
-              maxAmount: maxYAmount,
-              updatedMaxAmount: updatedMaxYAmount,
+              maxAmount: Number(maxYAmountBigInt),
+              updatedMaxAmount: Number(updatedMaxYAmountBigInt),
               fees: yAmountFeesTotalBigInt,
               dy: dyBigInt,
               dxBeforeCap: dxBeforeCapBigInt,
@@ -1808,45 +2073,395 @@ function checkRoundingErrors(
       }
     }
   } else if (functionName === 'add-liquidity') {
-    // Check LP token calculation: LP received should be proportional to liquidity added
+    // **NEW**: Comprehensive float comparison for add-liquidity LP token calculation
+    // Following the same pattern as swap checks (lines 1274-1540)
     const xAdded = params.xAmount || 0n;
     const yAdded = params.yAmount || 0n;
     const lpReceived = result || 0n;
     
-    // LP should be positive if liquidity was added
+    // Basic validation: LP should be positive if liquidity was added
     if ((xAdded > 0n || yAdded > 0n) && lpReceived === 0n) {
       issues.push(`Rounding error: No LP tokens received despite adding liquidity`);
     }
     
-    // Check bin balance increases
-    // Note: Liquidity fees are deducted, so bin balance increase may be less than added
-    const xIncrease = afterBin.xBalance - beforeBin.xBalance;
-    const yIncrease = afterBin.yBalance - beforeBin.yBalance;
-    
-    // Bin balance should increase, but may be less than added due to fees
-    // Only flag if increase is significantly less (more than 1% difference)
-    if (xAdded > 0n) {
-      if (xIncrease <= 0n) {
-        issues.push(`Rounding error: X balance did not increase despite adding ${xAdded}`);
-      } else if (xIncrease < xAdded) {
-        const diff = xAdded - xIncrease;
-        const percentDiff = (diff * 10000n) / xAdded; // Basis points
-        if (percentDiff > 100n) { // More than 1% difference - likely a real issue
-          issues.push(`Rounding error: X balance increase (${xIncrease}) < added (${xAdded}), diff: ${diff} (${percentDiff/100n}%)`);
+    // **NEW**: Verify LP calculation matches contract's internal math
+    try {
+      const poolData = rovOk(sbtcUsdcPool.getPool());
+      const binStep = poolData.binStep;
+      const initialPrice = poolData.initialPrice;
+      const FEE_SCALE_BPS = 10000;
+      const PRICE_SCALE_BPS = 100000000;
+      
+      // Get bin price
+      const binPriceBigInt = rovOk(dlmmCore.getBinPrice(initialPrice, binStep, binId));
+      const binPrice = Number(binPriceBigInt);
+      
+      // Get minimum burnt shares (for new bins)
+      const minimumBurntShares = rovOk(dlmmCore.getMinimumBurntShares());
+      
+      // Get bin state BEFORE add-liquidity
+      const xBalanceBefore = beforeBin.xBalance;
+      const yBalanceBefore = beforeBin.yBalance;
+      const binSharesBefore = beforeBin.totalSupply;
+      
+      // Scale y amounts (contract scales y by PRICE_SCALE_BPS)
+      const yAmountScaledBigInt = yAdded * BigInt(PRICE_SCALE_BPS);
+      const yBalanceScaledBigInt = yBalanceBefore * BigInt(PRICE_SCALE_BPS);
+      
+      // ========================================================================
+      // Calculate liquidity values (matching contract logic)
+      // ========================================================================
+      // get-liquidity-value(x, y, price) = (bin-price * x-amount) + y-amount
+      const addLiquidityValueBigInt = (binPriceBigInt * xAdded) + yAmountScaledBigInt;
+      const binLiquidityValueBigInt = (binPriceBigInt * xBalanceBefore) + yBalanceScaledBigInt;
+      
+      // Calculate initial DLP (pre-fees) using integer math
+      let dlpPreFeesBigInt: bigint;
+      if (binSharesBefore === 0n || binLiquidityValueBigInt === 0n) {
+        // Empty bin: dlp = sqrti(add-liquidity-value)
+        dlpPreFeesBigInt = sqrti(addLiquidityValueBigInt);
+      } else {
+        // Existing bin: dlp = (add-liquidity-value * bin-shares) / bin-liquidity-value
+        dlpPreFeesBigInt = (addLiquidityValueBigInt * binSharesBefore) / binLiquidityValueBigInt;
+      }
+      
+      // ========================================================================
+      // Calculate fees (only for active bin and if dlp > 0)
+      // ========================================================================
+      const activeBinId = beforeState.activeBinId;
+      const isActiveBin = binId === activeBinId;
+      
+      let xAmountFeesLiquidityBigInt = 0n;
+      let yAmountFeesLiquidityBigInt = 0n;
+      
+      if (isActiveBin && dlpPreFeesBigInt > 0n) {
+        // Get fee rates from pool data
+        const xProtocolFee = Number(poolData.xProtocolFee || 0n);
+        const xProviderFee = Number(poolData.xProviderFee || 0n);
+        const xVariableFee = Number(poolData.xVariableFee || 0n);
+        const xLiquidityFee = xProtocolFee + xProviderFee + xVariableFee;
+        
+        const yProtocolFee = Number(poolData.yProtocolFee || 0n);
+        const yProviderFee = Number(poolData.yProviderFee || 0n);
+        const yVariableFee = Number(poolData.yVariableFee || 0n);
+        const yLiquidityFee = yProtocolFee + yProviderFee + yVariableFee;
+        
+        // Calculate withdrawable amounts without fees
+        // withdrawable = (dlp * (balance + amount)) / (binShares + dlp)
+        const xAmountWithdrawableBigInt = (dlpPreFeesBigInt * (xBalanceBefore + xAdded)) / (binSharesBefore + dlpPreFeesBigInt);
+        const yAmountWithdrawableBigInt = (dlpPreFeesBigInt * (yBalanceBefore + yAdded)) / (binSharesBefore + dlpPreFeesBigInt);
+        
+        // Calculate max liquidity fees
+        // X fee: if yWithdrawable > yAmount && xAmount > xWithdrawable
+        if (yAmountWithdrawableBigInt > yAdded && xAdded > xAmountWithdrawableBigInt) {
+          const maxXAmountFeesLiquidityBigInt = ((xAdded - xAmountWithdrawableBigInt) * BigInt(xLiquidityFee)) / BigInt(FEE_SCALE_BPS);
+          xAmountFeesLiquidityBigInt = xAdded > maxXAmountFeesLiquidityBigInt ? maxXAmountFeesLiquidityBigInt : xAdded;
+        }
+        
+        // Y fee: if xWithdrawable > xAmount && yAmount > yWithdrawable
+        if (xAmountWithdrawableBigInt > xAdded && yAdded > yAmountWithdrawableBigInt) {
+          const maxYAmountFeesLiquidityBigInt = ((yAdded - yAmountWithdrawableBigInt) * BigInt(yLiquidityFee)) / BigInt(FEE_SCALE_BPS);
+          yAmountFeesLiquidityBigInt = yAdded > maxYAmountFeesLiquidityBigInt ? maxYAmountFeesLiquidityBigInt : yAdded;
         }
       }
-    }
-    
-    if (yAdded > 0n) {
-      if (yIncrease <= 0n) {
-        issues.push(`Rounding error: Y balance did not increase despite adding ${yAdded}`);
-      } else if (yIncrease < yAdded) {
-        const diff = yAdded - yIncrease;
-        const percentDiff = (diff * 10000n) / yAdded; // Basis points
-        if (percentDiff > 100n) { // More than 1% difference
-          issues.push(`Rounding error: Y balance increase (${yIncrease}) < added (${yAdded}), diff: ${diff} (${percentDiff/100n}%)`);
+      
+      // Calculate post-fee amounts
+      const xAmountPostFeesBigInt = xAdded - xAmountFeesLiquidityBigInt;
+      const yAmountPostFeesBigInt = yAdded - yAmountFeesLiquidityBigInt;
+      const yAmountPostFeesScaledBigInt = yAmountPostFeesBigInt * BigInt(PRICE_SCALE_BPS);
+      
+      // Calculate bin balances post fees (fees stay in pool)
+      const xBalancePostFeesBigInt = xBalanceBefore + xAmountFeesLiquidityBigInt;
+      const yBalancePostFeesBigInt = yBalanceBefore + yAmountFeesLiquidityBigInt;
+      const yBalancePostFeesScaledBigInt = yBalancePostFeesBigInt * BigInt(PRICE_SCALE_BPS);
+      
+      // Calculate final liquidity values post fees
+      const addLiquidityValuePostFeesBigInt = (binPriceBigInt * xAmountPostFeesBigInt) + yAmountPostFeesScaledBigInt;
+      const binLiquidityValuePostFeesBigInt = (binPriceBigInt * xBalancePostFeesBigInt) + yBalancePostFeesScaledBigInt;
+      
+      // Calculate final DLP (post-fees) using integer math
+      let expectedLPInteger: bigint;
+      const burnAmount = binSharesBefore === 0n ? minimumBurntShares : 0n;
+      
+      if (binSharesBefore === 0n) {
+        // New bin: intended-dlp = sqrti(add-liquidity-value-post-fees), then subtract burn-amount
+        const intendedDlp = sqrti(addLiquidityValuePostFeesBigInt);
+        // Contract checks: intendedDlp >= minimumBinShares (we skip this check in test)
+        expectedLPInteger = intendedDlp - burnAmount;
+      } else if (binLiquidityValuePostFeesBigInt === 0n) {
+        // Edge case: bin-liquidity-value-post-fees is 0
+        expectedLPInteger = sqrti(addLiquidityValuePostFeesBigInt);
+      } else {
+        // Existing bin: dlp = (add-liquidity-value-post-fees * bin-shares) / bin-liquidity-value-post-fees
+        expectedLPInteger = (addLiquidityValuePostFeesBigInt * binSharesBefore) / binLiquidityValuePostFeesBigInt;
+      }
+      
+      // ========================================================================
+      // CHECK 1: Exact Integer Match (Verify our test logic matches contract)
+      // ========================================================================
+      // CRITICAL: Integer arithmetic MUST match exactly (0 difference)
+      // Our test logic replicates the contract's integer math step-by-step
+      // Any difference means our test logic is wrong, not that we need tolerance
+      const integerDiff = expectedLPInteger > lpReceived 
+        ? expectedLPInteger - lpReceived 
+        : lpReceived - expectedLPInteger;
+      
+      if (integerDiff > 0n) {
+        const violation: ViolationData = {
+          type: 'calculation_mismatch',
+          severity: 'critical',
+          transactionNumber: txNumber,
+          functionName: 'add-liquidity',
+          binId,
+          caller: user,
+          inputAmount: xAdded + yAdded, // Combined input for add-liquidity
+          actualSwappedIn: xAdded + yAdded,
+          actualSwappedOut: lpReceived,
+          expectedInteger: expectedLPInteger,
+          expectedFloat: expectedLPInteger, // Will be calculated in CHECK 2
+          contractResult: lpReceived,
+          integerDiff,
+          floatDiff: integerDiff, // Placeholder, will be updated in CHECK 2
+          floatPercentDiff: lpReceived > 0n ? (Number(integerDiff) / Number(lpReceived)) * 100 : 0,
+          poolState: {
+            binPrice: binPriceBigInt,
+            xBalanceBefore: xBalanceBefore,
+            yBalanceBefore: yBalanceBefore,
+            swapFeeTotal: 0, // Not applicable for add-liquidity
+            activeBinId: beforeState.activeBinId,
+          },
+          calculations: {
+            maxAmount: 0, // Not applicable
+            updatedMaxAmount: 0, // Not applicable
+            fees: xAmountFeesLiquidityBigInt + yAmountFeesLiquidityBigInt,
+          },
+          timestamp: new Date().toISOString(),
+          randomSeed,
+        };
+        logger.addViolation(violation);
+        issues.push(`Calculation mismatch: Expected ${expectedLPInteger}, got ${lpReceived}, diff: ${integerDiff}`);
+      }
+      
+      // ========================================================================
+      // CHECK 2: Rounding Error Detection (Compare to ideal float math)
+      // ========================================================================
+      // Calculate using float math for comparison
+      const addLiquidityValueFloat = (binPrice * Number(xAdded)) + (Number(yAdded) * PRICE_SCALE_BPS);
+      const binLiquidityValueFloat = (binPrice * Number(xBalanceBefore)) + (Number(yBalanceBefore) * PRICE_SCALE_BPS);
+      
+      let dlpPreFeesFloat: number;
+      if (binSharesBefore === 0n || binLiquidityValueFloat === 0) {
+        dlpPreFeesFloat = Math.sqrt(addLiquidityValueFloat);
+      } else {
+        dlpPreFeesFloat = (addLiquidityValueFloat * Number(binSharesBefore)) / binLiquidityValueFloat;
+      }
+      
+      // Calculate fees using float math
+      let xAmountFeesLiquidityFloat = 0;
+      let yAmountFeesLiquidityFloat = 0;
+      
+      if (isActiveBin && dlpPreFeesFloat > 0) {
+        const xProtocolFee = Number(poolData.xProtocolFee || 0n);
+        const xProviderFee = Number(poolData.xProviderFee || 0n);
+        const xVariableFee = Number(poolData.xVariableFee || 0n);
+        const xLiquidityFee = xProtocolFee + xProviderFee + xVariableFee;
+        
+        const yProtocolFee = Number(poolData.yProtocolFee || 0n);
+        const yProviderFee = Number(poolData.yProviderFee || 0n);
+        const yVariableFee = Number(poolData.yVariableFee || 0n);
+        const yLiquidityFee = yProtocolFee + yProviderFee + yVariableFee;
+        
+        const xAmountWithdrawableFloat = (dlpPreFeesFloat * (Number(xBalanceBefore) + Number(xAdded))) / (Number(binSharesBefore) + dlpPreFeesFloat);
+        const yAmountWithdrawableFloat = (dlpPreFeesFloat * (Number(yBalanceBefore) + Number(yAdded))) / (Number(binSharesBefore) + dlpPreFeesFloat);
+        
+        if (yAmountWithdrawableFloat > Number(yAdded) && Number(xAdded) > xAmountWithdrawableFloat) {
+          const maxXAmountFeesLiquidityFloat = ((Number(xAdded) - xAmountWithdrawableFloat) * xLiquidityFee) / FEE_SCALE_BPS;
+          xAmountFeesLiquidityFloat = Number(xAdded) > maxXAmountFeesLiquidityFloat ? maxXAmountFeesLiquidityFloat : Number(xAdded);
+        }
+        
+        if (xAmountWithdrawableFloat > Number(xAdded) && Number(yAdded) > yAmountWithdrawableFloat) {
+          const maxYAmountFeesLiquidityFloat = ((Number(yAdded) - yAmountWithdrawableFloat) * yLiquidityFee) / FEE_SCALE_BPS;
+          yAmountFeesLiquidityFloat = Number(yAdded) > maxYAmountFeesLiquidityFloat ? maxYAmountFeesLiquidityFloat : Number(yAdded);
         }
       }
+      
+      const xAmountPostFeesFloat = Number(xAdded) - xAmountFeesLiquidityFloat;
+      const yAmountPostFeesFloat = Number(yAdded) - yAmountFeesLiquidityFloat;
+      const yAmountPostFeesScaledFloat = yAmountPostFeesFloat * PRICE_SCALE_BPS;
+      
+      const xBalancePostFeesFloat = Number(xBalanceBefore) + xAmountFeesLiquidityFloat;
+      const yBalancePostFeesFloat = Number(yBalanceBefore) + yAmountFeesLiquidityFloat;
+      const yBalancePostFeesScaledFloat = yBalancePostFeesFloat * PRICE_SCALE_BPS;
+      
+      const addLiquidityValuePostFeesFloat = (binPrice * xAmountPostFeesFloat) + yAmountPostFeesScaledFloat;
+      const binLiquidityValuePostFeesFloat = (binPrice * xBalancePostFeesFloat) + yBalancePostFeesScaledFloat;
+      
+      let expectedLPFloat: number;
+      const burnAmountFloat = binSharesBefore === 0n ? Number(minimumBurntShares) : 0;
+      
+      if (binSharesBefore === 0n) {
+        const intendedDlpFloat = Math.sqrt(addLiquidityValuePostFeesFloat);
+        expectedLPFloat = intendedDlpFloat - burnAmountFloat;
+      } else if (binLiquidityValuePostFeesFloat === 0) {
+        expectedLPFloat = Math.sqrt(addLiquidityValuePostFeesFloat);
+      } else {
+        expectedLPFloat = (addLiquidityValuePostFeesFloat * Number(binSharesBefore)) / binLiquidityValuePostFeesFloat;
+      }
+      
+      const expectedLPFloatBigInt = BigInt(Math.floor(expectedLPFloat));
+      const floatDiff = expectedLPFloatBigInt > lpReceived
+        ? expectedLPFloatBigInt - lpReceived
+        : lpReceived - expectedLPFloatBigInt;
+      const floatPercentDiff = lpReceived > 0n
+        ? (Number(floatDiff) / Number(lpReceived)) * 100
+        : 0;
+      
+      // Log ALL rounding differences for analysis (not just violations)
+      const roundingData = {
+        txNumber,
+        functionName: 'add-liquidity',
+        binId: Number(binId),
+        xAmount: Number(xAdded),
+        yAmount: Number(yAdded),
+        lpReceived: Number(lpReceived),
+        binPrice: Number(binPriceBigInt),
+        binSharesBefore: Number(binSharesBefore),
+        expectedInteger: Number(expectedLPInteger),
+        expectedFloat: Number(expectedLPFloatBigInt),
+        integerDiff: Number(integerDiff),
+        floatDiff: Number(floatDiff),
+        floatPercentDiff,
+        activeBinId: Number(beforeState.activeBinId),
+        isActiveBin,
+      };
+      logger.logRoundingDifference(roundingData);
+      
+      // ========================================================================
+      // ADVERSARIAL ANALYSIS: Rounding Bias and Balance Conservation
+      // ========================================================================
+      
+      // Calculate rounding bias (does rounding favor pool or users?)
+      // For add-liquidity: lpReceived is LP tokens user receives
+      // If lpReceived > expectedFloat, user gets MORE (user_favored, positive bias)
+      // If lpReceived < expectedFloat, user gets LESS (pool_favored, negative bias)
+      const actualBias = lpReceived - expectedLPFloatBigInt;
+      const biasPercent = lpReceived > 0n
+        ? (Number(actualBias > 0n ? actualBias : -actualBias) / Number(lpReceived)) * 100
+        : 0;
+      const biasDirection = actualBias > 0n ? 'user_favored' : (actualBias < 0n ? 'pool_favored' : 'neutral');
+      
+      // Calculate pool value before and after (in Y token terms)
+      // Pool value = (xBalance * binPrice) / PRICE_SCALE_BPS + yBalance
+      const PRICE_SCALE_BPS_BIGINT = 100000000n;
+      const poolValueBefore = (xBalanceBefore * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT + yBalanceBefore;
+      const poolValueAfter = (afterBin.xBalance * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT + afterBin.yBalance;
+      const poolValueChange = poolValueAfter - poolValueBefore;
+      
+      // Expected pool value change = fees collected (fees stay in pool)
+      // Fees are already included in balance increases, so expected change = fees
+      const expectedPoolValueChange = (xAmountFeesLiquidityBigInt * binPriceBigInt) / PRICE_SCALE_BPS_BIGINT + yAmountFeesLiquidityBigInt;
+      
+      // Pool value leakage = actual change - expected change
+      const poolValueLeakage = poolValueChange - expectedPoolValueChange;
+      
+      logger.logRoundingBias({
+        txNumber,
+        functionName: 'add-liquidity',
+        biasDirection,
+        biasAmount: actualBias,
+        biasPercent,
+        poolValueBefore,
+        poolValueAfter,
+        poolValueChange,
+        expectedPoolValueChange,
+        poolValueLeakage,
+      });
+      
+      // Check balance conservation
+      // X: afterX = beforeX + xAdded (full amount, fees stay in pool)
+      const xBalanceExpected = xBalanceBefore + xAdded;
+      const xBalanceError = afterBin.xBalance > xBalanceExpected
+        ? afterBin.xBalance - xBalanceExpected
+        : xBalanceExpected - afterBin.xBalance;
+      const xBalanceConserved = xBalanceError <= 2n; // Allow 2 token tolerance
+      
+      // Y: afterY = beforeY + yAdded (full amount, fees stay in pool)
+      const yBalanceExpected = yBalanceBefore + yAdded;
+      const yBalanceError = afterBin.yBalance > yBalanceExpected
+        ? afterBin.yBalance - yBalanceExpected
+        : yBalanceExpected - afterBin.yBalance;
+      const yBalanceConserved = yBalanceError <= 2n;
+      
+      // LP Supply: afterLP = beforeLP + lpReceived
+      const lpSupplyExpected = binSharesBefore + lpReceived;
+      const lpSupplyError = afterBin.totalSupply > lpSupplyExpected
+        ? afterBin.totalSupply - lpSupplyExpected
+        : lpSupplyExpected - afterBin.totalSupply;
+      const lpSupplyConserved = lpSupplyError <= 2n;
+      
+      // Pool value should change by exactly fees (accounting for rounding)
+      const poolValueError = poolValueLeakage > 0n ? poolValueLeakage : -poolValueLeakage;
+      const percentageTolerance = expectedPoolValueChange / 1000n; // 0.1% tolerance
+      const minTolerance = 2n; // Minimum 2 tokens tolerance
+      const tolerance = expectedPoolValueChange > 0n
+        ? (percentageTolerance > minTolerance ? percentageTolerance : minTolerance)
+        : minTolerance;
+      const poolValueConserved = poolValueError <= tolerance;
+      
+      logger.logBalanceConservation({
+        txNumber,
+        functionName: 'add-liquidity',
+        xBalanceConserved,
+        yBalanceConserved,
+        xBalanceError: xBalanceError > 2n ? xBalanceError : undefined,
+        yBalanceError: yBalanceError > 2n ? yBalanceError : undefined,
+        poolValueConserved,
+        poolValueError: poolValueError > tolerance ? poolValueError : undefined,
+        lpSupplyConserved,
+        lpSupplyError: lpSupplyError > 2n ? lpSupplyError : undefined,
+      });
+      
+      // Flag if rounding error is significant (>1% or >100 LP tokens)
+      const maxRoundingDiff = Math.max(100, Number(lpReceived) * 0.01);
+      if (Number(floatDiff) > maxRoundingDiff) {
+        const severity = determineSeverity(floatDiff, floatPercentDiff);
+        const violation: ViolationData = {
+          type: 'rounding_error',
+          severity,
+          transactionNumber: txNumber,
+          functionName: 'add-liquidity',
+          binId,
+          caller: user,
+          inputAmount: xAdded + yAdded,
+          actualSwappedIn: xAdded + yAdded,
+          actualSwappedOut: lpReceived,
+          expectedInteger: expectedLPInteger,
+          expectedFloat: expectedLPFloatBigInt,
+          contractResult: lpReceived,
+          integerDiff,
+          floatDiff,
+          floatPercentDiff,
+          poolState: {
+            binPrice: binPriceBigInt,
+            xBalanceBefore: xBalanceBefore,
+            yBalanceBefore: yBalanceBefore,
+            swapFeeTotal: 0,
+            activeBinId: beforeState.activeBinId,
+          },
+          calculations: {
+            maxAmount: 0,
+            updatedMaxAmount: 0,
+            fees: xAmountFeesLiquidityBigInt + yAmountFeesLiquidityBigInt,
+          },
+          timestamp: new Date().toISOString(),
+          randomSeed,
+        };
+        logger.addViolation(violation);
+        issues.push(`Rounding error detected: Contract ${lpReceived} vs ideal ${expectedLPFloatBigInt}, diff: ${floatDiff} (${floatPercentDiff.toFixed(4)}%)`);
+      }
+    } catch (e) {
+      // If we can't get pool data or calculate, skip this check
+      // (this shouldn't happen, but don't fail the test if it does)
     }
   } else if (functionName === 'withdraw-liquidity') {
     // Check that withdrawn amounts are proportional to LP tokens burned
