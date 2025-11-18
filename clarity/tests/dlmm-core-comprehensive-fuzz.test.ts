@@ -2421,9 +2421,56 @@ function checkRoundingErrors(
         lpSupplyError: lpSupplyError > 2n ? lpSupplyError : undefined,
       });
       
-      // Flag if rounding error is significant (>1% or >100 LP tokens)
+      // ========================================================================
+      // CRITICAL EXPLOIT CHECK: User-favored bias (lpReceived > expectedLPFloat)
+      // ========================================================================
+      // If user receives MORE LP tokens than float math suggests, this is an exploit
+      // Fail immediately regardless of magnitude - even 1 LP token is unacceptable
+      // because it can be repeated to create massive exploits
+      if (lpReceived > expectedLPFloatBigInt) {
+        const exploitAmount = lpReceived - expectedLPFloatBigInt;
+        const exploitPercent = lpReceived > 0n 
+          ? (Number(exploitAmount) / Number(lpReceived)) * 100 
+          : 0;
+        const violation: ViolationData = {
+          type: 'rounding_error',
+          severity: 'critical', // User-favored bias is always critical
+          transactionNumber: txNumber,
+          functionName: 'add-liquidity',
+          binId,
+          caller: user,
+          inputAmount: xAdded + yAdded,
+          actualSwappedIn: xAdded + yAdded,
+          actualSwappedOut: lpReceived,
+          expectedInteger: expectedLPInteger,
+          expectedFloat: expectedLPFloatBigInt,
+          contractResult: lpReceived,
+          integerDiff,
+          floatDiff: exploitAmount,
+          floatPercentDiff: exploitPercent,
+          poolState: {
+            binPrice: binPriceBigInt,
+            xBalanceBefore: xBalanceBefore,
+            yBalanceBefore: yBalanceBefore,
+            swapFeeTotal: 0,
+            activeBinId: beforeState.activeBinId,
+          },
+          calculations: {
+            maxAmount: 0,
+            updatedMaxAmount: 0,
+            fees: xAmountFeesLiquidityBigInt + yAmountFeesLiquidityBigInt,
+          },
+          timestamp: new Date().toISOString(),
+          randomSeed,
+        };
+        logger.addViolation(violation);
+        issues.push(`🚨 EXPLOIT DETECTED: User received ${exploitAmount} MORE LP tokens than float math (${exploitPercent.toFixed(6)}%) - actual: ${lpReceived}, expected: ${expectedLPFloatBigInt}`);
+      }
+      
+      // Flag if rounding error is significant (>1% or >100 LP tokens) for pool-favored cases
+      // Note: User-favored cases are already caught above and always fail
       const maxRoundingDiff = Math.max(100, Number(lpReceived) * 0.01);
-      if (Number(floatDiff) > maxRoundingDiff) {
+      if (lpReceived < expectedLPFloatBigInt && Number(floatDiff) > maxRoundingDiff) {
         const severity = determineSeverity(floatDiff, floatPercentDiff);
         const violation: ViolationData = {
           type: 'rounding_error',
@@ -2568,9 +2615,25 @@ describe('DLMM Core Comprehensive Fuzz Test', () => {
     console.log(`📊 Results will be saved to: logs/fuzz-test-results/`);
     const startTime = Date.now();
 
+    // Open /dev/tty for direct terminal output - bypasses Vitest's output capture
+    let ttyFd: number | null = null;
+    try {
+      ttyFd = fs.openSync('/dev/tty', 'w');
+    } catch (e) {
+      // /dev/tty not available, will use stderr fallback
+    }
+
+    let lastPrintedPercent = -1; // Track last printed percentage for 1% increments
+
     for (let txNum = 1; txNum <= NUM_TRANSACTIONS; txNum++) {
-      // Progress indicator - show every 10 transactions for visibility
-      if (txNum % 10 === 0 || txNum === 1) {
+      // Progress indicator - update every 1% of total transactions
+      const currentPercent = Math.floor((txNum / NUM_TRANSACTIONS) * 100);
+      const shouldUpdate = txNum === 1 || 
+                           txNum === NUM_TRANSACTIONS || 
+                           currentPercent !== lastPrintedPercent;
+      
+      if (shouldUpdate) {
+        lastPrintedPercent = currentPercent;
         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
         const rate = txNum > 0 && (Date.now() - startTime) > 0 ? (txNum / (Date.now() - startTime) * 1000).toFixed(1) : '0';
         const successRate = logger.stats.totalTransactions > 0 ? ((logger.stats.successfulTransactions / logger.stats.totalTransactions) * 100).toFixed(1) : '0';
@@ -2582,18 +2645,29 @@ describe('DLMM Core Comprehensive Fuzz Test', () => {
         const empty = barWidth - filled;
         const bar = '█'.repeat(filled) + '░'.repeat(empty);
         
-        logger.log(`Progress: ${txNum}/${NUM_TRANSACTIONS} (${percent}%) | Success: ${successRate}% | Rate: ${rate} tx/s | Elapsed: ${elapsed}s`);
-        
-        // Force output with process.stdout.write for immediate visibility
-        process.stdout.write(`\r📊 [${bar}] ${percent}% (${txNum}/${NUM_TRANSACTIONS}) | ✅ ${successRate}% | ⚡ ${rate} tx/s | ⏱️  ${elapsed}s`);
+        // Build progress line
+        let progressLine = `📊 [${bar}] ${percent}% (${txNum}/${NUM_TRANSACTIONS}) | ✅ ${successRate}% | ⚡ ${rate} tx/s | ⏱️  ${elapsed}s`;
         if (txNum > 0 && parseFloat(rate) > 0) {
           const remaining = NUM_TRANSACTIONS - txNum;
           const eta = (remaining / parseFloat(rate)).toFixed(0);
           const etaMin = Math.floor(parseFloat(eta) / 60);
           const etaSec = parseFloat(eta) % 60;
-          process.stdout.write(` | ⏳ ETA: ~${etaMin}m ${etaSec}s`);
+          progressLine += ` | ⏳ ETA: ~${etaMin}m ${etaSec}s`;
         }
-        process.stdout.write('\n');
+        // Write directly to /dev/tty to bypass Vitest's output capture completely
+        // This ensures progress appears in real-time in the terminal
+        const lineEnd = txNum === NUM_TRANSACTIONS ? '\n' : '\r';
+        if (ttyFd !== null) {
+          try {
+            fs.writeSync(ttyFd, progressLine + lineEnd);
+          } catch (e) {
+            // Fallback to stderr if TTY write fails
+            fs.writeSync(2, progressLine + lineEnd);
+          }
+        } else {
+          // Fallback to stderr if /dev/tty not available
+          fs.writeSync(2, progressLine + lineEnd);
+        }
       }
 
       // Capture state before (with error handling)
@@ -2956,6 +3030,15 @@ describe('DLMM Core Comprehensive Fuzz Test', () => {
         afterState: success ? afterState : undefined,
         invariantChecks: invariantIssues.length > 0 ? invariantIssues : undefined,
       });
+    }
+
+    // Close /dev/tty file descriptor if opened
+    if (ttyFd !== null) {
+      try {
+        fs.closeSync(ttyFd);
+      } catch (e) {
+        // Ignore errors on close
+      }
     }
 
     // Generate summary

@@ -1,6 +1,6 @@
 # Agent 1: Add-Liquidity Rounding Checks - Implementation Plan
 
-**Status**: ✅ Ready for Review  
+**Status**: ✅ Complete - Lessons Learned Applied  
 **Created**: 2025-01-XX  
 **Agent**: Agent 1  
 **Todo**: `extend-add-liquidity-rounding`
@@ -400,4 +400,92 @@ function sqrti(value: bigint): bigint {
 7. Test and validate
 
 **Ready for implementation!**
+
+---
+
+## Complete Lessons Learned Review
+
+### All Lessons Learned Files Reviewed
+
+1. ✅ **adversarial-exploit-detection.md** - Applied
+2. ✅ **integer-vs-float-math-separation.md** - Applied
+3. ✅ **real-time-progress-bars.md** - Reviewed (already implemented in test)
+4. ✅ **testing-context.md** - Reviewed (philosophy/context)
+5. ✅ **README.md** - Reviewed (directory overview)
+
+### Notes on Progress Bars
+
+**Progress bar lesson**: The real-time progress bar implementation is **already present** in the comprehensive fuzz test (lines 2618-3038). The progress bar:
+- Opens `/dev/tty` at the start of the test
+- Writes progress updates directly to TTY (bypassing Vitest buffering)
+- Updates every 1% of transactions
+- Shows progress bar, success rate, transaction rate, elapsed time, and ETA
+
+**Why not applied to Agent 1 task**: 
+- Agent 1's task was to add rounding checks to the `checkRoundingErrors()` function
+- The progress bar is in the main test loop, not in the rounding check function
+- The progress bar is already working correctly in the test
+- No changes needed to the progress bar implementation
+
+---
+
+## Lessons Learned Applied
+
+### ✅ Adversarial Exploit Detection
+**Applied from**: `notes/lessons-learned/adversarial-exploit-detection.md`
+
+**Implementation**:
+- Added **CRITICAL EXPLOIT CHECK** that fails immediately if `lpReceived > expectedLPFloatBigInt` (user-favored bias)
+- No tolerance - even 1 LP token difference is flagged as an exploit
+- Separated exploit check from general rounding error check
+- General rounding error check only flags pool-favored cases when significant (>1% or >100 LP tokens)
+
+**Key Change**:
+```typescript
+// CRITICAL EXPLOIT CHECK: User-favored bias
+if (lpReceived > expectedLPFloatBigInt) {
+  // 🚨 EXPLOIT DETECTED - Fail immediately regardless of magnitude
+  issues.push(`🚨 EXPLOIT DETECTED: User received ${exploitAmount} MORE LP tokens...`);
+}
+
+// Pool-favored cases - only flag if significant
+if (lpReceived < expectedLPFloatBigInt && Number(floatDiff) > maxRoundingDiff) {
+  // Warning - less critical
+}
+```
+
+### ✅ Integer vs Float Math Separation
+**Applied from**: `notes/lessons-learned/integer-vs-float-math-separation.md`
+
+**Implementation**:
+- **CHECK 1**: Uses **ONLY BigInt** for all integer math replication
+  - All intermediate calculations use BigInt
+  - Fee calculations use BigInt arithmetic
+  - Integer tolerance set to **0n** (must match exactly)
+- **CHECK 2**: Separate float math calculations for rounding analysis
+  - Uses JavaScript `Number` type for float calculations
+  - Completely separate from integer replication
+
+**Key Changes**:
+- Integer tolerance changed from `> 2n` to `> 0n` (must match exactly)
+- All CHECK 1 calculations use BigInt exclusively
+- Float calculations are completely separate in CHECK 2
+
+### ✅ Code Quality
+- No linting errors
+- Follows exact pattern from swap checks
+- Proper error handling with try-catch
+- Comprehensive logging for analysis
+
+## Implementation Status
+
+✅ **Complete** - All lessons learned have been applied:
+1. ✅ `sqrti` helper function implemented
+2. ✅ CHECK 1: Exact Integer Match (0 tolerance)
+3. ✅ CHECK 2: Rounding Error Detection (float math)
+4. ✅ CRITICAL EXPLOIT CHECK: User-favored bias detection
+5. ✅ Adversarial Analysis: Bias tracking and balance conservation
+6. ✅ All lessons learned applied
+
+**Ready for testing!**
 

@@ -30,4 +30,5 @@ Use descriptive names:
 
 - **[integer-vs-float-math-separation.md](./integer-vs-float-math-separation.md)** - Critical: How to properly separate integer math replication from float math comparison when testing contract calculations
 - **[adversarial-exploit-detection.md](./adversarial-exploit-detection.md)** - Critical: Adversarial mindset for exploit detection - any user-favored bias (even 1 token) must fail immediately because it can be repeated to create massive exploits
+- **[real-time-progress-bars.md](./real-time-progress-bars.md)** - Critical: How to create progress bars that display in real-time during Vitest test execution by writing directly to `/dev/tty`
 
