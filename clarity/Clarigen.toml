@@ -23,7 +23,7 @@ output = "tests/clarigen-types.ts"
 # Generate docs by running `clarigen docs`
 [docs]
 # `output` should be a folder
-output = "docs"
+output = "../docs"
 
 # `docs.after` - script to run after docs are generated.
 # examples:

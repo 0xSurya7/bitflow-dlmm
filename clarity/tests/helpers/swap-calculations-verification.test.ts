@@ -11,7 +11,7 @@ import {
   calculateBinSwapFloat,
   calculateFeeRateBPS,
   BinData,
-} from './swap-calculations';
+} from '../../fuzz/harnesses/swap-calculations';
 
 describe('Helper Functions Verification', () => {
   const PRICE_SCALE_BPS = 100000000n;

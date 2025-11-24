@@ -10,8 +10,8 @@ import {
   getAdaptiveMaxAttempts,
   BinWithPrice,
   PoolState,
-} from './multi-bin-quote-estimation';
-import { BinData } from './swap-calculations';
+} from '../../fuzz/harnesses/multi-bin-quote-estimation';
+import { BinData } from '../../fuzz/harnesses/swap-calculations';
 
 describe('estimateBinsNeeded', () => {
   it('should return 1 for trade that fits in active bin', () => {

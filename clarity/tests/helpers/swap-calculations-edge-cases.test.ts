@@ -10,7 +10,7 @@ import {
   calculateBinSwap,
   calculateBinSwapFloat,
   BinData,
-} from './swap-calculations';
+} from '../../fuzz/harnesses/swap-calculations';
 
 describe('Edge Case Tests', () => {
   describe('Large Value Handling', () => {

@@ -7,15 +7,26 @@
   "scripts": {
     "test": "clarigen && clarigen docs && vitest run",
     "test-simple": "vitest run",
+    "test:unit": "vitest run tests/",
     "test:report": "clarigen && clarigen docs && vitest run -- --coverage --costs",
     "test:report:coverage": "clarigen && clarigen docs && vitest run -- --coverage --costs && genhtml lcov.info --branch-coverage -o coverage/",
-    "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
+    "test:watch": "chokidar \"tests/**/*.ts\" \"fuzz/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
+    "test:all": "clarigen && clarigen docs && vitest run",
+    "fuzz": "./scripts/fuzz-args.sh vitest run fuzz/",
+    "fuzz:comprehensive": "./scripts/fuzz-args.sh vitest run fuzz/comprehensive.test.ts",
+    "fuzz:quote-engine": "./scripts/fuzz-args.sh vitest run fuzz/quote-engine-validation.test.ts",
+    "fuzz:bin-traversal": "./scripts/fuzz-args.sh vitest run fuzz/bin-traversal.test.ts",
+    "fuzz:zero-fee": "./scripts/fuzz-args.sh vitest run fuzz/zero-fee-exploit.test.ts",
+    "fuzz:basic": "./scripts/fuzz-args.sh vitest run fuzz/basic.test.ts",
     "genhtml": "genhtml lcov.info --branch-coverage -o coverage/",
     "build": "clarigen && clarigen docs",
     "build:docs": "clarigen docs"
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@clarigen/cli": "4.0.0",
     "@clarigen/core": "4.0.0",

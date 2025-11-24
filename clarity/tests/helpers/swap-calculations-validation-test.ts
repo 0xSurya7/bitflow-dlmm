@@ -10,7 +10,7 @@ import {
   calculateBinSwap,
   calculateBinSwapFloat,
   BinData,
-} from './swap-calculations';
+} from '../../fuzz/harnesses/swap-calculations';
 
 describe('Validation Test Scenarios', () => {
   describe('Already-Capped Input Handling', () => {
