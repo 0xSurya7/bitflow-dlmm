@@ -469,7 +469,7 @@ describe('DLMM Core Comprehensive Fuzz Test', () => {
     txOk(mockUsdcToken.mint(TestConfig.INITIAL_USDC_BALANCE, alice), deployer);
   });
 
-  it('should handle comprehensive fuzz test: traverse bins 0 → -500 → 500 → 0', async () => {
+  it('should handle comprehensive fuzz test: traverse bins 0 > -500 > 500 > 0', async () => {
     const initialPool = PoolStateManager.getPoolState();
     const initialActiveBin = initialPool.activeBinId;
     
