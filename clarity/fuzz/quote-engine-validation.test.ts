@@ -1,16 +1,5 @@
 /**
  * Quote Engine Validation Fuzz Test
- * 
- * This test validates that the contract's swap calculations match Bitflow's
- * production Python quote engine (pricing.py). The quote engine represents
- * the maximum tokens that should be returned - if the contract returns more,
- * it's a critical security violation.
- * 
- * Key differences from comprehensive fuzz test:
- * - Uses helper functions matching pricing.py API exactly
- * - Supports both single-bin and multi-bin swaps (use --multi-bin flag to enable)
- * - Fails immediately if contract returns more than quote engine allows
- * - Compares against both integer and float math from quote engine
  */
 
 import {
