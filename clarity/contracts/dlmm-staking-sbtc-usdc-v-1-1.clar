@@ -19,14 +19,17 @@
 (define-constant ERR_INVALID_MIN_STAKING_DURATION (err u4013))
 (define-constant ERR_MINIMUM_STAKING_DURATION_HAS_NOT_PASSED (err u4014))
 (define-constant ERR_MINIMUM_STAKING_DURATION_PASSED (err u4015))
-(define-constant ERR_BINS_STAKED_OVERFLOW (err u4016))
-(define-constant ERR_NO_BIN_DATA (err u4017))
-(define-constant ERR_NO_USER_DATA (err u4018))
-(define-constant ERR_NO_USER_DATA_AT_BIN (err u4019))
-(define-constant ERR_NO_LP_TO_UNSTAKE (err u4020))
-(define-constant ERR_NO_EARLY_LP_TO_UNSTAKE (err u4021))
-(define-constant ERR_INVALID_FEE (err u4022))
-(define-constant ERR_MIN_REWARD_BUFFER_BLOCKS_PASSED (err u4023))
+(define-constant ERR_INVALID_REWARD_PERIOD_DURATION (err u4016))
+(define-constant ERR_REWARD_PERIOD_HAS_NOT_PASSED (err u4017))
+(define-constant ERR_BINS_STAKED_OVERFLOW (err u4018))
+(define-constant ERR_INVALID_BIN_ID (err u4019))
+(define-constant ERR_NO_BIN_DATA (err u4020))
+(define-constant ERR_NO_USER_DATA (err u4021))
+(define-constant ERR_NO_USER_DATA_AT_BIN (err u4022))
+(define-constant ERR_NO_LP_TO_UNSTAKE (err u4023))
+(define-constant ERR_NO_EARLY_LP_TO_UNSTAKE (err u4024))
+(define-constant ERR_NO_CLAIMABLE_REWARDS (err u4025))
+(define-constant ERR_INVALID_FEE (err u4026))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -34,9 +37,6 @@
 ;; Number of bins per pool and center bin ID as unsigned ints
 (define-constant NUM_OF_BINS u1001)
 (define-constant CENTER_BIN_ID (/ NUM_OF_BINS u2))
-
-;; Minimum runway when setting reward-per-block for a bin
-(define-constant MIN_REWARD_BUFFER_BLOCKS u10000)
 
 ;; Maximum BPS
 (define-constant FEE_SCALE_BPS u10000)
@@ -60,23 +60,23 @@
 ;; Minimum staking duration in blocks
 (define-data-var minimum-staking-duration uint u1)
 
+;; Default reward period duration in blocks
+(define-data-var default-reward-period-duration uint u10000)
+
 ;; Total amount of LP tokens staked
 (define-data-var total-lp-staked uint u0)
 
-;; Total rewards per block and claimed across all bins
-(define-data-var total-rewards-per-block uint u0)
+;; Total rewards claimed across all bins
 (define-data-var total-rewards-claimed uint u0)
-
-;; Total rewards accrued accross all bins and last update to the data var
-(define-data-var total-rewards-accrued uint u0)
-(define-data-var last-total-rewards-accrued-update uint u0)
 
 ;; Define bin-data map
 (define-map bin-data uint {
   lp-staked: uint,
   reward-per-block: uint,
+  reward-period-duration: uint,
   reward-index: uint,
-  last-reward-index-update: uint
+  last-reward-index-update: uint,
+  reward-period-end-block: uint
 })
 
 ;; Define user-data map
@@ -88,6 +88,7 @@
 ;; Define user-data-at-bin map
 (define-map user-data-at-bin {user: principal, bin-id: uint} {
   lp-staked: uint,
+  accrued-rewards: uint,
   reward-index: uint,
   last-stake-height: uint
 })
@@ -132,29 +133,19 @@
   (ok (var-get minimum-staking-duration))
 )
 
+;; Get default reward period duration
+(define-read-only (get-default-reward-period-duration)
+  (ok (var-get default-reward-period-duration))
+)
+
 ;; Get total LP staked
 (define-read-only (get-total-lp-staked)
   (ok (var-get total-lp-staked))
 )
 
-;; Get total rewards per block
-(define-read-only (get-total-rewards-per-block)
-  (ok (var-get total-rewards-per-block))
-)
-
 ;; Get total rewards claimed
 (define-read-only (get-total-rewards-claimed)
   (ok (var-get total-rewards-claimed))
-)
-
-;; Get total rewards accrued
-(define-read-only (get-total-rewards-accrued)
-  (ok (var-get total-rewards-accrued))
-)
-
-;; Get last total rewards accrued update
-(define-read-only (get-last-total-rewards-accrued-update)
-  (ok (var-get last-total-rewards-accrued-update))
 )
 
 ;; Get bin data
@@ -177,51 +168,42 @@
   (let (
     (current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
     (lp-staked (get lp-staked current-bin-data))
+    (reward-per-block (get reward-per-block current-bin-data))
     (reward-index (get reward-index current-bin-data))
     (last-reward-index-update (get last-reward-index-update current-bin-data))
+    (reward-period-end-block (get reward-period-end-block current-bin-data))
+    (reward-period-effective-block (if (> reward-period-end-block u0)
+                                       (if (> stacks-block-height reward-period-end-block)
+                                           reward-period-end-block
+                                           stacks-block-height)
+                                       stacks-block-height))
   )
-    ;; Get updated reward-index if current-total-lp-staked is greater than 0 and stacks-block-height is greater than last-reward-index-update
-    (if (and (> lp-staked u0) (> stacks-block-height last-reward-index-update))
+    ;; Get updated reward-index, rewards-to-distribute, and reward-period-effective-block
+    (if (and (> lp-staked u0) (> reward-period-effective-block last-reward-index-update) (> reward-per-block u0))
       (let (
-        (blocks-since-last-update (- stacks-block-height last-reward-index-update))
-        (rewards-to-distribute (* (get reward-per-block current-bin-data) blocks-since-last-update))
+        (blocks-since-last-update (- reward-period-effective-block last-reward-index-update))
+        (rewards-to-distribute (* reward-per-block blocks-since-last-update))
         (reward-index-delta (/ (* rewards-to-distribute REWARD_SCALE_BPS) lp-staked))
       )
-        (ok {reward-index: (+ reward-index reward-index-delta), rewards-to-distribute: rewards-to-distribute})
+        (ok {reward-index: (+ reward-index reward-index-delta), rewards-to-distribute: rewards-to-distribute, reward-period-effective-block: reward-period-effective-block})
       )
-      ;; Return reward-index and rewards-to-distribute
-      (ok {reward-index: reward-index, rewards-to-distribute: u0})
+      ;; Return reward-index, rewards-to-distribute, and reward-period-effective-block
+      (ok {reward-index: reward-index, rewards-to-distribute: u0, reward-period-effective-block: reward-period-effective-block})
     )
   )
 )
 
-;; Get unclaimed rewards for a user at a bin
-(define-read-only (get-unclaimed-rewards (user principal) (bin-id int))
+;; Get claimable rewards for a user at a bin
+(define-read-only (get-claimable-rewards (user principal) (bin-id int))
   (let (
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
     (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: user, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
     (reward-index-delta (- (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id))) (get reward-index current-user-data-at-bin)))
-    (unclaimed-rewards (/ (* (get lp-staked current-user-data-at-bin) reward-index-delta) REWARD_SCALE_BPS))
+    (pending-rewards (/ (* (get lp-staked current-user-data-at-bin) reward-index-delta) REWARD_SCALE_BPS))
+    (accrued-rewards (get accrued-rewards current-user-data-at-bin))
   )
-    ;; Return unclaimed-rewards
-    (ok unclaimed-rewards)
-  )
-)
-
-;; Get available contract reward token balance 
-(define-read-only (get-available-contract-balance)
-  (let (
-    (current-contract-balance (unwrap-panic (get-reward-token-balance)))
-    (current-total-rewards-accrued (var-get total-rewards-accrued))
-    (current-total-rewards-claimed (var-get total-rewards-claimed))
-    (reserved-contract-balance (if (>= current-total-rewards-accrued current-total-rewards-claimed)
-                                    (- current-total-rewards-accrued current-total-rewards-claimed)
-                                    u0))
-  )
-    ;; Return available contract balance
-    (ok (if (>= current-contract-balance reserved-contract-balance)
-            (- current-contract-balance reserved-contract-balance)
-            u0))
+    ;; Return pending-rewards, accrued-rewards, and claimable-rewards
+    (ok {pending-rewards: pending-rewards, accrued-rewards: accrued-rewards, claimable-rewards: (+ pending-rewards accrued-rewards)})
   )
 )
 
@@ -365,37 +347,120 @@
   )
 )
 
-;; Set reward emitted per block for a bin
-(define-public (set-reward-per-block (bin-id uint) (reward uint))
+;; Set the default reward period duration in blocks
+(define-public (set-default-reward-period-duration (duration uint))
   (let (
-    (current-bin-data (map-get? bin-data bin-id))
-    (current-reward-per-block (default-to u0 (get reward-per-block current-bin-data)))
-    (updated-total-rewards-per-block (+ (- (var-get total-rewards-per-block) current-reward-per-block) reward))
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert caller is an admin and duration is greater than 0
+      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+      (asserts! (> duration u0) ERR_INVALID_REWARD_PERIOD_DURATION)
+
+      ;; Set default-reward-period-duration to duration
+      (var-set default-reward-period-duration duration)
+
+      ;; Print function data and return true
+      (print {action: "set-default-reward-period-duration", caller: caller, data: {duration: duration}})
+      (ok true)
+    )
+  )
+)
+
+;; Set the reward period duration in blocks for a bin
+(define-public (set-reward-period-duration (bin-id int) (duration uint))
+  (let (
+    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+    (updated-reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
+    (caller tx-sender)
+  )
+    (begin
+      ;; Assert caller is an admin and duration is greater than 0
+      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+      (asserts! (> duration u0) ERR_INVALID_REWARD_PERIOD_DURATION)
+
+      ;; Assert current reward period has passed
+      (asserts! (> stacks-block-height (get reward-period-end-block current-bin-data)) ERR_REWARD_PERIOD_HAS_NOT_PASSED)
+
+      ;; Update bin-data mapping
+      (map-set bin-data unsigned-bin-id (merge current-bin-data {
+        reward-index: (get reward-index updated-reward-index),
+        reward-period-duration: duration,
+        last-reward-index-update: (get reward-period-effective-block updated-reward-index)
+      }))
+
+      ;; Print function data and return true
+      (print {action: "set-reward-period-duration", caller: caller, data: {bin-id: bin-id, duration: duration}})
+      (ok true)
+    )
+  )
+)
+
+;; Set rewards to distribute for a bin
+(define-public (set-rewards-to-distribute (bin-id int) (amount uint))
+  (let (
+    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
     (caller tx-sender)
   )
     (begin
       ;; Assert caller is an admin
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
 
+      ;; Assert unsigned-bin-id is less than NUM_OF_BINS
+      (asserts! (< unsigned-bin-id NUM_OF_BINS) ERR_INVALID_BIN_ID)
+
       ;; Update reward-index for bin
-      (if (is-some current-bin-data)
-          (unwrap-panic (update-reward-index bin-id))
+      (if (is-some (map-get? bin-data unsigned-bin-id))
+          (unwrap-panic (update-reward-index unsigned-bin-id))
           false)
 
-      ;; Assert contract has sufficient reward balance for new reward rate
-      (asserts! (>= (unwrap-panic (get-available-contract-balance)) (* updated-total-rewards-per-block MIN_REWARD_BUFFER_BLOCKS)) ERR_INSUFFICIENT_TOKEN_BALANCE)
-      
-      ;; Update total-rewards-per-block
-      (var-set total-rewards-per-block updated-total-rewards-per-block)
+      (let (
+        (current-bin-data (default-to {lp-staked: u0, reward-per-block: u0, reward-period-duration: (var-get default-reward-period-duration), reward-index: u0, last-reward-index-update: stacks-block-height, reward-period-end-block: u0} (map-get? bin-data unsigned-bin-id)))
+        (current-reward-per-block (get reward-per-block current-bin-data))
+        (current-reward-period-duration (get reward-period-duration current-bin-data))
+        (current-reward-period-end-block (get reward-period-end-block current-bin-data))
+        (reward-period-is-active (> current-reward-period-end-block stacks-block-height))
+        (reward-period-time-left (if reward-period-is-active
+                                     (- current-reward-period-end-block stacks-block-height)
+                                     u0))
+        (current-remaining-rewards (if reward-period-is-active
+                                       (* current-reward-per-block reward-period-time-left)
+                                       u0))
+        (updated-rewards-to-distribute (+ amount current-remaining-rewards))
+        (updated-reward-per-block (if (> updated-rewards-to-distribute u0)
+                                      (/ updated-rewards-to-distribute current-reward-period-duration)
+                                      u0))
+        (updated-reward-period-end-block (if (> updated-reward-per-block u0)
+                                             (+ stacks-block-height current-reward-period-duration)
+                                             stacks-block-height))
+      )
+        ;; Assert updated-rewards-to-distribute is less than or equal to the contract's reward token balance
+        (asserts! (<= updated-rewards-to-distribute (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
-      ;; Update bin-data mapping
-      (map-set bin-data bin-id (merge (default-to {lp-staked: u0, reward-per-block: u0, reward-index: u0, last-reward-index-update: stacks-block-height} current-bin-data) {
-        reward-per-block: reward
-      }))
-      
-      ;; Print function data and return true
-      (print {action: "set-reward-per-block", caller: caller, data: {bin-id: bin-id, reward: reward}})
-      (ok true)
+        ;; Update bin-data mapping
+        (map-set bin-data unsigned-bin-id (merge current-bin-data {
+          reward-per-block: updated-reward-per-block,
+          last-reward-index-update: (if (> updated-reward-per-block u0)
+                                        stacks-block-height
+                                        (get last-reward-index-update current-bin-data)),
+          reward-period-end-block: updated-reward-period-end-block
+        }))
+
+        ;; Print function data and return true
+        (print {
+          action: "set-rewards-to-distribute",
+          caller: caller,
+          data: {
+            bin-id: bin-id,
+            amount: amount,
+            updated-rewards-to-distribute: updated-rewards-to-distribute,
+            updated-reward-per-block: updated-reward-per-block,
+            updated-reward-period-end-block: updated-reward-period-end-block
+          }
+        })
+        (ok true)
+      )
     )
   )
 )
@@ -424,34 +489,32 @@
       ;; Update reward-index for bin
       (unwrap-panic (update-reward-index unsigned-bin-id))
 
-      ;; Claim any rewards at bin
-      (if (is-some current-user-data-at-bin)
-          (try! (claim-rewards bin-id))
-          u0)
-
-      ;; Update total LP staked
-      (var-set total-lp-staked updated-total-lp-staked)
-
-      ;; Update bin-data mapping
-      (map-set bin-data unsigned-bin-id (merge current-bin-data {
-        lp-staked: updated-bin-lp-staked
-      }))
-
-      ;; Update user-data mapping
-      (map-set user-data caller {
-        bins-staked: updated-user-bins-staked,
-        lp-staked: updated-user-lp-staked
-      })
-
-      ;; Update user-data-at-bin mapping
-      (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} {
-        lp-staked: (+ (default-to u0 (get lp-staked current-user-data-at-bin)) amount),
-        reward-index: (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id))),
-        last-stake-height: stacks-block-height
-      })
+      ;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
+      (let (
+        (updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+        (updated-reward-index (get reward-index updated-bin-data))
+        (updated-accrued-rewards (if (is-some current-user-data-at-bin)
+                                     (get claimable-rewards (try! (get-claimable-rewards caller bin-id)))
+                                     u0))
+      )
+        (var-set total-lp-staked updated-total-lp-staked)
+        (map-set bin-data unsigned-bin-id (merge updated-bin-data {
+          lp-staked: updated-bin-lp-staked
+        }))
+        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} {
+          lp-staked: (+ (default-to u0 (get lp-staked current-user-data-at-bin)) amount),
+          accrued-rewards: updated-accrued-rewards,
+          reward-index: updated-reward-index,
+          last-stake-height: stacks-block-height
+        })
+        (map-set user-data caller {
+          bins-staked: updated-user-bins-staked,
+          lp-staked: updated-user-lp-staked
+        })
+      )
 
       ;; Transfer amount LP tokens from caller to contract
-      (try! (transfer-lp-token unsigned-bin-id amount caller (as-contract tx-sender)))
+      (try! (transfer-lp-token unsigned-bin-id amount caller current-contract))
 
       ;; Print function data and return true
       (print {
@@ -492,29 +555,30 @@
 
       ;; Update reward-index for bin
       (unwrap-panic (update-reward-index unsigned-bin-id))
-      
-      ;; Claim any rewards at bin
-      (try! (claim-rewards bin-id))
 
-      ;; Update total LP staked
-      (var-set total-lp-staked updated-total-lp-staked)
-
-      ;; Update bin-data mapping
-      (map-set bin-data unsigned-bin-id (merge current-bin-data {
-        lp-staked: updated-bin-lp-staked
-      }))
-
-      ;; Update user-data mapping
-      (map-set user-data caller (merge current-user-data {
-        bins-staked: updated-user-bins-staked,
-        lp-staked: updated-user-lp-staked
-      }))
-
-      ;; Delete entry in user-data-at-bin mapping
-      (map-delete user-data-at-bin {user: caller, bin-id: unsigned-bin-id})
+      ;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
+      (let (
+        (updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+        (updated-reward-index (get reward-index updated-bin-data))
+        (updated-accrued-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
+      )
+        (var-set total-lp-staked updated-total-lp-staked)
+        (map-set bin-data unsigned-bin-id (merge updated-bin-data {
+          lp-staked: updated-bin-lp-staked
+        }))
+        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+          lp-staked: u0,
+          accrued-rewards: updated-accrued-rewards,
+          reward-index: updated-reward-index
+        }))
+        (map-set user-data caller {
+          bins-staked: updated-user-bins-staked,
+          lp-staked: updated-user-lp-staked
+        })
+      )
 
       ;; Transfer lp-to-unstake LP tokens from contract to caller
-      (try! (as-contract (transfer-lp-token unsigned-bin-id lp-to-unstake tx-sender caller)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake tx-sender caller))))
 
       ;; Print function data and return true
       (print {
@@ -560,34 +624,35 @@
 
       ;; Update reward-index for bin
       (unwrap-panic (update-reward-index unsigned-bin-id))
-      
-      ;; Claim any rewards at bin
-      (try! (claim-rewards bin-id))
 
-      ;; Update total LP staked
-      (var-set total-lp-staked updated-total-lp-staked)
-
-      ;; Update bin-data mapping
-      (map-set bin-data unsigned-bin-id (merge current-bin-data {
-        lp-staked: updated-bin-lp-staked
-      }))
-
-      ;; Update user-data mapping
-      (map-set user-data caller (merge current-user-data {
-        bins-staked: updated-user-bins-staked,
-        lp-staked: updated-user-lp-staked
-      }))
-
-      ;; Delete entry in user-data-at-bin mapping
-      (map-delete user-data-at-bin {user: caller, bin-id: unsigned-bin-id})
+      ;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
+      (let (
+        (updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+        (updated-reward-index (get reward-index updated-bin-data))
+        (updated-accrued-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
+      )
+        (var-set total-lp-staked updated-total-lp-staked)
+        (map-set bin-data unsigned-bin-id (merge updated-bin-data {
+          lp-staked: updated-bin-lp-staked
+        }))
+        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+          lp-staked: u0,
+          accrued-rewards: updated-accrued-rewards,
+          reward-index: updated-reward-index
+        }))
+        (map-set user-data caller {
+          bins-staked: updated-user-bins-staked,
+          lp-staked: updated-user-lp-staked
+        })
+      )
 
       ;; Transfer lp-to-unstake-user LP tokens from contract to caller
-      (try! (as-contract (transfer-lp-token unsigned-bin-id lp-to-unstake-user tx-sender caller)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-user tx-sender caller))))
 
       ;; Transfer lp-to-unstake-fees LP tokens from contract to early-unstake-fee-address
       (if (> lp-to-unstake-fees u0)
-        (try! (as-contract (transfer-lp-token unsigned-bin-id lp-to-unstake-fees tx-sender (var-get early-unstake-fee-address))))
-        false)
+          (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-fees tx-sender (var-get early-unstake-fee-address)))))
+          false)
 
       ;; Print function data and return true
       (print {
@@ -606,44 +671,46 @@
   )
 )
 
-;; Claim any unclaimed rewards at a bin
+;; Claim any claimable rewards at a bin
 (define-public (claim-rewards (bin-id int))
   (let (
     (caller tx-sender)
     (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
     (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
-    (unclaimed-rewards (try! (get-unclaimed-rewards caller bin-id)))
+    (claimable-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
   )
-    ;; Claim rewards if unclaimed-rewards is greater than 0
-    (if (> unclaimed-rewards u0)
-      (begin
-        ;; Update reward-index for bin
-        (unwrap-panic (update-reward-index unsigned-bin-id))
+    (begin
+      ;; Assert claimable-rewards is greater than 0
+      (asserts! (> claimable-rewards u0) ERR_NO_CLAIMABLE_REWARDS)
 
-        ;; Transfer unclaimed-rewards rewards token from contract to caller
-        (try! (as-contract (transfer-reward-token unclaimed-rewards tx-sender caller)))
-        
-        ;; Update user-data-at-bin mapping
-        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
-          reward-index: (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
-        }))
+      ;; Assert claimable-rewards is less than or equal to the contract's reward token balance
+      (asserts! (<= claimable-rewards (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
-        ;; Update total-rewards-claimed
-        (var-set total-rewards-claimed (+ (var-get total-rewards-claimed) unclaimed-rewards))
+      ;; Update reward-index for bin
+      (unwrap-panic (update-reward-index unsigned-bin-id))
 
-        ;; Print function data and return true
-        (print {action: "claim-rewards", caller: caller, data: {bin-id: bin-id, unclaimed-rewards: unclaimed-rewards}})
-        (ok unclaimed-rewards)
-      )
-      (ok u0))
+      ;; Transfer claimable-rewards rewards token from contract to caller
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token claimable-rewards tx-sender caller))))
+
+      ;; Update user-data-at-bin mapping
+      (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+        accrued-rewards: u0,
+        reward-index: (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
+      }))
+
+      ;; Update total-rewards-claimed
+      (var-set total-rewards-claimed (+ (var-get total-rewards-claimed) claimable-rewards))
+
+      ;; Print function data and return true
+      (print {action: "claim-rewards", caller: caller, data: {bin-id: bin-id, claimable-rewards: claimable-rewards}})
+      (ok claimable-rewards)
+    )
   )
 )
 
 ;; Withdraw reward token from contract
 (define-public (withdraw-rewards (amount uint) (recipient principal))
   (let (
-    (current-available-contract-balance (unwrap-panic (get-available-contract-balance)))
     (caller tx-sender)
   )
     (begin
@@ -654,17 +721,11 @@
       ;; Assert amount is greater than 0
       (asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Assert blocks since last-total-rewards-accrued-update is less than or equal to MIN_REWARD_BUFFER_BLOCKS
-      (asserts! (<= (- stacks-block-height (var-get last-total-rewards-accrued-update)) MIN_REWARD_BUFFER_BLOCKS) ERR_MIN_REWARD_BUFFER_BLOCKS_PASSED)
-
-      ;; Assert amount is less than or equal to available contract reward balance
-      (asserts! (<= amount current-available-contract-balance) ERR_INSUFFICIENT_TOKEN_BALANCE)
-      
-      ;; Assert contract has sufficient reward balance for reward rate
-      (asserts! (>= (- current-available-contract-balance amount) (* (var-get total-rewards-per-block) MIN_REWARD_BUFFER_BLOCKS)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+      ;; Assert amount is less than or equal to the contract's reward token balance
+      (asserts! (<= amount (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
       ;; Transfer amount rewards token from contract to recipient
-      (try! (as-contract (transfer-reward-token amount tx-sender recipient)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token amount tx-sender recipient))))
 
       ;; Print function data and return true
       (print {action: "withdraw-rewards", caller: caller, data: {amount: amount, recipient: recipient}})
@@ -678,45 +739,48 @@
   (let (
     (current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
     (updated-reward-index (unwrap-panic (get-updated-reward-index bin-id)))
+    (reward-period-effective-block (get reward-period-effective-block updated-reward-index))
     (caller tx-sender)
   )
-    ;; Update last-total-rewards-accrued-update
-    (var-set last-total-rewards-accrued-update stacks-block-height)
-
-    ;; Update reward index if stacks-block-height is greater than last-reward-index-update
-    (if (> stacks-block-height (get last-reward-index-update current-bin-data))
+    ;; Update reward index if reward-period-effective-block is greater than last-reward-index-update
+    (if (> reward-period-effective-block (get last-reward-index-update current-bin-data))
         (begin
           ;; Update bin-data mapping
-          (map-set bin-data bin-id (merge current-bin-data {
+          (map-set bin-data bin-id (merge (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA) {
             reward-index: (get reward-index updated-reward-index),
-            last-reward-index-update: stacks-block-height
+            last-reward-index-update: reward-period-effective-block
           }))
 
-          ;; Update total-rewards-accrued
-          (var-set total-rewards-accrued (+ (var-get total-rewards-accrued) (get rewards-to-distribute updated-reward-index)))
-          
           ;; Print function data and return true
-          (print {action: "update-reward-index", caller: caller, data: {updated-reward-index: updated-reward-index}})
+          (print {action: "update-reward-index", caller: caller, data: {bin-id: bin-id, updated-reward-index: updated-reward-index}})
           (ok true)
         )
         (ok true))
   )
 )
 
-;; Get unclaimed rewards for multiple bins
-(define-public (get-unclaimed-rewards-multi
+;; Get claimable rewards for multiple bins
+(define-public (get-claimable-rewards-multi
     (users (list 350 principal))
     (bin-ids (list 350 int))
   )
-  (ok (map get-unclaimed-rewards users bin-ids))
+  (ok (map get-claimable-rewards users bin-ids))
 )
 
-;; Set reward emitted per block for multiple bins
-(define-public (set-reward-per-block-multi
-    (bin-ids (list 350 uint))
+;; Set reward period duration for multiple bins
+(define-public (set-reward-period-duration-multi
+    (bin-ids (list 350 int))
+    (durations (list 350 uint))
+  )
+  (ok (map set-reward-period-duration bin-ids durations))
+)
+
+;; Set rewards to distribute for multiple bins
+(define-public (set-rewards-to-distribute-multi
+    (bin-ids (list 350 int))
     (amounts (list 350 uint))
   )
-  (ok (map set-reward-per-block bin-ids amounts))
+  (ok (map set-rewards-to-distribute bin-ids amounts))
 )
 
 ;; Stake LP tokens for multiple bins
@@ -741,7 +805,7 @@
   (ok (map early-unstake-lp-tokens bin-ids))
 )
 
-;; Claim any unclaimed rewards for multiple bins
+;; Claim any claimable rewards for multiple bins
 (define-public (claim-rewards-multi
     (bin-ids (list 350 int))
   )
@@ -767,9 +831,8 @@
 
 ;; Get reward token balance for contract
 (define-private (get-reward-token-balance)
-  (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance (as-contract tx-sender))
-    ERR_CANNOT_GET_TOKEN_BALANCE
-  ))
+  (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance
+               current-contract) ERR_CANNOT_GET_TOKEN_BALANCE))
 )
 
 ;; Transfer LP token

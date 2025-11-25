@@ -76,10 +76,21 @@
       x-token: principal,
       y-token: principal
     } uint))
+    (get-variable-fees-data () (response {
+      variable-fees-manager: principal,
+      x-variable-fee: uint,
+      y-variable-fee: uint,
+      bin-change-count: uint,
+      last-variable-fees-update: uint,
+      variable-fees-cooldown: uint,
+      freeze-variable-fees-manager: bool,
+      dynamic-config: (buff 4096)
+    } uint))
     (get-active-bin-id () (response int uint))
     (get-bin-balances (uint) (response {x-balance: uint, y-balance: uint, bin-shares: uint} uint))
     (get-user-bins (principal) (response (list 1001 uint) uint))
     (set-pool-uri ((string-ascii 256)) (response bool uint))
+    (set-core-address (principal) (response bool uint))
     (set-variable-fees-manager (principal) (response bool uint))
     (set-fee-address (principal) (response bool uint))
     (set-active-bin-id (int) (response bool uint))

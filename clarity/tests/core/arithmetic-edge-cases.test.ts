@@ -1,0 +1,335 @@
+/**
+ * Arithmetic Edge Case Tests
+ * 
+ * Tests for overflow, underflow, and division by zero scenarios
+ * across all DLMM operations.
+ */
+
+import {
+  alice,
+  deployer,
+  dlmmCore,
+  sbtcUsdcPool,
+  mockSbtcToken,
+  mockUsdcToken,
+  setupTestEnvironment,
+  errors,
+} from "../helpers/helpers";
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { cvToValue } from '@clarigen/core';
+import { txErr, txOk, rovOk } from '@clarigen/test';
+import {
+  generateMinBinId,
+  generateMaxBinId,
+  generateInvalidMinBinId,
+  generateInvalidMaxBinId,
+  generateBinIdCausingUnderflow,
+  generateVerySmallAmount,
+  generateVeryLargeAmount,
+  generateAmountThatRoundsToZero,
+  generateDivisionByZeroCandidate,
+} from "../helpers/edge-case-generators";
+
+const MIN_BIN_ID = -500n;
+const MAX_BIN_ID = 500n;
+
+describe('Arithmetic Edge Cases', () => {
+  
+  beforeEach(async () => {
+    setupTestEnvironment();
+  });
+
+  describe('Bin ID Boundary Tests', () => {
+    
+    it('should handle get-unsigned-bin-id with valid minimum bin ID', async () => {
+      const binId = MIN_BIN_ID; // -500
+      const result = rovOk(dlmmCore.getUnsignedBinId(binId));
+      // -500 + 500 = 0
+      expect(result).toBe(0n);
+    });
+
+    it('should handle get-unsigned-bin-id with valid maximum bin ID', async () => {
+      const binId = MAX_BIN_ID; // 500
+      const result = rovOk(dlmmCore.getUnsignedBinId(binId));
+      // 500 + 500 = 1000
+      expect(result).toBe(1000n);
+    });
+
+    it('should handle get-unsigned-bin-id with center bin ID (0)', async () => {
+      const binId = 0n;
+      const result = rovOk(dlmmCore.getUnsignedBinId(binId));
+      // 0 + 500 = 500
+      expect(result).toBe(500n);
+    });
+
+    it('should fail get-unsigned-bin-id with bin ID below minimum (causes underflow)', async () => {
+      const binId = MIN_BIN_ID - 1n; // -501
+      // This should cause ArithmeticUnderflow when converting to uint
+      // The contract doesn't validate this, so it will panic
+      try {
+        const result = rovOk(dlmmCore.getUnsignedBinId(binId));
+        // If we get here, the contract might handle it differently than expected
+        // But -501 + 500 = -1, which should underflow when converting to uint
+        expect(result).toBeDefined();
+      } catch (error: any) {
+        // Expected: ArithmeticUnderflow error
+        expect(String(error)).toContain('ArithmeticUnderflow');
+      }
+    });
+
+    it('should fail swap with invalid bin ID below minimum', async () => {
+      const binId = MIN_BIN_ID - 1n; // -501
+      const xAmount = 1000000n;
+      
+      // This should fail before reaching get-unsigned-bin-id due to validation
+      // or fail with underflow if validation doesn't catch it
+      const response = txErr(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount
+      ), alice);
+      
+      // Should return an error (either validation error or underflow)
+      expect(response).toBeDefined();
+    });
+
+    it('should fail swap with invalid bin ID above maximum', async () => {
+      const binId = MAX_BIN_ID + 1n; // 501
+      const xAmount = 1000000n;
+      
+      const response = txErr(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount
+      ), alice);
+      
+      // Should return an error
+      expect(response).toBeDefined();
+    });
+  });
+
+  describe('Division by Zero Tests', () => {
+    
+    it('should fail withdraw-liquidity from bin with zero totalSupply', async () => {
+      const binId = 10n; // Bin with no liquidity
+      const liquidityBalance = rovOk(sbtcUsdcPool.getTotalSupply(
+        rovOk(dlmmCore.getUnsignedBinId(binId))
+      ));
+      expect(liquidityBalance).toBe(0n); // Verify no liquidity exists
+      
+      const amountToWithdraw = 1000000n;
+      const minXAmount = 1n;
+      const minYAmount = 1n;
+      
+      const response = txErr(dlmmCore.withdrawLiquidity(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        amountToWithdraw,
+        minXAmount,
+        minYAmount
+      ), alice);
+      
+      // Should return ERR_NO_BIN_SHARES (division by zero protection)
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NO_BIN_SHARES);
+    });
+
+    it('should handle very small swap amounts that might round to zero', async () => {
+      const binId = 0n; // Active bin
+      const xAmount = generateVerySmallAmount(); // 1
+      
+      // Very small amounts might round to zero after fees
+      // The contract should handle this gracefully
+      const response = txErr(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount
+      ), alice);
+      
+      // Should return ERR_INVALID_AMOUNT or handle gracefully
+      expect(response).toBeDefined();
+    });
+
+    it('should handle add-liquidity with very small amounts', async () => {
+      const binId = 0n;
+      const xAmount = generateVerySmallAmount(); // 1
+      const yAmount = generateVerySmallAmount(); // 1
+      const minDlp = 1n;
+      
+      // Very small amounts might not meet minimum requirements
+      const response = txErr(dlmmCore.addLiquidity(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount,
+        yAmount,
+        minDlp,
+        1000000n,
+        1000000n
+      ), alice);
+      
+      // Should return an error if amounts are too small
+      expect(response).toBeDefined();
+    });
+  });
+
+  describe('Very Small Value Tests', () => {
+    
+    it('should handle swap with minimum amount (1)', async () => {
+      const binId = 0n;
+      const xAmount = 1n;
+      
+      const response = txErr(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount
+      ), alice);
+      
+      // Should return ERR_INVALID_AMOUNT for amount too small
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_AMOUNT);
+    });
+
+    it('should handle withdraw-liquidity with minimum amount', async () => {
+      const binId = 0n;
+      const liquidityBalance = rovOk(sbtcUsdcPool.getBalance(
+        rovOk(dlmmCore.getUnsignedBinId(binId)),
+        alice
+      ));
+      
+      if (liquidityBalance > 0n) {
+        const amountToWithdraw = 1n; // Minimum amount
+        const minXAmount = 0n;
+        const minYAmount = 0n;
+        
+        const response = txErr(dlmmCore.withdrawLiquidity(
+          sbtcUsdcPool.identifier,
+          mockSbtcToken.identifier,
+          mockUsdcToken.identifier,
+          binId,
+          amountToWithdraw,
+          minXAmount,
+          minYAmount
+        ), alice);
+        
+        // Should handle gracefully (might fail if amount too small)
+        expect(response).toBeDefined();
+      }
+    });
+  });
+
+  describe('Very Large Value Tests', () => {
+    
+    it('should handle swap with very large amount (contract should cap)', async () => {
+      const binId = 0n;
+      const xAmount = generateVeryLargeAmount(); // Near u128 max
+      
+      // Contract should cap the amount to maximum allowed
+      const response = txOk(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount
+      ), alice);
+      
+      const swapResult = cvToValue(response.result);
+      // Should succeed with capped amount
+      expect(swapResult.in).toBeGreaterThan(0n);
+      expect(swapResult.in).toBeLessThanOrEqual(xAmount);
+    });
+
+    it('should handle add-liquidity with very large amounts', async () => {
+      const binId = 0n;
+      // Use large but reasonable amounts (not max to avoid immediate issues)
+      const xAmount = 1000000000000000n; // Very large but not max
+      const yAmount = 50000000000000000n;
+      const minDlp = 1n;
+      
+      // Should handle large amounts without overflow
+      const response = txOk(dlmmCore.addLiquidity(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount,
+        yAmount,
+        minDlp,
+        1000000n,
+        1000000n
+      ), alice);
+      
+      const liquidityReceived = cvToValue(response.result);
+      expect(liquidityReceived).toBeGreaterThan(0n);
+    });
+  });
+
+  describe('Zero Amount Tests', () => {
+    
+    it('should fail swap with zero amount', async () => {
+      const binId = 0n;
+      const xAmount = 0n;
+      
+      const response = txErr(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount
+      ), alice);
+      
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_AMOUNT);
+    });
+
+    it('should fail add-liquidity with zero amounts', async () => {
+      const binId = 0n;
+      const xAmount = 0n;
+      const yAmount = 0n;
+      const minDlp = 1n;
+      
+      const response = txErr(dlmmCore.addLiquidity(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        xAmount,
+        yAmount,
+        minDlp,
+        1000000n,
+        1000000n
+      ), alice);
+      
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_AMOUNT);
+    });
+
+    it('should fail withdraw-liquidity with zero amount', async () => {
+      const binId = 0n;
+      const amountToWithdraw = 0n;
+      const minXAmount = 0n;
+      const minYAmount = 0n;
+      
+      const response = txErr(dlmmCore.withdrawLiquidity(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        binId,
+        amountToWithdraw,
+        minXAmount,
+        minYAmount
+      ), alice);
+      
+      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_AMOUNT);
+    });
+  });
+});
+

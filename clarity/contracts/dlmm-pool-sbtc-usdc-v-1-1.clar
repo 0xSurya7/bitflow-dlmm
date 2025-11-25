@@ -11,17 +11,17 @@
 (define-non-fungible-token pool-token-id {token-id: uint, owner: principal})
 
 ;; Error constants
+(define-constant ERR_INSUFFICIENT_BALANCE_SIP_013 (err u1))
+(define-constant ERR_MATCHING_PRINCIPALS_SIP_013 (err u2))
+(define-constant ERR_INVALID_AMOUNT_SIP_013 (err u3))
 (define-constant ERR_NOT_AUTHORIZED_SIP_013 (err u4))
-(define-constant ERR_INVALID_AMOUNT_SIP_013 (err u1))
-(define-constant ERR_INVALID_PRINCIPAL_SIP_013 (err u5))
 (define-constant ERR_NOT_AUTHORIZED (err u3001))
 (define-constant ERR_INVALID_AMOUNT (err u3002))
 (define-constant ERR_INVALID_PRINCIPAL (err u3003))
 (define-constant ERR_NOT_POOL_CONTRACT_DEPLOYER (err u3004))
 (define-constant ERR_MAX_NUMBER_OF_BINS (err u3005))
 
-;; DLMM Core address and contract deployer address
-(define-constant CORE_ADDRESS .dlmm-core-v-1-1)
+;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
 
 ;; Define all pool data vars and maps
@@ -42,11 +42,13 @@
 })
 
 (define-data-var pool-addresses {
+  core-address: principal,
   variable-fees-manager: principal,
   fee-address: principal,
   x-token: principal,
   y-token: principal
 } {
+  core-address: .dlmm-core-v-1-1,
   variable-fees-manager: tx-sender,
   fee-address: tx-sender,
   x-token: tx-sender,
@@ -144,12 +146,12 @@
       pool-uri: (get pool-uri current-pool-info),
       pool-created: (get pool-created current-pool-info),
       creation-height: (get creation-height current-pool-info),
-      core-address: CORE_ADDRESS,
+      core-address: (get core-address current-pool-addresses),
       variable-fees-manager: (get variable-fees-manager current-pool-addresses),
       fee-address: (get fee-address current-pool-addresses),
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
-      pool-token: (as-contract tx-sender),
+      pool-token: current-contract,
       bin-step: (var-get bin-step),
       initial-price: (var-get initial-price),
       active-bin-id: (var-get active-bin-id),
@@ -231,6 +233,24 @@
   )
 )
 
+;; Get all pool data for variable fees
+(define-read-only (get-variable-fees-data)
+  (let (
+    (current-pool-fees (var-get pool-fees))
+  )
+    (ok {
+      variable-fees-manager: (get variable-fees-manager (var-get pool-addresses)),
+      x-variable-fee: (get x-variable-fee current-pool-fees),
+      y-variable-fee: (get y-variable-fee current-pool-fees),
+      bin-change-count: (var-get bin-change-count),
+      last-variable-fees-update: (var-get last-variable-fees-update),
+      variable-fees-cooldown: (var-get variable-fees-cooldown),
+      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+      dynamic-config: (var-get dynamic-config),
+    })
+  )
+)
+
 ;; Get active bin ID
 (define-read-only (get-active-bin-id)
   (ok (var-get active-bin-id))
@@ -253,9 +273,26 @@
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-info (merge (var-get pool-info) {
         pool-uri: uri
+      }))
+      (ok true)
+    )
+  )
+)
+
+;; Set core address via DLMM Core
+(define-public (set-core-address (address principal))
+  (let (
+    (current-pool-addresses (var-get pool-addresses))
+    (caller contract-caller)
+  )
+    (begin
+      ;; Assert that caller is core address before setting var
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+      (var-set pool-addresses (merge current-pool-addresses {
+        core-address: address
       }))
       (ok true)
     )
@@ -265,12 +302,13 @@
 ;; Set variable fees manager via DLMM Core
 (define-public (set-variable-fees-manager (manager principal))
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge (var-get pool-addresses) {
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+      (var-set pool-addresses (merge current-pool-addresses {
         variable-fees-manager: manager
       }))
       (ok true)
@@ -281,12 +319,13 @@
 ;; Set fee address via DLMM Core
 (define-public (set-fee-address (address principal))
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge (var-get pool-addresses) {
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+      (var-set pool-addresses (merge current-pool-addresses {
         fee-address: address
       }))
       (ok true)
@@ -301,7 +340,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set active-bin-id id)
       (var-set bin-change-count (+ (var-get bin-change-count) u1))
       (ok true)
@@ -316,7 +355,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-fees (merge (var-get pool-fees) {
         x-protocol-fee: protocol-fee,
         x-provider-fee: provider-fee
@@ -333,7 +372,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-fees (merge (var-get pool-fees) {
         y-protocol-fee: protocol-fee,
         y-provider-fee: provider-fee
@@ -350,7 +389,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set pool-fees (merge (var-get pool-fees) {
         x-variable-fee: x-fee,
         y-variable-fee: y-fee
@@ -369,7 +408,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set variable-fees-cooldown cooldown)
       (ok true)
     )
@@ -383,7 +422,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set freeze-variable-fees-manager true)
       (ok true)
     )
@@ -397,7 +436,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (var-set dynamic-config config)
       (ok true)
     )
@@ -411,7 +450,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (map-set balances-at-bin bin-id (merge (unwrap-panic (get-bin-balances bin-id)) {x-balance: x-balance, y-balance: y-balance}))
 
       ;; Print function data and return true
@@ -428,7 +467,7 @@
   )
     (begin
       ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
       (map-set balances-at-bin bin-id {x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares})
 
       ;; Print function data and return true
@@ -446,14 +485,14 @@
 	)
     (begin
       ;; Assert that caller is sender and sender is not recipient
-      (asserts! (is-eq caller sender) ERR_NOT_AUTHORIZED_SIP_013)
-      (asserts! (not (is-eq sender recipient)) ERR_INVALID_PRINCIPAL_SIP_013)
+      (asserts! (or (is-eq caller sender) (is-eq contract-caller sender)) ERR_NOT_AUTHORIZED_SIP_013)
+      (asserts! (not (is-eq sender recipient)) ERR_MATCHING_PRINCIPALS_SIP_013)
 
       ;; Assert that addresses are standard principals and amount is valid
-      (asserts! (is-standard sender) ERR_INVALID_PRINCIPAL_SIP_013)
-      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL_SIP_013)
+      (asserts! (is-standard sender) ERR_INVALID_PRINCIPAL)
+      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
       (asserts! (> amount u0) ERR_INVALID_AMOUNT_SIP_013)
-      (asserts! (<= amount sender-balance) ERR_INVALID_AMOUNT_SIP_013)
+      (asserts! (<= amount sender-balance) ERR_INSUFFICIENT_BALANCE_SIP_013)
 
       ;; Try to transfer pool token
       (try! (ft-transfer? pool-token amount sender recipient))
@@ -499,7 +538,7 @@
   )
     (begin
       ;; Assert that caller is core address before transferring tokens
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
       ;; Assert that recipient address is standard principal
       (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
@@ -508,7 +547,7 @@
       (asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
       ;; Try to transfer amount of token from pool contract to recipient
-      (try! (as-contract (contract-call? token-trait transfer amount tx-sender recipient none)))
+      (try! (as-contract? ((with-all-assets-unsafe)) (try! (contract-call? token-trait transfer amount tx-sender recipient none))))
 
       ;; Print function data and return true
       (print {action: "pool-transfer", data: {token: token-contract, amount: amount, recipient: recipient}})
@@ -524,7 +563,7 @@
   )
     (begin
       ;; Assert that caller is core address before minting tokens
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
       ;; Assert that user is standard principal and amount is greater than 0
       (asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
@@ -554,7 +593,7 @@
   )
     (begin
       ;; Assert that caller is core address before burning tokens
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
       ;; Assert that user is standard principal and amount is valid
       (asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
@@ -585,11 +624,12 @@
     (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))
   )
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address and core caller is contract deployer before setting vars
-      (asserts! (is-eq caller CORE_ADDRESS) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
       (asserts! (is-eq core-caller CONTRACT_DEPLOYER) ERR_NOT_POOL_CONTRACT_DEPLOYER)
       (var-set pool-info (merge (var-get pool-info) {
         pool-id: id,
@@ -599,7 +639,7 @@
         pool-created: true,
         creation-height: burn-block-height
       }))
-      (var-set pool-addresses (merge (var-get pool-addresses) {
+      (var-set pool-addresses (merge current-pool-addresses {
         variable-fees-manager: variable-fees-mgr,
         fee-address: fee-addr,
         x-token: x-token-contract,
