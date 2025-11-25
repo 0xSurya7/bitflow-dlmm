@@ -4,7 +4,7 @@
  * This test validates that the contract's swap calculations match Bitflow's
  * production Python quote engine (pricing.py). The quote engine represents
  * the maximum tokens that should be returned - if the contract returns more,
- * it's a critical security violation (exploit).
+ * it's a critical security violation.
  * 
  * Key differences from comprehensive fuzz test:
  * - Uses helper functions matching pricing.py API exactly
@@ -69,7 +69,7 @@ interface SwapValidationResult {
   expectedFloat: bigint;
   integerMatch: boolean;
   floatMatch: boolean;
-  exploitDetected: boolean;
+  bugDetected: boolean;
   binId: bigint;
   binPrice: bigint;
   feeRateBPS: bigint;
@@ -82,7 +82,7 @@ interface ValidationStats {
   failedSwaps: number;
   integerMatches: number;
   floatMatches: number;
-  exploitsDetected: number;
+  bugsDetected: number;
   singleBinSwaps: number;
   multiBinSwaps: number;
   roundingDifferences: Array<{
@@ -425,7 +425,7 @@ class SwapValidator {
     const expectedFloat = BigInt(Math.floor(floatResult.out_this));
     const integerMatch = expectedInteger === actualSwappedOut;
     const floatMatch = expectedFloat === actualSwappedOut;
-    const exploitDetected = actualSwappedOut > expectedFloat;
+    const bugDetected = actualSwappedOut > expectedFloat;
 
     return {
       txNumber,
@@ -437,7 +437,7 @@ class SwapValidator {
       expectedFloat,
       integerMatch,
       floatMatch,
-      exploitDetected,
+      bugDetected,
       binId,
       binPrice,
       feeRateBPS,
@@ -515,7 +515,7 @@ class SwapValidator {
     const expectedFloat = BigInt(Math.floor(floatResult.totalOut));
     const integerMatch = expectedInteger === actualSwappedOut;
     const floatMatch = expectedFloat === actualSwappedOut;
-    const exploitDetected = actualSwappedOut > expectedFloat;
+    const bugDetected = actualSwappedOut > expectedFloat;
     const binPrice = rovOk(dlmmCore.getBinPrice(poolData.initialPrice, poolData.binStep, activeBinId));
 
     return {
@@ -528,7 +528,7 @@ class SwapValidator {
       expectedFloat,
       integerMatch,
       floatMatch,
-      exploitDetected,
+      bugDetected,
       binId: activeBinId,
       binPrice,
       feeRateBPS,
@@ -571,7 +571,7 @@ class ProgressReporter {
       ? ((stats.floatMatches / stats.totalSwaps) * 100).toFixed(1)
       : '0.0';
     
-    let progressLine = `${percent}% (${txNumber}/${totalTransactions}) | ✅ ${successRate}% | 🔢 ${integerMatchRate}% | 🔷 ${floatMatchRate}% | 🚨 ${stats.exploitsDetected} | ⚡ ${rate} tx/s | ⏱️  ${elapsed}s`;
+    let progressLine = `${percent}% (${txNumber}/${totalTransactions}) | ✅ ${successRate}% | 🔢 ${integerMatchRate}% | 🔷 ${floatMatchRate}% | 🚨 ${stats.bugsDetected} | ⚡ ${rate} tx/s | ⏱️  ${elapsed}s`;
     
     if (txNumber > 1 && parseFloat(rate) > 0) {
       const remaining = totalTransactions - txNumber;
@@ -584,13 +584,13 @@ class ProgressReporter {
     this.write(progressLine + '\n');
   }
 
-  writeExploit(txNumber: number, direction: Direction, swapAmount: bigint, actualOut: bigint, expectedFloat: bigint): void {
-    const exploitMsg = `\n🚨 EXPLOIT DETECTED at transaction ${txNumber}:\n   Direction: ${direction}\n   Input: ${swapAmount}\n   Contract returned: ${actualOut}\n   Quote engine max: ${expectedFloat}\n   Excess: ${actualOut - expectedFloat}\n`;
-    this.write(exploitMsg);
+  writebug(txNumber: number, direction: Direction, swapAmount: bigint, actualOut: bigint, expectedFloat: bigint): void {
+    const bugMsg = `\n🚨 bug DETECTED at transaction ${txNumber}:\n   Direction: ${direction}\n   Input: ${swapAmount}\n   Contract returned: ${actualOut}\n   Quote engine max: ${expectedFloat}\n   Excess: ${actualOut - expectedFloat}\n`;
+    this.write(bugMsg);
   }
 
   writeSummary(stats: ValidationStats): void {
-    const summary = `\n✅ Validation complete:\n   Total swaps: ${stats.totalSwaps}\n   Integer matches: ${stats.integerMatches}\n   Float matches: ${stats.floatMatches}\n   Exploits detected: ${stats.exploitsDetected}\n`;
+    const summary = `\n✅ Validation complete:\n   Total swaps: ${stats.totalSwaps}\n   Integer matches: ${stats.integerMatches}\n   Float matches: ${stats.floatMatches}\n   bugs detected: ${stats.bugsDetected}\n`;
     this.write(summary);
   }
 
@@ -637,7 +637,7 @@ class ValidationLogger {
       failedSwaps: 0,
       integerMatches: 0,
       floatMatches: 0,
-      exploitsDetected: 0,
+      bugsDetected: 0,
       singleBinSwaps: 0,
       multiBinSwaps: 0,
       roundingDifferences: [],
@@ -660,7 +660,7 @@ class ValidationLogger {
     
     if (result.integerMatch) this.stats.integerMatches++;
     if (result.floatMatch) this.stats.floatMatches++;
-    if (result.exploitDetected) this.stats.exploitsDetected++;
+    if (result.bugDetected) this.stats.bugsDetected++;
     
     if (result.swapType === 'multi-bin') {
       this.stats.multiBinSwaps++;
@@ -717,10 +717,10 @@ class ValidationLogger {
     md += `- Failed Swaps: ${this.stats.failedSwaps}\n`;
     md += `- Integer Math Matches: ${this.stats.integerMatches} (${((this.stats.integerMatches / this.stats.totalSwaps) * 100).toFixed(2)}%)\n`;
     md += `- Float Math Matches: ${this.stats.floatMatches} (${((this.stats.floatMatches / this.stats.totalSwaps) * 100).toFixed(2)}%)\n`;
-    md += `- **EXPLOITS DETECTED**: ${this.stats.exploitsDetected}\n\n`;
+    md += `- **bugS DETECTED**: ${this.stats.bugsDetected}\n\n`;
     
-    if (this.stats.exploitsDetected > 0) {
-      md += this.generateExploitSection();
+    if (this.stats.bugsDetected > 0) {
+      md += this.generatebugSection();
     }
     
     if (this.stats.roundingDifferences.length > 0) {
@@ -730,16 +730,16 @@ class ValidationLogger {
     return md;
   }
 
-  private generateExploitSection(): string {
-    let md = `## 🚨 CRITICAL: Exploits Detected\n\n`;
-    md += `The contract returned MORE tokens than the quote engine allows in ${this.stats.exploitsDetected} cases.\n\n`;
-    const exploits = this.results.filter(r => r.exploitDetected);
-    for (const exploit of exploits) {
-      md += `- Transaction ${exploit.txNumber}: ${exploit.direction}, `;
-      md += `Input: ${exploit.inputAmount}, `;
-      md += `Contract returned: ${exploit.actualSwappedOut}, `;
-      md += `Quote engine max: ${exploit.expectedFloat}, `;
-      md += `Excess: ${exploit.actualSwappedOut - exploit.expectedFloat}\n`;
+  private generatebugSection(): string {
+    let md = `## 🚨 CRITICAL: bugs Detected\n\n`;
+    md += `The contract returned MORE tokens than the quote engine allows in ${this.stats.bugsDetected} cases.\n\n`;
+    const bugs = this.results.filter(r => r.bugDetected);
+    for (const bug of bugs) {
+      md += `- Transaction ${bug.txNumber}: ${bug.direction}, `;
+      md += `Input: ${bug.inputAmount}, `;
+      md += `Contract returned: ${bug.actualSwappedOut}, `;
+      md += `Quote engine max: ${bug.expectedFloat}, `;
+      md += `Excess: ${bug.actualSwappedOut - bug.expectedFloat}\n`;
     }
     md += `\n`;
     return md;
@@ -781,7 +781,7 @@ class TestOrchestrator {
     txNumber: number,
     totalTransactions: number,
     multiBinMode: boolean
-  ): Promise<{ success: boolean; exploitDetected: boolean }> {
+  ): Promise<{ success: boolean; bugDetected: boolean }> {
     const useMultiBin = multiBinMode && this.rng.next() < 0.5;
     
     const beforeState = useMultiBin
@@ -804,7 +804,7 @@ class TestOrchestrator {
       : SwapAmountGenerator.generateSingleBin(this.rng, beforeState, activeBinId, direction, userBalance, binPrice);
     
     if (!swapAmount || swapAmount === 0n) {
-      return { success: false, exploitDetected: false };
+      return { success: false, bugDetected: false };
     }
     
     try {
@@ -846,13 +846,13 @@ class TestOrchestrator {
       validation.swapType = useMultiBin ? 'multi-bin' : 'single-bin';
       this.logger.logResult(validation);
       
-      if (validation.exploitDetected) {
-        this.reporter.writeExploit(txNumber, direction, swapAmount, swapResult.swappedOut, validation.expectedFloat);
+      if (validation.bugDetected) {
+        this.reporter.writebug(txNumber, direction, swapAmount, swapResult.swappedOut, validation.expectedFloat);
         this.reporter.writeProgress(txNumber, totalTransactions, this.logger.stats);
-        return { success: true, exploitDetected: true };
+        return { success: true, bugDetected: true };
       }
       
-      return { success: true, exploitDetected: false };
+      return { success: true, bugDetected: false };
     } catch (e: any) {
       this.logger.logResult({
         txNumber,
@@ -864,12 +864,12 @@ class TestOrchestrator {
         expectedFloat: 0n,
         integerMatch: true,
         floatMatch: true,
-        exploitDetected: false,
+        bugDetected: false,
         binId: activeBinId,
         binPrice,
         feeRateBPS: 0n,
       });
-      return { success: false, exploitDetected: false };
+      return { success: false, bugDetected: false };
     }
   }
 
@@ -941,8 +941,8 @@ describe('DLMM Core Quote Engine Validation Fuzz Test', () => {
     logger.writeResults();
     reporter.writeSummary(logger.stats);
     
-    // Verify no exploits were detected
-    expect(logger.stats.exploitsDetected).toBe(0);
+    // Verify no bugs were detected
+    expect(logger.stats.bugsDetected).toBe(0);
     
     // Verify high match rates
     if (logger.stats.totalSwaps > 0) {
