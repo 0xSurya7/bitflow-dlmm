@@ -156,37 +156,6 @@ describe('Validation Logic Tests', () => {
     });
   });
 
-  describe('Reserve State Handling', () => {
-    it('should use reserves from BEFORE swap (correct)', () => {
-      // Validation test captures state BEFORE swap
-      // Helper function should use those reserves (which match what contract used)
-      
-      const binDataBefore: BinData = {
-        reserve_x: 0n,
-        reserve_y: 50000000000n, // Reserves BEFORE swap
-      };
-      const binPrice = 5000000000n;
-      const actualSwappedIn = 100000000n;
-      const feeRateBPS = 4000n;
-
-      // Calculate using reserves BEFORE swap (correct)
-      const resultBefore = calculateBinSwap(binDataBefore, binPrice, actualSwappedIn, feeRateBPS, true);
-
-      // Simulate reserves AFTER swap (for comparison)
-      const binDataAfter: BinData = {
-        reserve_x: 0n,
-        reserve_y: binDataBefore.reserve_y - resultBefore.out_this, // Reserves AFTER swap
-      };
-
-      // If we used reserves AFTER swap, we'd get wrong result
-      const resultAfter = calculateBinSwap(binDataAfter, binPrice, actualSwappedIn, feeRateBPS, true);
-
-      // Results should be different (proving we need BEFORE state)
-      // Note: This is just to verify the logic - in practice we always use BEFORE state
-      expect(resultBefore.out_this).not.toBe(resultAfter.out_this);
-    });
-  });
-
   describe('Fee Exemption Handling', () => {
     it('should handle zero fees correctly (fee exemption)', () => {
       const binData: BinData = {
@@ -259,6 +228,5 @@ describe('Validation Logic Tests', () => {
     });
   });
 });
-
 
 

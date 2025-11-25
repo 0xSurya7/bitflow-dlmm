@@ -7,30 +7,283 @@ import {
   mockSbtcToken,
   mockUsdcToken,
   setupTestEnvironment,
+  getSbtcUsdcPoolLpBalance,
 } from "../tests/helpers/helpers";
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { cvToValue } from '@clarigen/core';
-import { txOk, txErr, rovOk } from '@clarigen/test';
+import { txOk, rovOk } from '@clarigen/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
 // ============================================================================
-// Constants
+// Type Definitions
 // ============================================================================
 
-const MIN_BIN_ID = -500n;
-const MAX_BIN_ID = 500n;
-const CENTER_BIN_ID = 0n;
+type Direction = 'x-for-y' | 'y-for-x';
+
+interface BinBalances {
+  xBalance: bigint;
+  yBalance: bigint;
+}
+
+interface LiquidityAmounts {
+  xAmount: bigint;
+  yAmount: bigint;
+}
+
+interface ErrorRecord {
+  bin: bigint;
+  operation: string;
+  error: string;
+  params: any;
+}
 
 // ============================================================================
-// Logger for test results
+// Configuration & Constants
 // ============================================================================
 
-class BinTraversalLogger {
+class TestConfig {
+  // Bin range
+  static readonly MIN_BIN_ID = -500n;
+  static readonly MAX_BIN_ID = 500n;
+  static readonly CENTER_BIN_ID = 0n;
+  
+  // Traversal path
+  static readonly TRAVERSAL_PATH = [0n, -500n, 500n, 0n];
+  
+  // Operations per bin
+  static readonly SWAPS_PER_BIN = 5;
+  static readonly ADD_LIQUIDITY_PER_BIN = 3;
+  static readonly WITHDRAW_LIQUIDITY_PER_BIN = 3;
+  static readonly MOVE_LIQUIDITY_PER_BIN = 3;
+  
+  // Amount generation percentages
+  static readonly SWAP_BIN_BALANCE_PERCENT = 15; // 5-15% of bin balance
+  static readonly ADD_LIQUIDITY_USER_BALANCE_PERCENT = 10; // 10% of user balance
+  static readonly WITHDRAW_LP_PERCENT = 40; // 30-50% of LP tokens
+  static readonly MOVE_LP_PERCENT = 30; // 20-40% of LP tokens
+  
+  // Minimum amounts
+  static readonly MIN_SWAP_AMOUNT = 10000n;
+  static readonly MIN_ADD_LIQUIDITY_AMOUNT = 1000n;
+  static readonly MIN_WITHDRAW_AMOUNT = 100n;
+  static readonly MIN_MOVE_AMOUNT = 100n;
+  static readonly MIN_DLP = 1n;
+  
+  // Cross-bin swap parameters
+  static readonly MAX_CROSS_BIN_ATTEMPTS = 200;
+  
+  static readonly MAX_LIQUIDITY_FEE = 1000000n;
+
+  static readonly TIMEOUT = 600000;
+}
+
+// ============================================================================
+// Pool State Manager
+// ============================================================================
+
+class PoolStateManager {
+  /**
+   * Get active bin ID
+   */
+  static getActiveBinId(): bigint {
+    return rovOk(sbtcUsdcPool.getActiveBinId());
+  }
+
+  /**
+   * Get bin balances
+   */
+  static getBinBalances(binId: bigint): BinBalances {
+    const unsignedBinId = rovOk(dlmmCore.getUnsignedBinId(binId));
+    try {
+      const balances = rovOk(sbtcUsdcPool.getBinBalances(unsignedBinId));
+      return { xBalance: balances.xBalance, yBalance: balances.yBalance };
+    } catch {
+      return { xBalance: 0n, yBalance: 0n };
+    }
+  }
+
+  /**
+   * Get user token balance
+   */
+  static getUserTokenBalance(user: string, tokenContract: any): bigint {
+    return rovOk(tokenContract.getBalance(user)) as bigint;
+  }
+
+  /**
+   * Get user LP balance for a bin
+   */
+  static getUserLpBalance(user: string, binId: bigint): bigint {
+    try {
+      return getSbtcUsdcPoolLpBalance(binId, user);
+    } catch {
+      return 0n;
+    }
+  }
+}
+
+// ============================================================================
+// Amount Generator
+// ============================================================================
+
+class AmountGenerator {
+  /**
+   * Generate swap amount based on bin and user balances
+   */
+  static generateSwapAmount(binId: bigint, direction: Direction, user: string): bigint | null {
+    const balances = PoolStateManager.getBinBalances(binId);
+    const userXBalance = PoolStateManager.getUserTokenBalance(user, mockSbtcToken);
+    const userYBalance = PoolStateManager.getUserTokenBalance(user, mockUsdcToken);
+
+    if (direction === 'x-for-y') {
+      if (balances.yBalance === 0n || userXBalance === 0n) return null;
+      const maxFromBin = (balances.yBalance * BigInt(TestConfig.SWAP_BIN_BALANCE_PERCENT)) / 100n;
+      const maxAmount = maxFromBin < userXBalance ? maxFromBin : userXBalance;
+      return maxAmount < TestConfig.MIN_SWAP_AMOUNT ? null : maxAmount;
+    } else {
+      if (balances.xBalance === 0n || userYBalance === 0n) return null;
+      const maxFromBin = (balances.xBalance * BigInt(TestConfig.SWAP_BIN_BALANCE_PERCENT)) / 100n;
+      const maxAmount = maxFromBin < userYBalance ? maxFromBin : userYBalance;
+      return maxAmount < TestConfig.MIN_SWAP_AMOUNT ? null : maxAmount;
+    }
+  }
+
+  /**
+   * Generate add liquidity amounts based on bin position
+   */
+  static generateAddLiquidityAmounts(binId: bigint, user: string): LiquidityAmounts | null {
+    const activeBinId = PoolStateManager.getActiveBinId();
+    const userXBalance = PoolStateManager.getUserTokenBalance(user, mockSbtcToken);
+    const userYBalance = PoolStateManager.getUserTokenBalance(user, mockUsdcToken);
+
+    if (binId < activeBinId) {
+      // y only
+      if (userYBalance === 0n) return null;
+      const yAmount = (userYBalance * BigInt(TestConfig.ADD_LIQUIDITY_USER_BALANCE_PERCENT)) / 100n;
+      return yAmount < TestConfig.MIN_ADD_LIQUIDITY_AMOUNT ? null : { xAmount: 0n, yAmount };
+    } else if (binId === activeBinId) {
+      // both x & y
+      if (userXBalance === 0n || userYBalance === 0n) return null;
+      const xAmount = (userXBalance * BigInt(TestConfig.ADD_LIQUIDITY_USER_BALANCE_PERCENT)) / 100n;
+      const yAmount = (userYBalance * BigInt(TestConfig.ADD_LIQUIDITY_USER_BALANCE_PERCENT)) / 100n;
+      return (xAmount < TestConfig.MIN_ADD_LIQUIDITY_AMOUNT || yAmount < TestConfig.MIN_ADD_LIQUIDITY_AMOUNT) 
+        ? null 
+        : { xAmount, yAmount };
+    } else {
+      // x only
+      if (userXBalance === 0n) return null;
+      const xAmount = (userXBalance * BigInt(TestConfig.ADD_LIQUIDITY_USER_BALANCE_PERCENT)) / 100n;
+      return xAmount < TestConfig.MIN_ADD_LIQUIDITY_AMOUNT ? null : { xAmount, yAmount: 0n };
+    }
+  }
+
+  /**
+   * Generate withdraw amount from LP balance
+   */
+  static generateWithdrawAmount(binId: bigint, user: string): bigint | null {
+    const lpBalance = PoolStateManager.getUserLpBalance(user, binId);
+    if (lpBalance === 0n) return null;
+    const amount = (lpBalance * BigInt(TestConfig.WITHDRAW_LP_PERCENT)) / 100n;
+    return amount < TestConfig.MIN_WITHDRAW_AMOUNT ? null : amount;
+  }
+
+  /**
+   * Generate move amount from LP balance
+   */
+  static generateMoveAmount(sourceBinId: bigint, user: string): bigint | null {
+    const lpBalance = PoolStateManager.getUserLpBalance(user, sourceBinId);
+    if (lpBalance === 0n) return null;
+    const amount = (lpBalance * BigInt(TestConfig.MOVE_LP_PERCENT)) / 100n;
+    return amount < TestConfig.MIN_MOVE_AMOUNT ? null : amount;
+  }
+}
+
+// ============================================================================
+// Operation Executor
+// ============================================================================
+
+class OperationExecutor {
+  /**
+   * Execute a swap operation
+   */
+  static executeSwap(binId: bigint, direction: Direction, amount: bigint, user: string): void {
+    if (direction === 'x-for-y') {
+      txOk(dlmmCore.swapXForY(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        Number(binId),
+        amount
+      ), user);
+    } else {
+      txOk(dlmmCore.swapYForX(
+        sbtcUsdcPool.identifier,
+        mockSbtcToken.identifier,
+        mockUsdcToken.identifier,
+        Number(binId),
+        amount
+      ), user);
+    }
+  }
+
+  /**
+   * Execute add liquidity operation
+   */
+  static executeAddLiquidity(binId: bigint, amounts: LiquidityAmounts, user: string): void {
+    txOk(dlmmCore.addLiquidity(
+      sbtcUsdcPool.identifier,
+      mockSbtcToken.identifier,
+      mockUsdcToken.identifier,
+      Number(binId),
+      amounts.xAmount,
+      amounts.yAmount,
+      TestConfig.MIN_DLP,
+      TestConfig.MAX_LIQUIDITY_FEE,
+      TestConfig.MAX_LIQUIDITY_FEE
+    ), user);
+  }
+
+  /**
+   * Execute withdraw liquidity operation
+   */
+  static executeWithdrawLiquidity(binId: bigint, amount: bigint, user: string): void {
+    txOk(dlmmCore.withdrawLiquidity(
+      sbtcUsdcPool.identifier,
+      mockSbtcToken.identifier,
+      mockUsdcToken.identifier,
+      Number(binId),
+      amount,
+      0n, // minXAmount
+      0n  // minYAmount
+    ), user);
+  }
+
+  /**
+   * Execute move liquidity operation
+   */
+  static executeMoveLiquidity(fromBinId: bigint, toBinId: bigint, amount: bigint, user: string): void {
+    txOk(dlmmCore.moveLiquidity(
+      sbtcUsdcPool.identifier,
+      mockSbtcToken.identifier,
+      mockUsdcToken.identifier,
+      Number(fromBinId),
+      Number(toBinId),
+      amount,
+      TestConfig.MIN_DLP,
+      TestConfig.MAX_LIQUIDITY_FEE,
+      TestConfig.MAX_LIQUIDITY_FEE
+    ), user);
+  }
+}
+
+// ============================================================================
+// Traversal Logger
+// ============================================================================
+
+class TraversalLogger {
   private logFile: string;
   private logs: string[] = [];
-  private errors: Array<{ bin: bigint; operation: string; error: string; params: any }> = [];
+  public errors: ErrorRecord[] = [];
 
   constructor() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -41,19 +294,19 @@ class BinTraversalLogger {
     this.logFile = path.join(baseDir, `bin-traversal-${timestamp}.log`);
   }
 
-  log(message: string) {
+  log(message: string): void {
     const timestamp = new Date().toISOString();
     const logLine = `[${timestamp}] ${message}`;
     this.logs.push(logLine);
     console.log(logLine);
   }
 
-  logError(bin: bigint, operation: string, error: string, params: any) {
+  logError(bin: bigint, operation: string, error: string, params: any): void {
     this.errors.push({ bin, operation, error, params });
     this.log(`ERROR at bin ${bin}: ${operation} failed - ${error}`);
   }
 
-  save() {
+  save(): void {
     let content = `# Bin Traversal Fuzz Test Log\n\n`;
     content += `**Test Date:** ${new Date().toISOString()}\n\n`;
     content += `## Test Summary\n\n`;
@@ -78,409 +331,309 @@ class BinTraversalLogger {
 }
 
 // ============================================================================
-// Helper Functions
+// Bin Operations Handler
 // ============================================================================
 
-function getActiveBinId(): bigint {
-  return rovOk(sbtcUsdcPool.getActiveBinId());
-}
-
-function getBinBalances(binId: bigint) {
-  const unsignedBinId = rovOk(dlmmCore.getUnsignedBinId(binId));
-  try {
-    const balances = rovOk(sbtcUsdcPool.getBinBalances(unsignedBinId));
-    return { xBalance: balances.xBalance, yBalance: balances.yBalance };
-  } catch {
-    return { xBalance: 0n, yBalance: 0n };
-  }
-}
-
-function getUserTokenBalance(user: string, token: any): bigint {
-  return rovOk(token.getBalance(user));
-}
-
-function getUserLpBalance(user: string, binId: bigint): bigint {
-  const unsignedBinId = rovOk(dlmmCore.getUnsignedBinId(binId));
-  try {
-    return rovOk(sbtcUsdcPool.getBalanceOf(user, unsignedBinId));
-  } catch {
-    return 0n;
-  }
-}
-
-// ============================================================================
-// Operation Generators
-// ============================================================================
-
-function generateSwapAmount(
-  binId: bigint,
-  direction: 'x-for-y' | 'y-for-x',
-  user: string
-): bigint | null {
-  const balances = getBinBalances(binId);
-  const userXBalance = getUserTokenBalance(user, mockSbtcToken);
-  const userYBalance = getUserTokenBalance(user, mockUsdcToken);
-
-  if (direction === 'x-for-y') {
-    if (balances.yBalance === 0n || userXBalance === 0n) return null;
-    // Use 5-15% of available Y balance or user X balance, whichever is smaller
-    const maxFromBin = (balances.yBalance * 15n) / 100n;
-    const maxFromUser = userXBalance;
-    const maxAmount = maxFromBin < maxFromUser ? maxFromBin : maxFromUser;
-    if (maxAmount < 10000n) return null;
-    return maxAmount;
-  } else {
-    if (balances.xBalance === 0n || userYBalance === 0n) return null;
-    const maxFromBin = (balances.xBalance * 15n) / 100n;
-    const maxFromUser = userYBalance;
-    const maxAmount = maxFromBin < maxFromUser ? maxFromBin : maxFromUser;
-    if (maxAmount < 10000n) return null;
-    return maxAmount;
-  }
-}
-
-function generateAddLiquidityAmounts(
-  binId: bigint,
-  user: string
-): { xAmount: bigint; yAmount: bigint } | null {
-  const activeBinId = getActiveBinId();
-  const userXBalance = getUserTokenBalance(user, mockSbtcToken);
-  const userYBalance = getUserTokenBalance(user, mockUsdcToken);
-
-  if (binId < activeBinId) {
-    // Negative bin: only Y tokens
-    if (userYBalance === 0n) return null;
-    const yAmount = (userYBalance * 10n) / 100n; // 10% of balance
-    if (yAmount < 1000n) return null;
-    return { xAmount: 0n, yAmount };
-  } else if (binId === activeBinId) {
-    // Active bin: both X and Y tokens
-    if (userXBalance === 0n || userYBalance === 0n) return null;
-    const xAmount = (userXBalance * 10n) / 100n;
-    const yAmount = (userYBalance * 10n) / 100n;
-    if (xAmount < 1000n || yAmount < 1000n) return null;
-    return { xAmount, yAmount };
-  } else {
-    // Positive bin: only X tokens
-    if (userXBalance === 0n) return null;
-    const xAmount = (userXBalance * 10n) / 100n;
-    if (xAmount < 1000n) return null;
-    return { xAmount, yAmount: 0n };
-  }
-}
-
-function generateWithdrawAmount(binId: bigint, user: string): bigint | null {
-  const lpBalance = getUserLpBalance(user, binId);
-  if (lpBalance === 0n) return null;
-  // Withdraw 30-50% of LP tokens
-  const amount = (lpBalance * 40n) / 100n;
-  if (amount < 100n) return null;
-  return amount;
-}
-
-function generateMoveAmount(sourceBinId: bigint, user: string): bigint | null {
-  const lpBalance = getUserLpBalance(user, sourceBinId);
-  if (lpBalance === 0n) return null;
-  // Move 20-40% of LP tokens
-  const amount = (lpBalance * 30n) / 100n;
-  if (amount < 100n) return null;
-  return amount;
-}
-
-// ============================================================================
-// Swap to cross bins
-// ============================================================================
-
-function swapToCrossBin(
-  targetBinId: bigint,
-  logger: BinTraversalLogger
-): boolean {
-  const activeBinId = getActiveBinId();
-  
-  if (activeBinId === targetBinId) {
-    return true; // Already at target
-  }
-
-  logger.log(`Swapping to cross from bin ${activeBinId} to bin ${targetBinId}`);
-
-  // Determine direction: to go to higher bin (positive), swap X for Y
-  // To go to lower bin (negative), swap Y for X
-  const direction = targetBinId > activeBinId ? 'x-for-y' : 'y-for-x';
-  const user = alice;
-  let attempts = 0;
-  const maxAttempts = 200; // More attempts for long traversals
-
-  while (getActiveBinId() !== targetBinId && attempts < maxAttempts) {
-    attempts++;
-    const currentBinId = getActiveBinId();
+class BinOperationsHandler {
+  /**
+   * Perform swap operations in a bin
+   */
+  static performSwaps(binId: bigint, count: number, logger: TraversalLogger): void {
+    logger.log(`Performing ${count} swaps in bin ${binId}`);
     
-    // Check if we're moving in the right direction
-    const currentDirection = targetBinId > currentBinId ? 'x-for-y' : 'y-for-x';
-    if (currentDirection !== direction) {
-      // We've overshot or need to change direction
-      logger.log(`Direction changed at bin ${currentBinId}, target is ${targetBinId}`);
-      break;
+    for (let j = 0; j < count; j++) {
+      const direction: Direction = j % 2 === 0 ? 'x-for-y' : 'y-for-x';
+      const user = j % 2 === 0 ? alice : bob;
+      const amount = AmountGenerator.generateSwapAmount(binId, direction, user);
+      
+      if (!amount) {
+        logger.log(`Skipping swap ${j + 1} - insufficient balance`);
+        continue;
+      }
+      
+      try {
+        OperationExecutor.executeSwap(binId, direction, amount, user);
+        logger.log(` Swap ${j + 1}: ${direction} with amount ${amount}`);
+      } catch (error: any) {
+        logger.logError(binId, `swap-${direction}`, error.message || String(error), { amount });
+      }
     }
+  }
+
+  /**
+   * Perform add liquidity operations in a bin
+   */
+  static performAddLiquidity(binId: bigint, count: number, logger: TraversalLogger): void {
+    logger.log(`Performing ${count} add liquidity operations in bin ${binId}`);
     
-    const amount = generateSwapAmount(currentBinId, currentDirection, user);
+    for (let j = 0; j < count; j++) {
+      const user = j % 2 === 0 ? alice : bob;
+      const amounts = AmountGenerator.generateAddLiquidityAmounts(binId, user);
+      
+      if (!amounts) {
+        logger.log(`Skipping add liquidity ${j + 1} - insufficient balance`);
+        continue;
+      }
+      
+      try {
+        OperationExecutor.executeAddLiquidity(binId, amounts, user);
+        logger.log(`  Add liquidity ${j + 1}: x=${amounts.xAmount}, y=${amounts.yAmount}`);
+      } catch (error: any) {
+        logger.logError(binId, 'add-liquidity', error.message || String(error), amounts);
+      }
+    }
+  }
+
+  /**
+   * Perform withdraw liquidity operations in a bin
+   */
+  static performWithdrawLiquidity(binId: bigint, count: number, logger: TraversalLogger): void {
+    logger.log(`Performing ${count} remove liquidity operations in bin ${binId}`);
     
-    if (!amount) {
-      logger.log(`Cannot generate swap amount at bin ${currentBinId} - may need liquidity`);
-      // Try to add liquidity to current bin to continue
-      const amounts = generateAddLiquidityAmounts(currentBinId, user);
-      if (amounts) {
-        try {
-          txOk(dlmmCore.addLiquidity(
-            sbtcUsdcPool.identifier,
-            mockSbtcToken.identifier,
-            mockUsdcToken.identifier,
-            currentBinId,
-            amounts.xAmount,
-            amounts.yAmount,
-            1n,
-            user
-          ), user);
-          logger.log(`Added liquidity to bin ${currentBinId} to continue traversal`);
+    for (let j = 0; j < count; j++) {
+      const user = j % 2 === 0 ? alice : bob;
+      const amount = AmountGenerator.generateWithdrawAmount(binId, user);
+      
+      if (!amount) {
+        logger.log(`Skipping remove liquidity ${j + 1} - no LP tokens`);
+        continue;
+      }
+      
+      try {
+        OperationExecutor.executeWithdrawLiquidity(binId, amount, user);
+        logger.log(`  Remove liquidity ${j + 1}: ${amount} LP tokens`);
+      } catch (error: any) {
+        logger.logError(binId, 'withdraw-liquidity', error.message || String(error), { amount });
+      }
+    }
+  }
+
+  /**
+   * Perform move liquidity operations from a bin
+   */
+  static performMoveLiquidity(binId: bigint, count: number, logger: TraversalLogger): void {
+    logger.log(`Performing ${count} move liquidity operations from bin ${binId}`);
+    
+    for (let j = 0; j < count; j++) {
+      const user = j % 2 === 0 ? alice : bob;
+      const amount = AmountGenerator.generateMoveAmount(binId, user);
+      
+      if (!amount) {
+        logger.log(`Skipping move liquidity ${j + 1} - no LP tokens`);
+        continue;
+      }
+      
+      // Determine target bin
+      const targetBin = binId === TestConfig.MIN_BIN_ID 
+        ? binId + 1n 
+        : binId === TestConfig.MAX_BIN_ID
+        ? binId - 1n
+        : binId + (j % 2 === 0 ? 1n : -1n);
+      
+      if (targetBin < TestConfig.MIN_BIN_ID || targetBin > TestConfig.MAX_BIN_ID) {
+        logger.log(`Skipping move liquidity ${j + 1} - target bin ${targetBin} out of range`);
+        continue;
+      }
+      
+      try {
+        OperationExecutor.executeMoveLiquidity(binId, targetBin, amount, user);
+        logger.log(`  Move liquidity ${j + 1}: ${amount} LP tokens from ${binId} to ${targetBin}`);
+      } catch (error: any) {
+        logger.logError(binId, 'move-liquidity', error.message || String(error), { from: binId, to: targetBin, amount });
+      }
+    }
+  }
+
+  /**
+   * Process all operations for a bin
+   */
+  static processAllOperations(binId: bigint, logger: TraversalLogger): void {
+    this.performSwaps(binId, TestConfig.SWAPS_PER_BIN, logger);
+    this.performAddLiquidity(binId, TestConfig.ADD_LIQUIDITY_PER_BIN, logger);
+    this.performWithdrawLiquidity(binId, TestConfig.WITHDRAW_LIQUIDITY_PER_BIN, logger);
+    this.performMoveLiquidity(binId, TestConfig.MOVE_LIQUIDITY_PER_BIN, logger);
+    logger.log(`Completed operations in bin ${binId}`);
+  }
+}
+
+// ============================================================================
+// Bin Traversal Handler
+// ============================================================================
+
+class BinTraversalHandler {
+  /**
+   * Swap to cross bins and reach target bin
+   */
+  static swapToCrossBin(targetBinId: bigint, logger: TraversalLogger): boolean {
+    const activeBinId = PoolStateManager.getActiveBinId();
+    
+    if (activeBinId === targetBinId) {
+      return true; // Already at target
+    }
+
+    logger.log(`Swapping to cross from bin ${activeBinId} to bin ${targetBinId}`);
+
+    const direction: Direction = targetBinId > activeBinId ? 'x-for-y' : 'y-for-x';
+    let attempts = 0;
+
+    while (PoolStateManager.getActiveBinId() !== targetBinId && attempts < TestConfig.MAX_CROSS_BIN_ATTEMPTS) {
+      attempts++;
+      const currentBinId = PoolStateManager.getActiveBinId();
+      
+      // correct direction sanity
+      const currentDirection: Direction = targetBinId > currentBinId ? 'x-for-y' : 'y-for-x';
+      if (currentDirection !== direction) {
+        logger.log(`Direction changed at bin ${currentBinId}, target is ${targetBinId}`);
+        break;
+      }
+      
+      const amount = AmountGenerator.generateSwapAmount(currentBinId, currentDirection, alice);
+      
+      if (!amount) {
+        // try adding liquidity to continue
+        if (this.tryAddLiquidityForTraversal(currentBinId, alice, logger)) {
           continue;
-        } catch (e) {
-          logger.log(`Failed to add liquidity at bin ${currentBinId}`);
         }
+        break;
       }
-      break;
+
+      try {
+        OperationExecutor.executeSwap(currentBinId, currentDirection, amount, alice);
+        const newBinId = PoolStateManager.getActiveBinId();
+        logger.log(`Swap ${currentDirection}: ${amount} at bin ${currentBinId} -> new bin ${newBinId}`);
+      } catch (error: any) {
+        logger.logError(currentBinId, `swap-${currentDirection}`, error.message || String(error), { amount });
+        continue;
+      }
     }
 
-    try {
-      if (currentDirection === 'x-for-y') {
-        txOk(dlmmCore.swapXForY(
-          sbtcUsdcPool.identifier,
-          mockSbtcToken.identifier,
-          mockUsdcToken.identifier,
-          currentBinId,
-          amount
-        ), user);
-        const newBinId = getActiveBinId();
-        logger.log(`Swap X for Y: ${amount} at bin ${currentBinId} -> new bin ${newBinId}`);
-      } else {
-        txOk(dlmmCore.swapYForX(
-          sbtcUsdcPool.identifier,
-          mockSbtcToken.identifier,
-          mockUsdcToken.identifier,
-          currentBinId,
-          amount
-        ), user);
-        const newBinId = getActiveBinId();
-        logger.log(`Swap Y for X: ${amount} at bin ${currentBinId} -> new bin ${newBinId}`);
-      }
-    } catch (error: any) {
-      logger.logError(currentBinId, `swap-${currentDirection}`, error.message || String(error), { amount });
-      // Try smaller amount or continue
-      continue;
+    const finalBinId = PoolStateManager.getActiveBinId();
+    if (finalBinId === targetBinId) {
+      logger.log(`Successfully reached target bin ${targetBinId}`);
+      return true;
+    } else {
+      logger.log(`Reached bin ${finalBinId} instead of target ${targetBinId} after ${attempts} attempts`);
+      return false;
     }
   }
 
-  const finalBinId = getActiveBinId();
-  if (finalBinId === targetBinId) {
-    logger.log(`Successfully reached target bin ${targetBinId}`);
-    return true;
-  } else {
-    logger.log(`Reached bin ${finalBinId} instead of target ${targetBinId} after ${attempts} attempts`);
-    return false;
+  /**
+   * Try adding liquidity to enable continued traversal
+   */
+  private static tryAddLiquidityForTraversal(binId: bigint, user: string, logger: TraversalLogger): boolean {
+    logger.log(`Cannot generate swap amount at bin ${binId} - attempting to add liquidity`);
+    const amounts = AmountGenerator.generateAddLiquidityAmounts(binId, user);
+    
+    if (!amounts) return false;
+    
+    try {
+      OperationExecutor.executeAddLiquidity(binId, amounts, user);
+      logger.log(`Added liquidity to bin ${binId} to continue traversal`);
+      return true;
+    } catch (e) {
+      logger.log(`Failed to add liquidity at bin ${binId}`);
+      return false;
+    }
   }
 }
 
 // ============================================================================
-// Main Test
+// Test Orchestrator
+// ============================================================================
+
+class TestOrchestrator {
+  private logger: TraversalLogger;
+
+  constructor(logger: TraversalLogger) {
+    this.logger = logger;
+  }
+
+  /**
+   * Process a single bin in the traversal path
+   */
+  processBin(targetBinId: bigint, isFirstBin: boolean): void {
+    this.logger.log(`\n=== Processing bin ${targetBinId} ===`);
+    
+    // Traverse to target bin
+    if (!isFirstBin) {
+      const success = BinTraversalHandler.swapToCrossBin(targetBinId, this.logger);
+      if (!success) {
+        this.logger.log(`Failed to reach bin ${targetBinId}`);
+        return;
+      }
+    }
+    
+    const currentBinId = PoolStateManager.getActiveBinId();
+    expect(currentBinId).toBe(targetBinId);
+    
+    // Perform all operations in this bin
+    BinOperationsHandler.processAllOperations(currentBinId, this.logger);
+  }
+
+  /**
+   * Execute complete traversal path
+   */
+  executeTraversalPath(traversalPath: bigint[]): void {
+    for (let i = 0; i < traversalPath.length; i++) {
+      this.processBin(traversalPath[i], i === 0);
+    }
+  }
+
+  /**
+   * Attempt to return to center bin
+   */
+  returnToCenterIfNeeded(): bigint {
+    let finalBinId = PoolStateManager.getActiveBinId();
+    
+    if (finalBinId !== TestConfig.CENTER_BIN_ID) {
+      this.logger.log(`\nAttempting to return to bin 0 from bin ${finalBinId}`);
+      BinTraversalHandler.swapToCrossBin(TestConfig.CENTER_BIN_ID, this.logger);
+      finalBinId = PoolStateManager.getActiveBinId();
+    }
+    
+    return finalBinId;
+  }
+
+  /**
+   * Log final summary
+   */
+  logFinalSummary(finalBinId: bigint): void {
+    this.logger.log(`\nFinal bin ID: ${finalBinId}`);
+    
+    if (this.logger.errors.length > 0) {
+      this.logger.log(`\nTest completed with ${this.logger.errors.length} errors. Check log file for details.`);
+    } else {
+      this.logger.log(`\nTest completed successfully with no errors.`);
+    }
+  }
+}
+
+// ============================================================================
+// Test Suite
 // ============================================================================
 
 describe('DLMM Core Bin Traversal Fuzz Test', () => {
-  let logger: BinTraversalLogger;
+  let logger: TraversalLogger;
 
   beforeEach(() => {
     setupTestEnvironment();
-    logger = new BinTraversalLogger();
+    logger = new TraversalLogger();
   });
 
-  it('should traverse bins: 0 → -500 → 500 → 0 with operations in each bin', async () => {
+  it('should traverse bins: 0 > -500 > 500 > 0 with operations in each bin', async () => {
     logger.log('Starting bin traversal fuzz test');
     
-    // Define traversal path
-    const path: bigint[] = [0n, -500n, 500n, 0n];
+    const orchestrator = new TestOrchestrator(logger);
     
-    for (let i = 0; i < path.length; i++) {
-      const targetBinId = path[i];
-      logger.log(`\n=== Processing bin ${targetBinId} ===`);
-      
-      // Swap to target bin
-      if (i > 0) {
-        const success = swapToCrossBin(targetBinId, logger);
-        if (!success) {
-          logger.log(`Failed to reach bin ${targetBinId}`);
-          continue;
-        }
-      }
-      
-      const currentBinId = getActiveBinId();
-      expect(currentBinId).toBe(targetBinId);
-      
-      // Perform operations in this bin
-      // 4-5 swaps (staying in same bin)
-      logger.log(`Performing 4-5 swaps in bin ${currentBinId}`);
-      for (let j = 0; j < 5; j++) {
-        const direction = j % 2 === 0 ? 'x-for-y' : 'y-for-x';
-        const user = j % 2 === 0 ? alice : bob;
-        const amount = generateSwapAmount(currentBinId, direction, user);
-        
-        if (!amount) {
-          logger.log(`Skipping swap ${j + 1} - insufficient balance`);
-          continue;
-        }
-        
-        try {
-          if (direction === 'x-for-y') {
-            txOk(dlmmCore.swapXForY(
-              sbtcUsdcPool.identifier,
-              mockSbtcToken.identifier,
-              mockUsdcToken.identifier,
-              currentBinId,
-              amount
-            ), user);
-          } else {
-            txOk(dlmmCore.swapYForX(
-              sbtcUsdcPool.identifier,
-              mockSbtcToken.identifier,
-              mockUsdcToken.identifier,
-              currentBinId,
-              amount
-            ), user);
-          }
-          logger.log(`  Swap ${j + 1}: ${direction} with amount ${amount}`);
-        } catch (error: any) {
-          logger.logError(currentBinId, `swap-${direction}`, error.message || String(error), { amount });
-        }
-      }
-      
-      // 2-3 add liquidity
-      logger.log(`Performing 2-3 add liquidity operations in bin ${currentBinId}`);
-      for (let j = 0; j < 3; j++) {
-        const user = j % 2 === 0 ? alice : bob;
-        const amounts = generateAddLiquidityAmounts(currentBinId, user);
-        
-        if (!amounts) {
-          logger.log(`Skipping add liquidity ${j + 1} - insufficient balance`);
-          continue;
-        }
-        
-        try {
-          txOk(dlmmCore.addLiquidity(
-            sbtcUsdcPool.identifier,
-            mockSbtcToken.identifier,
-            mockUsdcToken.identifier,
-            currentBinId,
-            amounts.xAmount,
-            amounts.yAmount,
-            1n, // minDlp
-            user // recipient (same as caller)
-          ), user);
-          logger.log(`  Add liquidity ${j + 1}: x=${amounts.xAmount}, y=${amounts.yAmount}`);
-        } catch (error: any) {
-          logger.logError(currentBinId, 'add-liquidity', error.message || String(error), amounts);
-        }
-      }
-      
-      // 2-3 remove liquidity
-      logger.log(`Performing 2-3 remove liquidity operations in bin ${currentBinId}`);
-      for (let j = 0; j < 3; j++) {
-        const user = j % 2 === 0 ? alice : bob;
-        const amount = generateWithdrawAmount(currentBinId, user);
-        
-        if (!amount) {
-          logger.log(`Skipping remove liquidity ${j + 1} - no LP tokens`);
-          continue;
-        }
-        
-        try {
-          txOk(dlmmCore.withdrawLiquidity(
-            sbtcUsdcPool.identifier,
-            mockSbtcToken.identifier,
-            mockUsdcToken.identifier,
-            currentBinId,
-            amount,
-            0n, // minXAmount
-            0n, // minYAmount
-            user // recipient
-          ), user);
-          logger.log(`  Remove liquidity ${j + 1}: ${amount} LP tokens`);
-        } catch (error: any) {
-          logger.logError(currentBinId, 'withdraw-liquidity', error.message || String(error), { amount });
-        }
-      }
-      
-      // 2-3 move liquidity
-      logger.log(`Performing 2-3 move liquidity operations from bin ${currentBinId}`);
-      for (let j = 0; j < 3; j++) {
-        const user = j % 2 === 0 ? alice : bob;
-        const amount = generateMoveAmount(currentBinId, user);
-        
-        if (!amount) {
-          logger.log(`Skipping move liquidity ${j + 1} - no LP tokens`);
-          continue;
-        }
-        
-        // Move to a nearby bin
-        const targetBin = currentBinId === MIN_BIN_ID 
-          ? currentBinId + 1n 
-          : currentBinId === MAX_BIN_ID
-          ? currentBinId - 1n
-          : currentBinId + (j % 2 === 0 ? 1n : -1n);
-        
-        if (targetBin < MIN_BIN_ID || targetBin > MAX_BIN_ID) {
-          logger.log(`Skipping move liquidity ${j + 1} - target bin ${targetBin} out of range`);
-          continue;
-        }
-        
-        try {
-          txOk(dlmmCore.moveLiquidity(
-            sbtcUsdcPool.identifier,
-            mockSbtcToken.identifier,
-            mockUsdcToken.identifier,
-            currentBinId,
-            targetBin,
-            amount,
-            1n, // minDlp
-            user // recipient
-          ), user);
-          logger.log(`  Move liquidity ${j + 1}: ${amount} LP tokens from ${currentBinId} to ${targetBin}`);
-        } catch (error: any) {
-          logger.logError(currentBinId, 'move-liquidity', error.message || String(error), { from: currentBinId, to: targetBin, amount });
-        }
-      }
-      
-      logger.log(`Completed operations in bin ${currentBinId}`);
-    }
+    // execute traversal path
+    orchestrator.executeTraversalPath(TestConfig.TRAVERSAL_PATH);
     
-    // Save log
+    // attempt to return to center
+    const finalBinId = orchestrator.returnToCenterIfNeeded();
+    
+    // log final summary
+    orchestrator.logFinalSummary(finalBinId);
+    
     logger.save();
-    
-    // Final verification - try to return to bin 0 if not already there
-    let finalBinId = getActiveBinId();
-    if (finalBinId !== 0n) {
-      logger.log(`\nAttempting to return to bin 0 from bin ${finalBinId}`);
-      swapToCrossBin(0n, logger);
-      finalBinId = getActiveBinId();
-    }
-    
-    logger.log(`\nFinal bin ID: ${finalBinId}`);
-    
-    // Verify no errors occurred
-    if (logger.errors.length > 0) {
-      logger.log(`\n⚠️  Test completed with ${logger.errors.length} errors. Check log file for details.`);
-      // Don't fail the test if we have errors - just log them
-    } else {
-      logger.log(`\n✅ Test completed successfully with no errors.`);
-    }
-    
-    // Note: We don't strictly require ending at bin 0 since the traversal itself is the test
-    // The important part is that we attempted the full traversal path
-  });
+  }, TestConfig.TIMEOUT);
 });
-

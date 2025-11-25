@@ -152,25 +152,22 @@ export function calculateBinSwapFloat(
   if (swap_for_y) {
     // X → Y swap: Float version
     // Calculate max X that can be swapped based on available Y
-    // Note: For float math, we don't need the ceiling rounding term
     const max_x_amount = bin_price > 0
-      ? (reserve_y * PRICE_SCALE_BPS_FLOAT) / bin_price
+      ? Math.ceil((reserve_y * PRICE_SCALE_BPS_FLOAT) / bin_price)
       : 0;
 
     // Apply fee adjustment to max amount
     const updated_max_x_amount = fee_rate_bps > 0
-      ? (max_x_amount * FEE_SCALE_BPS_FLOAT) / (FEE_SCALE_BPS_FLOAT - fee_rate_bps)
+      ? Math.floor((max_x_amount * FEE_SCALE_BPS_FLOAT) / (FEE_SCALE_BPS_FLOAT - fee_rate_bps))
       : max_x_amount;
 
     // Use the smaller of remaining input or max allowed
     const updated_x_amount = Math.min(remaining, updated_max_x_amount);
 
-    // Calculate fees
-    const x_amount_fees_total = (updated_x_amount * fee_rate_bps) / FEE_SCALE_BPS_FLOAT;
+    const x_amount_fees_total = Math.floor((updated_x_amount * fee_rate_bps) / FEE_SCALE_BPS_FLOAT);
     const dx = updated_x_amount - x_amount_fees_total;
 
-    // Calculate output
-    const dy_before_cap = (dx * bin_price) / PRICE_SCALE_BPS_FLOAT;
+    const dy_before_cap = Math.floor((dx * bin_price) / PRICE_SCALE_BPS_FLOAT);
     const out_this = Math.min(dy_before_cap, reserve_y);
     const in_effective = updated_x_amount;
     const fee_amount = x_amount_fees_total;
@@ -183,23 +180,21 @@ export function calculateBinSwapFloat(
     };
   } else {
     // Y → X swap: Float version
-    const max_y_amount = (reserve_x * bin_price) / PRICE_SCALE_BPS_FLOAT;
+    const max_y_amount = Math.ceil((reserve_x * bin_price) / PRICE_SCALE_BPS_FLOAT);
 
     // Apply fee adjustment to max amount
     const updated_max_y_amount = fee_rate_bps > 0
-      ? (max_y_amount * FEE_SCALE_BPS_FLOAT) / (FEE_SCALE_BPS_FLOAT - fee_rate_bps)
+      ? Math.floor((max_y_amount * FEE_SCALE_BPS_FLOAT) / (FEE_SCALE_BPS_FLOAT - fee_rate_bps))
       : max_y_amount;
 
     // Use the smaller of remaining input or max allowed
     const updated_y_amount = Math.min(remaining, updated_max_y_amount);
 
-    // Calculate fees
-    const y_amount_fees_total = (updated_y_amount * fee_rate_bps) / FEE_SCALE_BPS_FLOAT;
+    const y_amount_fees_total = Math.floor((updated_y_amount * fee_rate_bps) / FEE_SCALE_BPS_FLOAT);
     const dy = updated_y_amount - y_amount_fees_total;
 
-    // Calculate output
     const out_this = bin_price > 0
-      ? Math.min((dy * PRICE_SCALE_BPS_FLOAT) / bin_price, reserve_x)
+      ? Math.min(Math.floor((dy * PRICE_SCALE_BPS_FLOAT) / bin_price), reserve_x)
       : 0;
     const in_effective = updated_y_amount;
     const fee_amount = y_amount_fees_total;
@@ -241,4 +236,3 @@ export function calculateFeeRateBPSFloat(
 ): number {
   return protocol_fee_bps + provider_fee_bps + variable_fee_bps;
 }
-

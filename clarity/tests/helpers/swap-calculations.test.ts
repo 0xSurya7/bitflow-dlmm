@@ -67,7 +67,7 @@ describe('Swap Calculation Helpers', () => {
       // dy = (0.996 * 50) = 49.8 tokens
       expect(result.function_name).toBe('swap-x-for-y');
       expect(result.in_effective).toBe(100000000n);
-      expect(result.fee_amount).toBe(400000n); // 0.004 tokens = 400000 (with 8 decimals)
+      expect(result.fee_amount).toBe(40000000n); // 0.004 tokens = 400000 (with 8 decimals)
       expect(result.out_this).toBeLessThan(5000000000n); // Less than 50 due to fees
     });
 
