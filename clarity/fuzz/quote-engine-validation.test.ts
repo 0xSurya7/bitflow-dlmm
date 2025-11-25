@@ -269,7 +269,6 @@ class SwapAmountGenerator {
 
   /**
    * Generate a random swap amount that will require multiple bins.
-   * Uses 80-120% of active bin capacity to ensure multi-bin execution.
    */
   static generateMultiBin(
     rng: SeededRandom,
@@ -280,28 +279,48 @@ class SwapAmountGenerator {
     const activeBinData = poolState.binBalances.get(activeBinId);
     if (!activeBinData) return null;
 
+    // Sample adjacent bins to estimate total available liquidity
+    const sampleBins = getSampleBins(poolState, activeBinId, 5);
+    
+    // Calculate average liquidity across sampled bins
+    const avgLiquidity = sampleBins.length > 0
+      ? sampleBins.reduce((sum, bin) => {
+          const minReserve = bin.reserve_x < bin.reserve_y ? bin.reserve_x : bin.reserve_y;
+          return sum + minReserve;
+        }, 0n) / BigInt(sampleBins.length)
+      : 0n;
+    
+    // Calculate active bin capacity; min == 80% of bin
     const minReserve = activeBinData.xBalance < activeBinData.yBalance 
       ? activeBinData.xBalance 
       : activeBinData.yBalance;
     const activeBinCapacity = (minReserve * 80n) / 100n;
-
-    const minAmount = (activeBinCapacity * BigInt(Math.floor(TestConfig.MULTI_BIN_MIN_PERCENT * 100))) / 100n;
-    const maxAmount = (activeBinCapacity * BigInt(Math.floor(TestConfig.MULTI_BIN_MAX_PERCENT * 100))) / 100n;
+    
+    // Estimate total liquidity across ~5 bins
+    const estimatedTotalLiquidity = avgLiquidity > 0n
+      ? activeBinCapacity + (avgLiquidity * 4n) // Active + 4 adjacent bins
+      : activeBinCapacity * 2n; // Fallback: assume 2x active bin
+    
+    // Generate amount; 110-150% of active bin capacity
+    // Cap at 50% of total estimated liquidity
+    const minAmount = (activeBinCapacity * 110n) / 100n;
+    const maxFromActiveRatio = (activeBinCapacity * 150n) / 100n;
+    const maxFromTotalLiquidity = (estimatedTotalLiquidity * 50n) / 100n;
+    const maxAmount = maxFromActiveRatio < maxFromTotalLiquidity 
+      ? maxFromActiveRatio 
+      : maxFromTotalLiquidity;
+    
+    // Apply user balance constraint
     const effectiveMax = userBalance < maxAmount ? userBalance : maxAmount;
     
+    // Validate bounds
     if (effectiveMax < minAmount || effectiveMax < TestConfig.MIN_SWAP_AMOUNT) {
-      // Fallback: try smaller amounts that might still require multiple bins
-      const fallbackMin = (activeBinCapacity * BigInt(Math.floor(TestConfig.MULTI_BIN_FALLBACK_MIN * 100))) / 100n;
-      const fallbackMax = effectiveMax;
-      if (fallbackMax < fallbackMin || fallbackMax < TestConfig.MIN_SWAP_AMOUNT) return null;
-      
-      const percentage = rng.next() * (TestConfig.MULTI_BIN_FALLBACK_MAX - TestConfig.MULTI_BIN_FALLBACK_MIN) + TestConfig.MULTI_BIN_FALLBACK_MIN;
-      const amount = (fallbackMax * BigInt(Math.floor(percentage * Number(TestConfig.PERCENTAGE_PRECISION)))) / TestConfig.PERCENTAGE_PRECISION;
-      return amount < TestConfig.MIN_SWAP_AMOUNT ? null : amount;
+      return null;
     }
-
-    const percentage = rng.next() * (TestConfig.MULTI_BIN_MAX_PERCENT - TestConfig.MULTI_BIN_MIN_PERCENT) + TestConfig.MULTI_BIN_MIN_PERCENT;
-    const amount = (effectiveMax * BigInt(Math.floor(percentage * Number(TestConfig.PERCENTAGE_PRECISION)))) / TestConfig.PERCENTAGE_PRECISION;
+    
+    // Generate random amount in range [minAmount, effectiveMax]
+    const range = effectiveMax - minAmount;
+    const amount = minAmount + (range * BigInt(Math.floor(rng.next() * Number(TestConfig.PERCENTAGE_PRECISION)))) / TestConfig.PERCENTAGE_PRECISION;
     
     return amount < TestConfig.MIN_SWAP_AMOUNT ? null : amount;
   }
