@@ -176,6 +176,11 @@
   (ok (map-get? allowed-token-direction {x-token: x-token, y-token: y-token}))
 )
 
+;; Get is token direction allowed for pool creation
+(define-read-only (get-is-token-direction-allowed (x-token principal) (y-token principal))
+  (ok (is-none (map-get? allowed-token-direction {x-token: y-token, y-token: x-token})))
+)
+
 ;; Get unclaimed-protocol-fees for a pool
 (define-read-only (get-unclaimed-protocol-fees-by-id (id uint))
   (ok (map-get? unclaimed-protocol-fees id))
