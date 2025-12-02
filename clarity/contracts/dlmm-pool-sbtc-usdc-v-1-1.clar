@@ -18,8 +18,9 @@
 (define-constant ERR_NOT_AUTHORIZED (err u3001))
 (define-constant ERR_INVALID_AMOUNT (err u3002))
 (define-constant ERR_INVALID_PRINCIPAL (err u3003))
-(define-constant ERR_NOT_POOL_CONTRACT_DEPLOYER (err u3004))
-(define-constant ERR_MAX_NUMBER_OF_BINS (err u3005))
+(define-constant ERR_INVALID_TOKEN (err u3004))
+(define-constant ERR_NOT_POOL_CONTRACT_DEPLOYER (err u3005))
+(define-constant ERR_MAX_NUMBER_OF_BINS (err u3006))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -536,12 +537,16 @@
 ;; Transfer tokens from this pool contract via DLMM Core
 (define-public (pool-transfer (token-trait <sip-010-trait>) (amount uint) (recipient principal))
   (let (
+    (current-pool-addresses (var-get pool-addresses))
     (token-contract (contract-of token-trait))
     (caller contract-caller)
   )
     (begin
       ;; Assert that caller is core address before transferring tokens
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+
+      ;; Assert that token-contract is the same as the x-token or y-token
+      (asserts! (or (is-eq token-contract (get x-token current-pool-addresses)) (is-eq token-contract (get y-token current-pool-addresses))) ERR_INVALID_TOKEN)
 
       ;; Assert that recipient address is standard principal
       (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
