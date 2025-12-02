@@ -436,10 +436,21 @@ class TestOrchestrator {
         const amount = this.amountGen.generateWithdrawAmount(beforeState, binId, caller);
         if (!amount) throw new Error("Could not generate withdraw amount");
 
-        params = { binId, amount, caller };
+        // min out assert bypass
+        const binData = beforeState.binBalances.get(binId);
+        let minX = 0n;
+        let minY = 0n;
+        
+        if (binData && binData.xBalance > 0n) {
+             minX = 1n;
+        } else {
+             minY = 1n;
+        }
+
+        params = { binId, amount, caller, minXAmount: minX, minYAmount: minY };
         const response = txOk(dlmmCore.withdrawLiquidity(
           sbtcUsdcPool.identifier, mockSbtcToken.identifier, mockUsdcToken.identifier, binId,
-          amount, 0n, 0n
+          amount, minX, minY
         ), caller);
         
         result = cvToValue(response.result);
