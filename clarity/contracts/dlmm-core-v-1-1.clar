@@ -1537,7 +1537,7 @@
     ;; Get pool data and check if pool is valid
     (pool-data (unwrap! (contract-call? pool-trait get-pool-for-add) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
-    (pool-validity-check (try! (check-pool-validity pool-id pool-contract)))
+    (pool-validity-check (try! (check-pool-validity (get pool-id pool-data) pool-contract)))
     (x-token (get x-token pool-data))
     (y-token (get y-token pool-data))
     (bin-step (get bin-step pool-data))
@@ -1814,7 +1814,7 @@
     ;; Get pool data and check if pool is valid
     (pool-data (unwrap! (contract-call? pool-trait get-pool-for-add) ERR_NO_POOL_DATA))
     (pool-contract (contract-of pool-trait))
-    (pool-validity-check (try! (check-pool-validity pool-id pool-contract)))
+    (pool-validity-check (try! (check-pool-validity (get pool-id pool-data) pool-contract)))
     (x-token (get x-token pool-data))
     (y-token (get y-token pool-data))
     (bin-step (get bin-step pool-data))
