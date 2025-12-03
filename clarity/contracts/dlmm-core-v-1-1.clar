@@ -65,6 +65,7 @@
 (define-constant ERR_CORE_MIGRATION_COOLDOWN (err u1058))
 (define-constant ERR_CORE_ADDRESS_ALREADY_MIGRATED (err u1059))
 (define-constant ERR_NOT_MANAGED_POOL (err u1060))
+(define-constant ERR_PROTOCOL_FEES_PRESENT (err u1061))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -328,6 +329,10 @@
   (let (
     ;; Get pool data
     (pool-data (unwrap! (contract-call? pool-trait get-pool) ERR_NO_POOL_DATA))
+    (pool-id (get pool-id pool-data))
+    (current-unclaimed-protocol-fees (unwrap! (map-get? unclaimed-protocol-fees pool-id) ERR_NO_UNCLAIMED_PROTOCOL_FEES_DATA))
+    (unclaimed-x-fees (get x-fee current-unclaimed-protocol-fees))
+    (unclaimed-y-fees (get y-fee current-unclaimed-protocol-fees))
     (current-core-migration-address (var-get core-migration-address))
     (current-core-migration-execution-time (var-get core-migration-execution-time))
     (caller tx-sender)
@@ -338,6 +343,9 @@
       (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
       (asserts! (is-eq (get core-address pool-data) current-contract) ERR_NOT_MANAGED_POOL)
+
+      ;; Assert unclaimed protocol fees for pool are 0
+      (asserts! (and (is-eq unclaimed-x-fees u0) (is-eq unclaimed-y-fees u0)) ERR_PROTOCOL_FEES_PRESENT)
 
       ;; Assert core migration cooldown has passed
       (asserts! (>= stacks-block-time current-core-migration-execution-time) ERR_CORE_MIGRATION_COOLDOWN)
