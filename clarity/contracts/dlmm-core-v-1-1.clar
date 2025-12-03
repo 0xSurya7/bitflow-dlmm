@@ -2106,7 +2106,7 @@
 ;; Check if a pool is valid and enabled
 (define-private (check-pool-validity (id uint) (contract principal))
   (let (
-    (pool-data (unwrap! (map-get? pools id) (ok false)))
+    (pool-data (unwrap! (map-get? pools id) ERR_NO_POOL_DATA))
   )
     (asserts! (is-eq contract (get pool-contract pool-data)) ERR_INVALID_POOL)
     (asserts! (is-eq (get status pool-data) true) ERR_POOL_DISABLED)
