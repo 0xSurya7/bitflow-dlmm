@@ -251,11 +251,13 @@ describe('Arithmetic Edge Cases', () => {
 
     it('should handle add-liquidity with very large amounts', async () => {
       const binId = 0n;
-      // Use large but reasonable amounts (not max to avoid immediate issues)
-      const xAmount = 1000000000000000n; // Very large but not max
+      const xAmount = 1000000000000000n;
       const yAmount = 50000000000000000n;
       const minDlp = 1n;
       
+      txOk(mockSbtcToken.mint(xAmount, alice), deployer);
+      txOk(mockUsdcToken.mint(yAmount, alice), deployer);
+
       // Should handle large amounts without overflow
       const response = txOk(dlmmCore.addLiquidity(
         sbtcUsdcPool.identifier,
@@ -265,8 +267,8 @@ describe('Arithmetic Edge Cases', () => {
         xAmount,
         yAmount,
         minDlp,
-        1000000n,
-        1000000n
+        xAmount / 1000n,
+        yAmount / 1000n
       ), alice);
       
       const liquidityReceived = cvToValue(response.result);

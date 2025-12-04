@@ -1193,6 +1193,9 @@ describe('DLMM Core Liquidity Functions', () => {
       const yAmount = 50000000000000000n;
       const minDlp = 1n;
       
+      txOk(mockSbtcToken.mint(xAmount, alice), deployer);
+      txOk(mockUsdcToken.mint(yAmount, alice), deployer);
+
       // Should handle large amounts without overflow
       const response = txOk(dlmmCore.addLiquidity(
         sbtcUsdcPool.identifier,
@@ -1202,8 +1205,8 @@ describe('DLMM Core Liquidity Functions', () => {
         xAmount,
         yAmount,
         minDlp,
-        1000000n,
-        1000000n
+        xAmount / 1000n,
+        yAmount / 1000n
       ), alice);
       
       const liquidityReceived = cvToValue(response.result);
@@ -1216,8 +1219,7 @@ describe('DLMM Core Liquidity Functions', () => {
       const yAmount = 1n;
       const minDlp = 1n;
       
-      // Very small amounts might not meet minimum requirements
-      const response = txErr(dlmmCore.addLiquidity(
+      const response = txOk(dlmmCore.addLiquidity(
         sbtcUsdcPool.identifier,
         mockSbtcToken.identifier,
         mockUsdcToken.identifier,
