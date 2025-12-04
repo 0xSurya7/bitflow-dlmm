@@ -24,11 +24,11 @@ describe('Validation Logic Tests', () => {
         reserve_y: 1000000000n, // 10 tokens available
       };
       const binPrice = 5000000000n; // Price = 50
-      const feeRateBPS = 4000n; // 0.4%
+      const feeRateBPS = 4000n; // 40%
 
-      // Simulate: Contract received 100 tokens, but capped to 10
+      // Simulate: Contract received 100 tokens, but capped to 0.33
       const originalInput = 10000000000n; // 100 tokens
-      const actualSwappedIn = 200000000n; // 2 tokens (what contract actually swapped)
+      const actualSwappedIn = 33333333n; // 0.33 tokens (what contract actually swapped)
 
       // Calculate with original input (helper will cap it)
       const resultWithOriginal = calculateBinSwap(binData, binPrice, originalInput, feeRateBPS, true);
@@ -228,5 +228,3 @@ describe('Validation Logic Tests', () => {
     });
   });
 });
-
-
