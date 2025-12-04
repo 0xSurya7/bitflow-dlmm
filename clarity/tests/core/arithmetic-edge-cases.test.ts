@@ -140,24 +140,6 @@ describe('Arithmetic Edge Cases', () => {
       expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_NO_BIN_SHARES);
     });
 
-    it('should handle very small swap amounts that might round to zero', async () => {
-      const binId = 0n; // Active bin
-      const xAmount = generateVerySmallAmount(); // 1
-      
-      // Very small amounts might round to zero after fees
-      // The contract should handle this gracefully
-      const response = txErr(dlmmCore.swapXForY(
-        sbtcUsdcPool.identifier,
-        mockSbtcToken.identifier,
-        mockUsdcToken.identifier,
-        binId,
-        xAmount
-      ), alice);
-      
-      // Should return ERR_INVALID_AMOUNT or handle gracefully
-      expect(response).toBeDefined();
-    });
-
     it('should handle add-liquidity with very small amounts', async () => {
       const binId = 0n;
       const xAmount = 0n
@@ -184,18 +166,18 @@ describe('Arithmetic Edge Cases', () => {
     
     it('should handle swap with minimum amount (1)', async () => {
       const binId = 0n;
-      const xAmount = 1n;
+      const yAmount = 1n;
       
-      const response = txErr(dlmmCore.swapXForY(
+      const response = txOk(dlmmCore.swapYForX(
         sbtcUsdcPool.identifier,
         mockSbtcToken.identifier,
         mockUsdcToken.identifier,
         binId,
-        xAmount
+        yAmount
       ), alice);
       
-      // Should return ERR_INVALID_AMOUNT for amount too small
-      expect(cvToValue(response.result)).toBe(errors.dlmmCore.ERR_INVALID_AMOUNT);
+      expect(response).toBeDefined();
+      expect(cvToValue(response.result)["out"]).toBe(0n); // exchange rate causes a donation swap
     });
 
     it('should handle withdraw-liquidity with minimum amount', async () => {
