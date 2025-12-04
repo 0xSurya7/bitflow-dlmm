@@ -63,7 +63,7 @@ export function calculateBinSwap(
 
     // Apply fee adjustment to max amount
     // Formula: updated_max_x_amount = (max_x_amount * FEE_SCALE_BPS) / (FEE_SCALE_BPS - fee_rate_bps)
-    const updated_max_x_amount = fee_rate_bps > 0n
+    const updated_max_x_amount = fee_rate_bps > 0n && fee_rate_bps < FEE_SCALE_BPS
       ? (max_x_amount * FEE_SCALE_BPS) / (FEE_SCALE_BPS - fee_rate_bps)
       : max_x_amount;
 
