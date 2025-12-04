@@ -80,18 +80,20 @@ describe('Arithmetic Edge Cases', () => {
       const binId = MIN_BIN_ID - 1n; // -501
       const xAmount = 1000000n;
       
-      // This should fail before reaching get-unsigned-bin-id due to validation
-      // or fail with underflow if validation doesn't catch it
-      const response = txErr(dlmmCore.swapXForY(
-        sbtcUsdcPool.identifier,
-        mockSbtcToken.identifier,
-        mockUsdcToken.identifier,
-        binId,
-        xAmount
-      ), alice);
-      
-      // Should return an error (either validation error or underflow)
-      expect(response).toBeDefined();
+      try {
+        txErr(dlmmCore.swapXForY(
+          sbtcUsdcPool.identifier,
+          mockSbtcToken.identifier,
+          mockUsdcToken.identifier,
+          binId,
+          xAmount
+        ), alice);
+
+        // reaching this meant the test failed
+        throw new Error('Should have thrown an error');
+      } catch (error: any) {
+        expect(String(error)).toContain('ArithmeticUnderflow');
+      }
     });
 
     it('should fail swap with invalid bin ID above maximum', async () => {
