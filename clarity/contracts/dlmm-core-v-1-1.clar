@@ -1,5 +1,8 @@
 ;; dlmm-core-v-1-1
 
+;; Implement DLMM core trait
+(impl-trait .dlmm-core-trait-v-1-1.dlmm-core-trait)
+
 ;; Use DLMM core trait, DLMM pool trait, and SIP 010 trait
 (use-trait dlmm-core-trait .dlmm-core-trait-v-1-1.dlmm-core-trait)
 (use-trait dlmm-pool-trait .dlmm-pool-trait-v-1-1.dlmm-pool-trait)
@@ -65,10 +68,9 @@
 (define-constant ERR_INVALID_CORE (err u1057))
 (define-constant ERR_INVALID_CORE_MIGRATION_COOLDOWN (err u1058))
 (define-constant ERR_CORE_MIGRATION_COOLDOWN (err u1059))
-(define-constant ERR_CORE_ADDRESS_ALREADY_MIGRATED (err u1060))
-(define-constant ERR_NOT_MANAGED_POOL (err u1061))
-(define-constant ERR_PROTOCOL_FEES_PRESENT (err u1062))
-(define-constant ERR_PUBLIC_POOL_CREATION_ENABLED (err u1063))
+(define-constant ERR_NOT_MANAGED_POOL (err u1060))
+(define-constant ERR_PROTOCOL_FEES_PRESENT (err u1061))
+(define-constant ERR_PUBLIC_POOL_CREATION_ENABLED (err u1062))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
@@ -375,7 +377,7 @@
     (begin
       ;; Assert caller is an admin and pool is created, valid, and managed by this core contract
       (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (is-valid-pool (get pool-id pool-data) (contract-of pool-trait)) ERR_INVALID_POOL)
+      (asserts! (is-valid-pool pool-id pool-contract) ERR_INVALID_POOL)
       (asserts! (get pool-created pool-data) ERR_POOL_NOT_CREATED)
       (asserts! (is-eq (get core-address pool-data) current-contract) ERR_NOT_MANAGED_POOL)
 
@@ -384,9 +386,6 @@
 
       ;; Assert core migration cooldown has passed
       (asserts! (>= stacks-block-time current-core-migration-execution-time) ERR_CORE_MIGRATION_COOLDOWN)
-
-      ;; Assert current-core-migration-target is not equal to the pool's current core address
-      (asserts! (not (is-eq current-core-migration-target (get core-address pool-data))) ERR_CORE_ADDRESS_ALREADY_MIGRATED)
 
       ;; Assert core-contract is equal to current-core-migration-target
       (asserts! (is-eq core-contract current-core-migration-target) ERR_INVALID_CORE)
@@ -405,7 +404,7 @@
         action: "migrate-pool",
         caller: caller,
         data: {
-          pool-id: (get pool-id pool-data),
+          pool-id: pool-id,
           pool-name: (get pool-name pool-data),
           pool-contract: pool-contract,
           core-contract: core-contract,
@@ -448,6 +447,9 @@
 
       ;; Assert bin step is valid
       (asserts! (is-some (index-of (var-get bin-steps) bin-step)) ERR_INVALID_BIN_STEP)
+
+      ;; Assert pool is not already in the pools map
+      (asserts! (is-none (map-get? pools pool-id)) ERR_POOL_ALREADY_CREATED)
 
       ;; Update last-pool-id, add pool to pools map, and add pool to unclaimed-protocol-fees map
       (var-set last-pool-id updated-last-pool-id)
