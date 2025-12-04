@@ -78,9 +78,9 @@ describe('Concrete Example Tests', () => {
         reserve_x: 0n,
         reserve_y: 10000000000n, // 100 tokens
       };
-      const binPrice = 5000000000n; // Price = 50
+      const binPrice = 500000000n; // Price = 50
       const inputAmount = 1000000000n; // 10 tokens (10% of reserve)
-      const feeRateBPS = 3000n; // 0.3%
+      const feeRateBPS = 3000n; // 30%
 
       const result = calculateBinSwap(binData, binPrice, inputAmount, feeRateBPS, true);
 
