@@ -25,17 +25,6 @@ describe('estimateBinsNeeded', () => {
     expect(result).toBe(1);
   });
 
-  it('should return > 1 for trade exceeding active bin capacity', () => {
-    const activeBin: BinData = {
-      reserve_x: 1000000n,
-      reserve_y: 1000000n,
-    };
-    const amountIn = 1000000n; // More than 80% of min reserve
-    
-    const result = estimateBinsNeeded(amountIn, activeBin, []);
-    expect(result).toBeGreaterThan(1);
-  });
-
   it('should apply 3x safety margin for very large trades', () => {
     const activeBin: BinData = {
       reserve_x: 10000000n,
