@@ -18,41 +18,42 @@
 (define-constant ERR_NOT_AUTHORIZED (err u3001))
 (define-constant ERR_INVALID_AMOUNT (err u3002))
 (define-constant ERR_INVALID_PRINCIPAL (err u3003))
-(define-constant ERR_NOT_POOL_CONTRACT_DEPLOYER (err u3004))
-(define-constant ERR_MAX_NUMBER_OF_BINS (err u3005))
+(define-constant ERR_INVALID_TOKEN (err u3004))
+(define-constant ERR_NOT_POOL_CONTRACT_DEPLOYER (err u3005))
+(define-constant ERR_MAX_NUMBER_OF_BINS (err u3006))
 
 ;; Contract deployer address
 (define-constant CONTRACT_DEPLOYER tx-sender)
 
 ;; Define all pool data vars and maps
 (define-data-var pool-info {
-  pool-id: uint,
-  pool-name: (string-ascii 32),
-  pool-symbol: (string-ascii 32),
-  pool-uri: (string-ascii 256),
-  pool-created: bool,
-  creation-height: uint
+	pool-id: uint,
+	pool-name: (string-ascii 32),
+	pool-symbol: (string-ascii 32),
+	pool-uri: (string-ascii 256),
+	pool-created: bool,
+	creation-height: uint
 } {
-  pool-id: u0,
-  pool-name: "",
-  pool-symbol: "",
-  pool-uri: "",
-  pool-created: false,
-  creation-height: u0
+	pool-id: u0,
+	pool-name: "",
+	pool-symbol: "",
+	pool-uri: "",
+	pool-created: false,
+	creation-height: u0
 })
 
 (define-data-var pool-addresses {
-  core-address: principal,
-  variable-fees-manager: principal,
-  fee-address: principal,
-  x-token: principal,
-  y-token: principal
+	core-address: principal,
+	variable-fees-manager: principal,
+	fee-address: principal,
+	x-token: principal,
+	y-token: principal
 } {
-  core-address: .dlmm-core-v-1-1,
-  variable-fees-manager: tx-sender,
-  fee-address: tx-sender,
-  x-token: tx-sender,
-  y-token: tx-sender
+	core-address: .dlmm-core-v-1-1,
+	variable-fees-manager: tx-sender,
+	fee-address: tx-sender,
+	x-token: tx-sender,
+	y-token: tx-sender
 })
 
 (define-data-var bin-step uint u0)
@@ -62,19 +63,19 @@
 (define-data-var active-bin-id int 0)
 
 (define-data-var pool-fees {
-  x-protocol-fee: uint,
-  x-provider-fee: uint,
-  x-variable-fee: uint,
-  y-protocol-fee: uint,
-  y-provider-fee: uint,
-  y-variable-fee: uint
+	x-protocol-fee: uint,
+	x-provider-fee: uint,
+	x-variable-fee: uint,
+	y-protocol-fee: uint,
+	y-provider-fee: uint,
+	y-variable-fee: uint
 } {
-  x-protocol-fee: u0,
-  x-provider-fee: u0,
-  x-variable-fee: u0,
-  y-protocol-fee: u0,
-  y-provider-fee: u0,
-  y-variable-fee: u0
+	x-protocol-fee: u0,
+	x-provider-fee: u0,
+	x-variable-fee: u0,
+	y-protocol-fee: u0,
+	y-provider-fee: u0,
+	y-variable-fee: u0
 })
 
 (define-data-var bin-change-count uint u0)
@@ -92,423 +93,407 @@
 
 (define-map user-bins principal (list 1001 uint))
 
-;; Get token name
 (define-read-only (get-name)
-  (ok (get pool-name (var-get pool-info)))
+	(ok (get pool-name (var-get pool-info)))
 )
 
-;; Get token symbol
 (define-read-only (get-symbol)
-  (ok (get pool-symbol (var-get pool-info)))
+	(ok (get pool-symbol (var-get pool-info)))
 )
 
-;; Get token decimals
 (define-read-only (get-decimals (token-id uint))
-  (ok u6)
+	(ok u6)
 )
 
-;; SIP 013 function to get token uri
 (define-read-only (get-token-uri (token-id uint))
-  (ok (some (get pool-uri (var-get pool-info))))
+	(ok (some (get pool-uri (var-get pool-info))))
 )
 
-;; SIP 013 function to get total token supply by ID
 (define-read-only (get-total-supply (token-id uint))
-  (ok (default-to u0 (get bin-shares (map-get? balances-at-bin token-id))))
+	(ok (default-to u0 (get bin-shares (map-get? balances-at-bin token-id))))
 )
 
-;; SIP 013 function to get overall token supply
 (define-read-only (get-overall-supply)
-  (ok (ft-get-supply pool-token))
+	(ok (ft-get-supply pool-token))
 )
 
-;; SIP 013 function to get token balance for an user by ID
 (define-read-only (get-balance (token-id uint) (user principal))
-  (ok (get-balance-or-default token-id user))
+	(ok (get-balance-or-default token-id user))
 )
 
-;; SIP 013 function to get overall token balance for an user
 (define-read-only (get-overall-balance (user principal))
-  (ok (ft-get-balance pool-token user))
+	(ok (ft-get-balance pool-token user))
 )
 
-;; Get all pool data
 (define-read-only (get-pool)
-  (let (
-    (current-pool-info (var-get pool-info))
-    (current-pool-fees (var-get pool-fees))
-    (current-pool-addresses (var-get pool-addresses))
-  )
-    (ok {
-      pool-id: (get pool-id current-pool-info),
-      pool-name: (get pool-name current-pool-info),
-      pool-symbol: (get pool-symbol current-pool-info),
-      pool-uri: (get pool-uri current-pool-info),
-      pool-created: (get pool-created current-pool-info),
-      creation-height: (get creation-height current-pool-info),
-      core-address: (get core-address current-pool-addresses),
-      variable-fees-manager: (get variable-fees-manager current-pool-addresses),
-      fee-address: (get fee-address current-pool-addresses),
-      x-token: (get x-token current-pool-addresses),
-      y-token: (get y-token current-pool-addresses),
-      pool-token: current-contract,
-      bin-step: (var-get bin-step),
-      initial-price: (var-get initial-price),
-      active-bin-id: (var-get active-bin-id),
-      x-protocol-fee: (get x-protocol-fee current-pool-fees),
-      x-provider-fee: (get x-provider-fee current-pool-fees),
-      x-variable-fee: (get x-variable-fee current-pool-fees),
-      y-protocol-fee: (get y-protocol-fee current-pool-fees),
-      y-provider-fee: (get y-provider-fee current-pool-fees),
-      y-variable-fee: (get y-variable-fee current-pool-fees),
-      bin-change-count: (var-get bin-change-count),
-      last-variable-fees-update: (var-get last-variable-fees-update),
-      variable-fees-cooldown: (var-get variable-fees-cooldown),
-      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
-      dynamic-config: (var-get dynamic-config)
-    })
-  )
+	(let (
+		(current-pool-info (var-get pool-info))
+		(current-pool-fees (var-get pool-fees))
+		(current-pool-addresses (var-get pool-addresses))
+	)
+		(ok {
+			pool-id: (get pool-id current-pool-info),
+			pool-name: (get pool-name current-pool-info),
+			pool-symbol: (get pool-symbol current-pool-info),
+			pool-uri: (get pool-uri current-pool-info),
+			pool-created: (get pool-created current-pool-info),
+			creation-height: (get creation-height current-pool-info),
+			core-address: (get core-address current-pool-addresses),
+			variable-fees-manager: (get variable-fees-manager current-pool-addresses),
+			fee-address: (get fee-address current-pool-addresses),
+			x-token: (get x-token current-pool-addresses),
+			y-token: (get y-token current-pool-addresses),
+			pool-token: current-contract,
+			bin-step: (var-get bin-step),
+			initial-price: (var-get initial-price),
+			active-bin-id: (var-get active-bin-id),
+			x-protocol-fee: (get x-protocol-fee current-pool-fees),
+			x-provider-fee: (get x-provider-fee current-pool-fees),
+			x-variable-fee: (get x-variable-fee current-pool-fees),
+			y-protocol-fee: (get y-protocol-fee current-pool-fees),
+			y-provider-fee: (get y-provider-fee current-pool-fees),
+			y-variable-fee: (get y-variable-fee current-pool-fees),
+			bin-change-count: (var-get bin-change-count),
+			last-variable-fees-update: (var-get last-variable-fees-update),
+			variable-fees-cooldown: (var-get variable-fees-cooldown),
+			freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+			dynamic-config: (var-get dynamic-config)
+		})
+	)
 )
 
-;; Get all pool data for swapping
 (define-read-only (get-pool-for-swap (is-x-for-y bool))
-  (let (
-    (current-pool-info (var-get pool-info))
-    (current-pool-addresses (var-get pool-addresses))
-    (current-pool-fees (var-get pool-fees))
-  )
-    (ok {
-      pool-id: (get pool-id current-pool-info),
-      pool-name: (get pool-name current-pool-info),
-      fee-address: (get fee-address current-pool-addresses),
-      x-token: (get x-token current-pool-addresses),
-      y-token: (get y-token current-pool-addresses),
-      bin-step: (var-get bin-step),
-      initial-price: (var-get initial-price),
-      active-bin-id: (var-get active-bin-id),
-      protocol-fee: (if is-x-for-y (get x-protocol-fee current-pool-fees) (get y-protocol-fee current-pool-fees)),
-      provider-fee: (if is-x-for-y (get x-provider-fee current-pool-fees) (get y-provider-fee current-pool-fees)),
-      variable-fee: (if is-x-for-y (get x-variable-fee current-pool-fees) (get y-variable-fee current-pool-fees))
-    })
-  )
+	(let (
+		(current-pool-info (var-get pool-info))
+		(current-pool-addresses (var-get pool-addresses))
+		(current-pool-fees (var-get pool-fees))
+	)
+		(ok {
+			pool-id: (get pool-id current-pool-info),
+			pool-name: (get pool-name current-pool-info),
+			core-address: (get core-address current-pool-addresses),
+			fee-address: (get fee-address current-pool-addresses),
+			x-token: (get x-token current-pool-addresses),
+			y-token: (get y-token current-pool-addresses),
+			bin-step: (var-get bin-step),
+			initial-price: (var-get initial-price),
+			active-bin-id: (var-get active-bin-id),
+			protocol-fee: (if is-x-for-y (get x-protocol-fee current-pool-fees) (get y-protocol-fee current-pool-fees)),
+			provider-fee: (if is-x-for-y (get x-provider-fee current-pool-fees) (get y-provider-fee current-pool-fees)),
+			variable-fee: (if is-x-for-y (get x-variable-fee current-pool-fees) (get y-variable-fee current-pool-fees))
+		})
+	)
 )
 
-;; Get all pool data for adding liquidity
 (define-read-only (get-pool-for-add)
-  (let (
-    (current-pool-info (var-get pool-info))
-    (current-pool-addresses (var-get pool-addresses))
-    (current-pool-fees (var-get pool-fees))
-  )
-    (ok {
-      pool-id: (get pool-id current-pool-info),
-      pool-name: (get pool-name current-pool-info),
-      x-token: (get x-token current-pool-addresses),
-      y-token: (get y-token current-pool-addresses),
-      bin-step: (var-get bin-step),
-      initial-price: (var-get initial-price),
-      active-bin-id: (var-get active-bin-id),
-      x-protocol-fee: (get x-protocol-fee current-pool-fees),
-      x-provider-fee: (get x-provider-fee current-pool-fees),
-      x-variable-fee: (get x-variable-fee current-pool-fees),
-      y-protocol-fee: (get y-protocol-fee current-pool-fees),
-      y-provider-fee: (get y-provider-fee current-pool-fees),
-      y-variable-fee: (get y-variable-fee current-pool-fees)
-    })
-  )
+	(let (
+		(current-pool-info (var-get pool-info))
+		(current-pool-addresses (var-get pool-addresses))
+		(current-pool-fees (var-get pool-fees))
+	)
+		(ok {
+			pool-id: (get pool-id current-pool-info),
+			pool-name: (get pool-name current-pool-info),
+			core-address: (get core-address current-pool-addresses),
+			x-token: (get x-token current-pool-addresses),
+			y-token: (get y-token current-pool-addresses),
+			bin-step: (var-get bin-step),
+			initial-price: (var-get initial-price),
+			active-bin-id: (var-get active-bin-id),
+			x-protocol-fee: (get x-protocol-fee current-pool-fees),
+			x-provider-fee: (get x-provider-fee current-pool-fees),
+			x-variable-fee: (get x-variable-fee current-pool-fees),
+			y-protocol-fee: (get y-protocol-fee current-pool-fees),
+			y-provider-fee: (get y-provider-fee current-pool-fees),
+			y-variable-fee: (get y-variable-fee current-pool-fees)
+		})
+	)
 )
 
-;; Get all pool data for withdrawing liquidity
 (define-read-only (get-pool-for-withdraw)
-  (let (
-      (current-pool-info (var-get pool-info))
-      (current-pool-addresses (var-get pool-addresses))
-    )
-    (ok {
-      pool-id: (get pool-id current-pool-info),
-      pool-name: (get pool-name current-pool-info),
-      x-token: (get x-token current-pool-addresses),
-      y-token: (get y-token current-pool-addresses)
-    })
-  )
+	(let (
+			(current-pool-info (var-get pool-info))
+			(current-pool-addresses (var-get pool-addresses))
+		)
+		(ok {
+			pool-id: (get pool-id current-pool-info),
+			pool-name: (get pool-name current-pool-info),
+			core-address: (get core-address current-pool-addresses),
+			x-token: (get x-token current-pool-addresses),
+			y-token: (get y-token current-pool-addresses)
+		})
+	)
 )
 
-;; Get all pool data for variable fees
 (define-read-only (get-variable-fees-data)
-  (let (
-    (current-pool-fees (var-get pool-fees))
-  )
-    (ok {
-      variable-fees-manager: (get variable-fees-manager (var-get pool-addresses)),
-      x-variable-fee: (get x-variable-fee current-pool-fees),
-      y-variable-fee: (get y-variable-fee current-pool-fees),
-      bin-change-count: (var-get bin-change-count),
-      last-variable-fees-update: (var-get last-variable-fees-update),
-      variable-fees-cooldown: (var-get variable-fees-cooldown),
-      freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
-      dynamic-config: (var-get dynamic-config),
-    })
-  )
+	(let (
+		(current-pool-fees (var-get pool-fees))
+	)
+		(ok {
+			variable-fees-manager: (get variable-fees-manager (var-get pool-addresses)),
+			x-variable-fee: (get x-variable-fee current-pool-fees),
+			y-variable-fee: (get y-variable-fee current-pool-fees),
+			bin-change-count: (var-get bin-change-count),
+			last-variable-fees-update: (var-get last-variable-fees-update),
+			variable-fees-cooldown: (var-get variable-fees-cooldown),
+			freeze-variable-fees-manager: (var-get freeze-variable-fees-manager),
+			dynamic-config: (var-get dynamic-config),
+		})
+	)
 )
 
-;; Get active bin ID
 (define-read-only (get-active-bin-id)
-  (ok (var-get active-bin-id))
+	(ok (var-get active-bin-id))
 )
 
-;; Get balance data at a bin
 (define-read-only (get-bin-balances (id uint))
-  (ok (default-to {x-balance: u0, y-balance: u0, bin-shares: u0} (map-get? balances-at-bin id)))
+	(ok (default-to {x-balance: u0, y-balance: u0, bin-shares: u0} (map-get? balances-at-bin id)))
 )
 
-;; Get a list of bins an user has a position in
 (define-read-only (get-user-bins (user principal))
-  (ok (default-to (list ) (map-get? user-bins user)))
+	(ok (default-to (list ) (map-get? user-bins user)))
 )
 
 ;; Set pool uri via DLMM Core
 (define-public (set-pool-uri (uri (string-ascii 256)))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set pool-info (merge (var-get pool-info) {
-        pool-uri: uri
-      }))
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set pool-info (merge (var-get pool-info) {
+				pool-uri: uri
+			}))
+			(ok true)
+		)
+	)
 )
 
 ;; Set core address via DLMM Core
 (define-public (set-core-address (address principal))
-  (let (
-    (current-pool-addresses (var-get pool-addresses))
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge current-pool-addresses {
-        core-address: address
-      }))
-      (ok true)
-    )
-  )
+	(let (
+		(current-pool-addresses (var-get pool-addresses))
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+			(var-set pool-addresses (merge current-pool-addresses {
+				core-address: address
+			}))
+			(ok true)
+		)
+	)
 )
 
 ;; Set variable fees manager via DLMM Core
 (define-public (set-variable-fees-manager (manager principal))
-  (let (
-    (current-pool-addresses (var-get pool-addresses))
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge current-pool-addresses {
-        variable-fees-manager: manager
-      }))
-      (ok true)
-    )
-  )
+	(let (
+		(current-pool-addresses (var-get pool-addresses))
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+			(var-set pool-addresses (merge current-pool-addresses {
+				variable-fees-manager: manager
+			}))
+			(ok true)
+		)
+	)
 )
 
 ;; Set fee address via DLMM Core
 (define-public (set-fee-address (address principal))
-  (let (
-    (current-pool-addresses (var-get pool-addresses))
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
-      (var-set pool-addresses (merge current-pool-addresses {
-        fee-address: address
-      }))
-      (ok true)
-    )
-  )
+	(let (
+		(current-pool-addresses (var-get pool-addresses))
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+			(var-set pool-addresses (merge current-pool-addresses {
+				fee-address: address
+			}))
+			(ok true)
+		)
+	)
 )
 
 ;; Set active bin ID via DLMM Core
 (define-public (set-active-bin-id (id int))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set active-bin-id id)
-      (var-set bin-change-count (+ (var-get bin-change-count) u1))
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting vars
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set active-bin-id id)
+			(var-set bin-change-count (+ (var-get bin-change-count) u1))
+			(ok true)
+		)
+	)
 )
 
 ;; Set x fees via DLMM Core
 (define-public (set-x-fees (protocol-fee uint) (provider-fee uint))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set pool-fees (merge (var-get pool-fees) {
-        x-protocol-fee: protocol-fee,
-        x-provider-fee: provider-fee
-      }))
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting vars
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set pool-fees (merge (var-get pool-fees) {
+				x-protocol-fee: protocol-fee,
+				x-provider-fee: provider-fee
+			}))
+			(ok true)
+		)
+	)
 )
 
 ;; Set y fees via DLMM Core
 (define-public (set-y-fees (protocol-fee uint) (provider-fee uint))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set pool-fees (merge (var-get pool-fees) {
-        y-protocol-fee: protocol-fee,
-        y-provider-fee: provider-fee
-      }))
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting vars
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set pool-fees (merge (var-get pool-fees) {
+				y-protocol-fee: protocol-fee,
+				y-provider-fee: provider-fee
+			}))
+			(ok true)
+		)
+	)
 )
 
 ;; Set variable fees via DLMM Core
 (define-public (set-variable-fees (x-fee uint) (y-fee uint))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set pool-fees (merge (var-get pool-fees) {
-        x-variable-fee: x-fee,
-        y-variable-fee: y-fee
-      }))
-      (var-set bin-change-count u0)
-      (var-set last-variable-fees-update stacks-block-height)
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting vars
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set pool-fees (merge (var-get pool-fees) {
+				x-variable-fee: x-fee,
+				y-variable-fee: y-fee
+			}))
+			(var-set bin-change-count u0)
+			(var-set last-variable-fees-update stacks-block-height)
+			(ok true)
+		)
+	)
 )
 
 ;; Set variable fees cooldown via DLMM Core
 (define-public (set-variable-fees-cooldown (cooldown uint))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set variable-fees-cooldown cooldown)
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set variable-fees-cooldown cooldown)
+			(ok true)
+		)
+	)
 )
 
 ;; Set freeze variable fees manager via DLMM Core
 (define-public (set-freeze-variable-fees-manager)
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set freeze-variable-fees-manager true)
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set freeze-variable-fees-manager true)
+			(ok true)
+		)
+	)
 )
 
 ;; Set dynamic config via DLMM Core
 (define-public (set-dynamic-config (config (buff 4096)))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting var
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (var-set dynamic-config config)
-      (ok true)
-    )
-  )
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting var
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(var-set dynamic-config config)
+			(ok true)
+		)
+	)
 )
 
 ;; Update bin balances via DLMM Core
 (define-public (update-bin-balances (bin-id uint) (x-balance uint) (y-balance uint))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (map-set balances-at-bin bin-id (merge (unwrap-panic (get-bin-balances bin-id)) {x-balance: x-balance, y-balance: y-balance}))
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting vars
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(map-set balances-at-bin bin-id (merge (unwrap-panic (get-bin-balances bin-id)) {x-balance: x-balance, y-balance: y-balance}))
 
-      ;; Print function data and return true
-      (print {action: "update-bin-balances", data: {bin-id: bin-id, x-balance: x-balance, y-balance: y-balance}})
-      (ok true)
-    )
-  )
+			(print {action: "update-bin-balances", data: {bin-id: bin-id, x-balance: x-balance, y-balance: y-balance}})
+			(ok true)
+		)
+	)
 )
 
 ;; Update bin balances when withdrawing liquidity via DLMM Core
 (define-public (update-bin-balances-on-withdraw (bin-id uint) (x-balance uint) (y-balance uint) (bin-shares uint))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before setting vars
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
-      (map-set balances-at-bin bin-id {x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares})
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before setting vars
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+			(map-set balances-at-bin bin-id {x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares})
 
-      ;; Print function data and return true
-      (print {action: "update-bin-balances-on-withdraw", data: {bin-id: bin-id, x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares}})
-      (ok true)
-    )
-  )
+			(print {action: "update-bin-balances-on-withdraw", data: {bin-id: bin-id, x-balance: x-balance, y-balance: y-balance, bin-shares: bin-shares}})
+			(ok true)
+		)
+	)
 )
 
 ;; SIP 013 transfer function that transfers pool token
 (define-public (transfer (token-id uint) (amount uint) (sender principal) (recipient principal))
 	(let (
 		(sender-balance (get-balance-or-default token-id sender))
-    (caller tx-sender)
+		(caller tx-sender)
 	)
-    (begin
-      ;; Assert that caller is sender and sender is not recipient
-      (asserts! (or (is-eq caller sender) (is-eq contract-caller sender)) ERR_NOT_AUTHORIZED_SIP_013)
-      (asserts! (not (is-eq sender recipient)) ERR_MATCHING_PRINCIPALS_SIP_013)
+		(begin
+			;; Assert that caller is sender and sender is not recipient
+			(asserts! (or (is-eq caller sender) (is-eq contract-caller sender)) ERR_NOT_AUTHORIZED_SIP_013)
+			(asserts! (not (is-eq sender recipient)) ERR_MATCHING_PRINCIPALS_SIP_013)
 
-      ;; Assert that addresses are standard principals and amount is valid
-      (asserts! (is-standard sender) ERR_INVALID_PRINCIPAL)
-      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
-      (asserts! (> amount u0) ERR_INVALID_AMOUNT_SIP_013)
-      (asserts! (<= amount sender-balance) ERR_INSUFFICIENT_BALANCE_SIP_013)
+			;; Assert that addresses are standard principals and amount is valid
+			(asserts! (is-standard sender) ERR_INVALID_PRINCIPAL)
+			(asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
+			(asserts! (> amount u0) ERR_INVALID_AMOUNT_SIP_013)
+			(asserts! (<= amount sender-balance) ERR_INSUFFICIENT_BALANCE_SIP_013)
 
-      ;; Try to transfer pool token
-      (try! (ft-transfer? pool-token amount sender recipient))
+			;; Try to transfer pool token
+			(try! (ft-transfer? pool-token amount sender recipient))
 
-      ;; Try to tag pool token and update balances
-      (try! (tag-pool-token-id {token-id: token-id, owner: sender}))
-      (try! (tag-pool-token-id {token-id: token-id, owner: recipient}))
-      (try! (update-user-balance token-id sender (- sender-balance amount)))
-      (try! (update-user-balance token-id recipient (+ (get-balance-or-default token-id recipient) amount)))
+			;; Try to tag pool token and update balances
+			(try! (tag-pool-token-id {token-id: token-id, owner: sender}))
+			(try! (tag-pool-token-id {token-id: token-id, owner: recipient}))
+			(try! (update-user-balance token-id sender (- sender-balance amount)))
+			(try! (update-user-balance token-id recipient (+ (get-balance-or-default token-id recipient) amount)))
 
-      ;; Print SIP 013 data, function data, and return true
-      (print {type: "sft_transfer", token-id: token-id, amount: amount, sender: sender, recipient: recipient})
-      (print {action: "transfer", caller: caller, data: { id: token-id, sender: sender, recipient: recipient, amount: amount}})
-      (ok true)
-    )
-  )
+			(print {type: "sft_transfer", token-id: token-id, amount: amount, sender: sender, recipient: recipient})
+			(print {action: "transfer", caller: caller, data: { id: token-id, sender: sender, recipient: recipient, amount: amount}})
+			(ok true)
+		)
+	)
 )
 
 ;; SIP 013 transfer function that transfers pool token with memo
@@ -517,7 +502,7 @@
 		(try! (transfer token-id amount sender recipient))
 		(print memo)
 		(ok true)
-  )
+	)
 )
 
 ;; SIP 013 transfer function that transfers many pool token
@@ -532,125 +517,126 @@
 
 ;; Transfer tokens from this pool contract via DLMM Core
 (define-public (pool-transfer (token-trait <sip-010-trait>) (amount uint) (recipient principal))
-  (let (
-    (token-contract (contract-of token-trait))
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before transferring tokens
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+	(let (
+		(current-pool-addresses (var-get pool-addresses))
+		(token-contract (contract-of token-trait))
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before transferring tokens
+			(asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
 
-      ;; Assert that recipient address is standard principal
-      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
+			;; Assert that token-contract is the same as the x-token or y-token
+			(asserts! (or (is-eq token-contract (get x-token current-pool-addresses)) (is-eq token-contract (get y-token current-pool-addresses))) ERR_INVALID_TOKEN)
 
-      ;; Assert that amount is greater than 0
-      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+			;; Assert that recipient address is standard principal
+			(asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
 
-      ;; Try to transfer amount of token from pool contract to recipient
-      (try! (as-contract? ((with-all-assets-unsafe)) (try! (contract-call? token-trait transfer amount tx-sender recipient none))))
+			;; Assert that amount is greater than 0
+			(asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Print function data and return true
-      (print {action: "pool-transfer", data: {token: token-contract, amount: amount, recipient: recipient}})
-      (ok true)
-    )
-  )
+			;; Try to transfer amount of token from pool contract to recipient
+			(try! (as-contract? ((with-all-assets-unsafe)) (try! (contract-call? token-trait transfer amount tx-sender recipient none))))
+
+			(print {action: "pool-transfer", data: {token: token-contract, amount: amount, recipient: recipient}})
+			(ok true)
+		)
+	)
 )
 
 ;; Mint pool token to an user via DLMM Core
 (define-public (pool-mint (id uint) (amount uint) (user principal))
-  (let (
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before minting tokens
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+	(let (
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before minting tokens
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
-      ;; Assert that user is standard principal and amount is greater than 0
-      (asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
-      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+			;; Assert that user is standard principal and amount is greater than 0
+			(asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
+			(asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Try to mint amount pool tokens to user
-      (try! (ft-mint? pool-token amount user))
+			;; Try to mint amount pool tokens to user
+			(try! (ft-mint? pool-token amount user))
 
-      ;; Try to tag pool token and update balances
-      (try! (tag-pool-token-id {token-id: id, owner: user}))
-      (try! (update-user-balance id user (+ (get-balance-or-default id user) amount)))
-      (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (+ (unwrap-panic (get-total-supply id)) amount)}))
+			;; Try to tag pool token and update balances
+			(try! (tag-pool-token-id {token-id: id, owner: user}))
+			(try! (update-user-balance id user (+ (get-balance-or-default id user) amount)))
+			(map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (+ (unwrap-panic (get-total-supply id)) amount)}))
 
-      ;; Print SIP 013 data, function data, and return true
-      (print {type: "sft_mint", token-id: id, amount: amount, recipient: user})
-      (print {action: "pool-mint", data: {id: id, amount: amount, user: user}})
-      (ok true)
-    )
-  )
+			(print {type: "sft_mint", token-id: id, amount: amount, recipient: user})
+			(print {action: "pool-mint", data: {id: id, amount: amount, user: user}})
+			(ok true)
+		)
+	)
 )
 
 ;; Burn pool token from an user via DLMM Core
 (define-public (pool-burn (id uint) (amount uint) (user principal))
-  (let (
-    (user-balance (get-balance-or-default id user))
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address before burning tokens
-      (asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
+	(let (
+		(user-balance (get-balance-or-default id user))
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address before burning tokens
+			(asserts! (is-eq caller (get core-address (var-get pool-addresses))) ERR_NOT_AUTHORIZED)
 
-      ;; Assert that user is standard principal and amount is valid
-      (asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
-      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
-      (asserts! (<= amount user-balance) ERR_INVALID_AMOUNT)
+			;; Assert that user is standard principal and amount is valid
+			(asserts! (is-standard user) ERR_INVALID_PRINCIPAL)
+			(asserts! (> amount u0) ERR_INVALID_AMOUNT)
+			(asserts! (<= amount user-balance) ERR_INVALID_AMOUNT)
 
-      ;; Try to burn amount pool tokens from user
-      (try! (ft-burn? pool-token amount user))
+			;; Try to burn amount pool tokens from user
+			(try! (ft-burn? pool-token amount user))
 
-      ;; Try to tag pool token and update balances
-      (try! (tag-pool-token-id {token-id: id, owner: user}))
-      (try! (update-user-balance id user (- user-balance amount)))
-      (map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (- (unwrap-panic (get-total-supply id)) amount)}))
+			;; Try to tag pool token and update balances
+			(try! (tag-pool-token-id {token-id: id, owner: user}))
+			(try! (update-user-balance id user (- user-balance amount)))
+			(map-set balances-at-bin id (merge (unwrap-panic (get-bin-balances id)) {bin-shares: (- (unwrap-panic (get-total-supply id)) amount)}))
 
-      ;; Print SIP 013 data, function data, and return true
-      (print {type: "sft_burn", token-id: id, amount: amount, sender: user})
-      (print {action: "pool-burn", data: {id: id, amount: amount, user: user}})
-      (ok true)
-    )
-  )
+			(print {type: "sft_burn", token-id: id, amount: amount, sender: user})
+			(print {action: "pool-burn", data: {id: id, amount: amount, user: user}})
+			(ok true)
+		)
+	)
 )
 
 ;; Create pool using this pool contract via DLMM Core
 (define-public (create-pool
-    (x-token-contract principal) (y-token-contract principal)
-    (variable-fees-mgr principal) (fee-addr principal) (core-caller principal)
-    (active-bin int) (step uint) (price uint)
-    (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))
-  )
-  (let (
-    (current-pool-addresses (var-get pool-addresses))
-    (caller contract-caller)
-  )
-    (begin
-      ;; Assert that caller is core address and core caller is contract deployer before setting vars
-      (asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
-      (asserts! (is-eq core-caller CONTRACT_DEPLOYER) ERR_NOT_POOL_CONTRACT_DEPLOYER)
-      (var-set pool-info (merge (var-get pool-info) {
-        pool-id: id,
-        pool-name: name,
-        pool-symbol: symbol,
-        pool-uri: uri,
-        pool-created: true,
-        creation-height: burn-block-height
-      }))
-      (var-set pool-addresses (merge current-pool-addresses {
-        variable-fees-manager: variable-fees-mgr,
-        fee-address: fee-addr,
-        x-token: x-token-contract,
-        y-token: y-token-contract
-      }))
-      (var-set active-bin-id active-bin)
-      (var-set bin-step step)
-      (var-set initial-price price)
-      (ok true)
-    )
-  )
+		(x-token-contract principal) (y-token-contract principal)
+		(variable-fees-mgr principal) (fee-addr principal) (core-caller principal)
+		(active-bin int) (step uint) (price uint)
+		(id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))
+	)
+	(let (
+		(current-pool-addresses (var-get pool-addresses))
+		(caller contract-caller)
+	)
+		(begin
+			;; Assert that caller is core address and core caller is contract deployer before setting vars
+			(asserts! (is-eq caller (get core-address current-pool-addresses)) ERR_NOT_AUTHORIZED)
+			(asserts! (is-eq core-caller CONTRACT_DEPLOYER) ERR_NOT_POOL_CONTRACT_DEPLOYER)
+			(var-set pool-info (merge (var-get pool-info) {
+				pool-id: id,
+				pool-name: name,
+				pool-symbol: symbol,
+				pool-uri: uri,
+				pool-created: true,
+				creation-height: burn-block-height
+			}))
+			(var-set pool-addresses (merge current-pool-addresses {
+				variable-fees-manager: variable-fees-mgr,
+				fee-address: fee-addr,
+				x-token: x-token-contract,
+				y-token: y-token-contract
+			}))
+			(var-set active-bin-id active-bin)
+			(var-set bin-step step)
+			(var-set initial-price price)
+			(ok true)
+		)
+	)
 )
 
 ;; Helper function to transfer many pool token
@@ -670,24 +656,24 @@
 
 ;; Update user balances via pool
 (define-private (update-user-balance (id uint) (user principal) (balance uint))
-  (let (
+	(let (
 		(user-bins-data (unwrap-panic (get-user-bins user)))
 	)
-    (begin
-      (match (index-of? user-bins-data id) id-index
-        (and
-          (is-eq balance u0)
-          (map-set user-bins user (unwrap-panic (as-max-len? (concat (unwrap-panic (slice? user-bins-data u0 id-index)) (default-to (list) (slice? user-bins-data (+ id-index u1) (len user-bins-data)))) u1001)))
-        )
-        (and
-          (> balance u0)
-          (map-set user-bins user (unwrap! (as-max-len? (append user-bins-data id) u1001) ERR_MAX_NUMBER_OF_BINS))
-        )
-      )
-      (map-set user-balance-at-bin {id: id, user: user} balance)
-      (ok true)
-    )
-  )
+		(begin
+			(match (index-of? user-bins-data id) id-index
+				(and
+					(is-eq balance u0)
+					(map-set user-bins user (unwrap-panic (as-max-len? (concat (unwrap-panic (slice? user-bins-data u0 id-index)) (default-to (list) (slice? user-bins-data (+ id-index u1) (len user-bins-data)))) u1001)))
+				)
+				(and
+					(> balance u0)
+					(map-set user-bins user (unwrap! (as-max-len? (append user-bins-data id) u1001) ERR_MAX_NUMBER_OF_BINS))
+				)
+			)
+			(map-set user-balance-at-bin {id: id, user: user} balance)
+			(ok true)
+		)
+	)
 )
 
 ;; Tag pool token
@@ -695,5 +681,5 @@
 	(begin
 		(and (is-some (nft-get-owner? pool-token-id id)) (try! (nft-burn? pool-token-id id (get owner id))))
 		(nft-mint? pool-token-id id (get owner id))
-  )
+	)
 )

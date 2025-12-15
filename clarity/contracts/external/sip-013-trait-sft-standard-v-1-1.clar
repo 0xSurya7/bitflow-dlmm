@@ -1,7 +1,7 @@
 ;; sip-013-trait-sft-standard-v-1-1
 
 (define-trait sip-013-trait
-  (
+	(
 		(get-balance (uint principal) (response uint uint))
 		(get-overall-balance (principal) (response uint uint))
 		(get-total-supply (uint) (response uint uint))
@@ -10,5 +10,5 @@
 		(get-token-uri (uint) (response (optional (string-ascii 256)) uint))
 		(transfer (uint uint principal principal) (response bool uint))
 		(transfer-memo (uint uint principal principal (buff 34)) (response bool uint))
-  )
+	)
 )

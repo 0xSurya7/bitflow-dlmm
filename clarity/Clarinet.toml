@@ -25,6 +25,11 @@ path = "contracts/external/token-stx-v-1-1.clar"
 clarity_version = 3
 epoch = "3.0"
 
+[contracts.dlmm-core-trait-v-1-1]
+path = "contracts/dlmm-core-trait-v-1-1.clar"
+clarity_version = 4
+epoch = "3.3"
+
 [contracts.dlmm-pool-trait-v-1-1]
 path = "contracts/dlmm-pool-trait-v-1-1.clar"
 clarity_version = 4
