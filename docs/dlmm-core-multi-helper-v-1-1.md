@@ -7,7 +7,7 @@ dlmm-core-multi-helper-v-1-1
 
 **Public functions:**
 
-- [`migrate-core-address-multi`](#migrate-core-address-multi)
+- [`migrate-pool-multi`](#migrate-pool-multi)
 - [`set-swap-fee-exemption-multi`](#set-swap-fee-exemption-multi)
 - [`claim-protocol-fees-multi`](#claim-protocol-fees-multi)
 - [`set-pool-uri-multi`](#set-pool-uri-multi)
@@ -28,7 +28,7 @@ dlmm-core-multi-helper-v-1-1
 
 **Private functions:**
 
-- [`migrate-core-address`](#migrate-core-address)
+- [`migrate-pool`](#migrate-pool)
 - [`set-swap-fee-exemption`](#set-swap-fee-exemption)
 - [`claim-protocol-fees`](#claim-protocol-fees)
 - [`set-pool-uri`](#set-pool-uri)
@@ -58,20 +58,20 @@ dlmm-core-multi-helper-v-1-1
 
 ## Functions
 
-### migrate-core-address-multi
+### migrate-pool-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L8)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L9)
 
-`(define-public (migrate-core-address-multi ((pool-traits (list 120 trait_reference))) (response (list 120 (response bool uint)) none))`
+`(define-public (migrate-pool-multi ((pool-traits (list 120 trait_reference)) (core-traits (list 120 trait_reference))) (response (list 120 (response bool uint)) none))`
 
-Migrate core address for multiple pools
+Migrate multiple pools to the target core contract
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
-(define-public (migrate-core-address-multi (pool-traits (list 120 <dlmm-pool-trait>)))
-  (ok (map migrate-core-address pool-traits))
+(define-public (migrate-pool-multi (pool-traits (list 120 <dlmm-pool-trait>)) (core-traits (list 120 <dlmm-core-trait>)))
+	(ok (map migrate-pool pool-traits core-traits))
 )
 ```
 </details>
@@ -82,10 +82,11 @@ Migrate core address for multiple pools
 | Name | Type | 
 | --- | --- | 
 | pool-traits | (list 120 trait_reference) |
+| core-traits | (list 120 trait_reference) |
 
 ### set-swap-fee-exemption-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L13)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L14)
 
 `(define-public (set-swap-fee-exemption-multi ((pool-traits (list 120 trait_reference)) (addresses (list 120 principal)) (exempts (list 120 bool))) (response (list 120 (response bool uint)) none))`
 
@@ -96,11 +97,11 @@ Set swap fee exemption for multiple addresses across multiple pools
 
 ```clarity
 (define-public (set-swap-fee-exemption-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (addresses (list 120 principal))
-    (exempts (list 120 bool))
-  )
-  (ok (map set-swap-fee-exemption pool-traits addresses exempts))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(addresses (list 120 principal))
+		(exempts (list 120 bool))
+	)
+	(ok (map set-swap-fee-exemption pool-traits addresses exempts))
 )
 ```
 </details>
@@ -116,7 +117,7 @@ Set swap fee exemption for multiple addresses across multiple pools
 
 ### claim-protocol-fees-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L22)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L23)
 
 `(define-public (claim-protocol-fees-multi ((pool-traits (list 120 trait_reference)) (x-token-traits (list 120 trait_reference)) (y-token-traits (list 120 trait_reference))) (response (list 120 (response bool uint)) none))`
 
@@ -127,11 +128,11 @@ Claim protocol fees for multiple pools
 
 ```clarity
 (define-public (claim-protocol-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (x-token-traits (list 120 <sip-010-trait>))
-    (y-token-traits (list 120 <sip-010-trait>))
-  )
-  (ok (map claim-protocol-fees pool-traits x-token-traits y-token-traits))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(x-token-traits (list 120 <sip-010-trait>))
+		(y-token-traits (list 120 <sip-010-trait>))
+	)
+	(ok (map claim-protocol-fees pool-traits x-token-traits y-token-traits))
 )
 ```
 </details>
@@ -147,7 +148,7 @@ Claim protocol fees for multiple pools
 
 ### set-pool-uri-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L31)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L32)
 
 `(define-public (set-pool-uri-multi ((pool-traits (list 120 trait_reference)) (uris (list 120 (string-ascii 256)))) (response (list 120 (response bool uint)) none))`
 
@@ -158,10 +159,10 @@ Set pool uri for multiple pools
 
 ```clarity
 (define-public (set-pool-uri-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (uris (list 120 (string-ascii 256)))
-  )
-  (ok (map set-pool-uri pool-traits uris))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(uris (list 120 (string-ascii 256)))
+	)
+	(ok (map set-pool-uri pool-traits uris))
 )
 ```
 </details>
@@ -176,7 +177,7 @@ Set pool uri for multiple pools
 
 ### set-pool-status-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L39)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L40)
 
 `(define-public (set-pool-status-multi ((pool-traits (list 120 trait_reference)) (statuses (list 120 bool))) (response (list 120 (response bool uint)) none))`
 
@@ -187,10 +188,10 @@ Set pool status for multiple pools
 
 ```clarity
 (define-public (set-pool-status-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (statuses (list 120 bool))
-  )
-  (ok (map set-pool-status pool-traits statuses))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(statuses (list 120 bool))
+	)
+	(ok (map set-pool-status pool-traits statuses))
 )
 ```
 </details>
@@ -205,7 +206,7 @@ Set pool status for multiple pools
 
 ### set-variable-fees-manager-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L47)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L48)
 
 `(define-public (set-variable-fees-manager-multi ((pool-traits (list 120 trait_reference)) (managers (list 120 principal))) (response (list 120 (response bool uint)) none))`
 
@@ -216,10 +217,10 @@ Set variable fees manager for multiple pools
 
 ```clarity
 (define-public (set-variable-fees-manager-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (managers (list 120 principal))
-  )
-  (ok (map set-variable-fees-manager pool-traits managers))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(managers (list 120 principal))
+	)
+	(ok (map set-variable-fees-manager pool-traits managers))
 )
 ```
 </details>
@@ -234,7 +235,7 @@ Set variable fees manager for multiple pools
 
 ### set-fee-address-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L55)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L56)
 
 `(define-public (set-fee-address-multi ((pool-traits (list 120 trait_reference)) (addresses (list 120 principal))) (response (list 120 (response bool uint)) none))`
 
@@ -245,10 +246,10 @@ Set fee address for multiple pools
 
 ```clarity
 (define-public (set-fee-address-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (addresses (list 120 principal))
-  )
-  (ok (map set-fee-address pool-traits addresses))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(addresses (list 120 principal))
+	)
+	(ok (map set-fee-address pool-traits addresses))
 )
 ```
 </details>
@@ -263,7 +264,7 @@ Set fee address for multiple pools
 
 ### set-variable-fees-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L63)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L64)
 
 `(define-public (set-variable-fees-multi ((pool-traits (list 120 trait_reference)) (x-fees (list 120 uint)) (y-fees (list 120 uint))) (response (list 120 (response bool uint)) none))`
 
@@ -274,11 +275,11 @@ Set variable fees for multiple pools
 
 ```clarity
 (define-public (set-variable-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (x-fees (list 120 uint))
-    (y-fees (list 120 uint))
-  )
-  (ok (map set-variable-fees pool-traits x-fees y-fees))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(x-fees (list 120 uint))
+		(y-fees (list 120 uint))
+	)
+	(ok (map set-variable-fees pool-traits x-fees y-fees))
 )
 ```
 </details>
@@ -294,7 +295,7 @@ Set variable fees for multiple pools
 
 ### set-x-fees-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L72)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L73)
 
 `(define-public (set-x-fees-multi ((pool-traits (list 120 trait_reference)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint))) (response (list 120 (response bool uint)) none))`
 
@@ -305,11 +306,11 @@ Set x fees for multiple pools
 
 ```clarity
 (define-public (set-x-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (protocol-fees (list 120 uint))
-    (provider-fees (list 120 uint))
-  )
-  (ok (map set-x-fees pool-traits protocol-fees provider-fees))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(protocol-fees (list 120 uint))
+		(provider-fees (list 120 uint))
+	)
+	(ok (map set-x-fees pool-traits protocol-fees provider-fees))
 )
 ```
 </details>
@@ -325,7 +326,7 @@ Set x fees for multiple pools
 
 ### set-y-fees-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L81)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L82)
 
 `(define-public (set-y-fees-multi ((pool-traits (list 120 trait_reference)) (protocol-fees (list 120 uint)) (provider-fees (list 120 uint))) (response (list 120 (response bool uint)) none))`
 
@@ -336,11 +337,11 @@ Set y fees for multiple pools
 
 ```clarity
 (define-public (set-y-fees-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (protocol-fees (list 120 uint))
-    (provider-fees (list 120 uint))
-  )
-  (ok (map set-y-fees pool-traits protocol-fees provider-fees))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(protocol-fees (list 120 uint))
+		(provider-fees (list 120 uint))
+	)
+	(ok (map set-y-fees pool-traits protocol-fees provider-fees))
 )
 ```
 </details>
@@ -356,7 +357,7 @@ Set y fees for multiple pools
 
 ### set-variable-fees-cooldown-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L90)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L91)
 
 `(define-public (set-variable-fees-cooldown-multi ((pool-traits (list 120 trait_reference)) (cooldowns (list 120 uint))) (response (list 120 (response bool uint)) none))`
 
@@ -367,10 +368,10 @@ Set variable fees cooldown for multiple pools
 
 ```clarity
 (define-public (set-variable-fees-cooldown-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (cooldowns (list 120 uint))
-  )
-  (ok (map set-variable-fees-cooldown pool-traits cooldowns))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(cooldowns (list 120 uint))
+	)
+	(ok (map set-variable-fees-cooldown pool-traits cooldowns))
 )
 ```
 </details>
@@ -385,7 +386,7 @@ Set variable fees cooldown for multiple pools
 
 ### set-freeze-variable-fees-manager-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L98)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L99)
 
 `(define-public (set-freeze-variable-fees-manager-multi ((pool-traits (list 120 trait_reference))) (response (list 120 (response bool uint)) none))`
 
@@ -396,7 +397,7 @@ Set freeze variable fees manager for multiple pools
 
 ```clarity
 (define-public (set-freeze-variable-fees-manager-multi (pool-traits (list 120 <dlmm-pool-trait>)))
-  (ok (map set-freeze-variable-fees-manager pool-traits))
+	(ok (map set-freeze-variable-fees-manager pool-traits))
 )
 ```
 </details>
@@ -410,7 +411,7 @@ Set freeze variable fees manager for multiple pools
 
 ### reset-variable-fees-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L103)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L104)
 
 `(define-public (reset-variable-fees-multi ((pool-traits (list 120 trait_reference))) (response (list 120 (response bool uint)) none))`
 
@@ -421,7 +422,7 @@ Reset variable fees for multiple pools
 
 ```clarity
 (define-public (reset-variable-fees-multi (pool-traits (list 120 <dlmm-pool-trait>)))
-  (ok (map reset-variable-fees pool-traits))
+	(ok (map reset-variable-fees pool-traits))
 )
 ```
 </details>
@@ -435,7 +436,7 @@ Reset variable fees for multiple pools
 
 ### set-dynamic-config-multi
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L108)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L109)
 
 `(define-public (set-dynamic-config-multi ((pool-traits (list 120 trait_reference)) (configs (list 120 (buff 4096)))) (response (list 120 (response bool uint)) none))`
 
@@ -446,10 +447,10 @@ Set dynamic config for multiple pools
 
 ```clarity
 (define-public (set-dynamic-config-multi
-    (pool-traits (list 120 <dlmm-pool-trait>))
-    (configs (list 120 (buff 4096)))
-  )
-  (ok (map set-dynamic-config pool-traits configs))
+		(pool-traits (list 120 <dlmm-pool-trait>))
+		(configs (list 120 (buff 4096)))
+	)
+	(ok (map set-dynamic-config pool-traits configs))
 )
 ```
 </details>
@@ -462,20 +463,20 @@ Set dynamic config for multiple pools
 | pool-traits | (list 120 trait_reference) |
 | configs | (list 120 (buff 4096)) |
 
-### migrate-core-address
+### migrate-pool
 
 [View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L116)
 
-`(define-private (migrate-core-address ((pool-trait trait_reference)) (response bool uint))`
+`(define-private (migrate-pool ((pool-trait trait_reference) (core-trait trait_reference)) (response bool uint))`
 
-Private function to call migrate-core-address via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
-(define-private (migrate-core-address (pool-trait <dlmm-pool-trait>))
-  (contract-call? .dlmm-core-v-1-1 migrate-core-address pool-trait)
+(define-private (migrate-pool (pool-trait <dlmm-pool-trait>) (core-trait <dlmm-core-trait>))
+	(contract-call? .dlmm-core-v-1-1 migrate-pool pool-trait core-trait)
 )
 ```
 </details>
@@ -486,21 +487,22 @@ Private function to call migrate-core-address via DLMM Core
 | Name | Type | 
 | --- | --- | 
 | pool-trait | trait_reference |
+| core-trait | trait_reference |
 
 ### set-swap-fee-exemption
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L121)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L120)
 
 `(define-private (set-swap-fee-exemption ((pool-trait trait_reference) (address principal) (exempt bool)) (response bool uint))`
 
-Private function to call set-swap-fee-exemption via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-swap-fee-exemption (pool-trait <dlmm-pool-trait>) (address principal) (exempt bool))
-  (contract-call? .dlmm-core-v-1-1 set-swap-fee-exemption pool-trait address exempt)
+	(contract-call? .dlmm-core-v-1-1 set-swap-fee-exemption pool-trait address exempt)
 )
 ```
 </details>
@@ -516,18 +518,18 @@ Private function to call set-swap-fee-exemption via DLMM Core
 
 ### claim-protocol-fees
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L126)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L124)
 
 `(define-private (claim-protocol-fees ((pool-trait trait_reference) (x-token-trait trait_reference) (y-token-trait trait_reference)) (response bool uint))`
 
-Private function to call claim-protocol-fees via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (claim-protocol-fees (pool-trait <dlmm-pool-trait>) (x-token-trait <sip-010-trait>) (y-token-trait <sip-010-trait>))
-  (contract-call? .dlmm-core-v-1-1 claim-protocol-fees pool-trait x-token-trait y-token-trait)
+	(contract-call? .dlmm-core-v-1-1 claim-protocol-fees pool-trait x-token-trait y-token-trait)
 )
 ```
 </details>
@@ -543,18 +545,18 @@ Private function to call claim-protocol-fees via DLMM Core
 
 ### set-pool-uri
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L131)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L128)
 
 `(define-private (set-pool-uri ((pool-trait trait_reference) (uri (string-ascii 256))) (response bool uint))`
 
-Private function to call set-pool-uri via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-pool-uri (pool-trait <dlmm-pool-trait>) (uri (string-ascii 256)))
-  (contract-call? .dlmm-core-v-1-1 set-pool-uri pool-trait uri)
+	(contract-call? .dlmm-core-v-1-1 set-pool-uri pool-trait uri)
 )
 ```
 </details>
@@ -569,18 +571,18 @@ Private function to call set-pool-uri via DLMM Core
 
 ### set-pool-status
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L136)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L132)
 
 `(define-private (set-pool-status ((pool-trait trait_reference) (status bool)) (response bool uint))`
 
-Private function to call set-pool-status via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-pool-status (pool-trait <dlmm-pool-trait>) (status bool))
-  (contract-call? .dlmm-core-v-1-1 set-pool-status pool-trait status)
+	(contract-call? .dlmm-core-v-1-1 set-pool-status pool-trait status)
 )
 ```
 </details>
@@ -595,18 +597,18 @@ Private function to call set-pool-status via DLMM Core
 
 ### set-variable-fees-manager
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L141)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L136)
 
 `(define-private (set-variable-fees-manager ((pool-trait trait_reference) (manager principal)) (response bool uint))`
 
-Private function to call set-variable-fees-manager via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-variable-fees-manager (pool-trait <dlmm-pool-trait>) (manager principal))
-  (contract-call? .dlmm-core-v-1-1 set-variable-fees-manager pool-trait manager)
+	(contract-call? .dlmm-core-v-1-1 set-variable-fees-manager pool-trait manager)
 )
 ```
 </details>
@@ -621,18 +623,18 @@ Private function to call set-variable-fees-manager via DLMM Core
 
 ### set-fee-address
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L146)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L140)
 
 `(define-private (set-fee-address ((pool-trait trait_reference) (address principal)) (response bool uint))`
 
-Private function to call set-fee-address via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-fee-address (pool-trait <dlmm-pool-trait>) (address principal))
-  (contract-call? .dlmm-core-v-1-1 set-fee-address pool-trait address)
+	(contract-call? .dlmm-core-v-1-1 set-fee-address pool-trait address)
 )
 ```
 </details>
@@ -647,18 +649,18 @@ Private function to call set-fee-address via DLMM Core
 
 ### set-variable-fees
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L151)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L144)
 
 `(define-private (set-variable-fees ((pool-trait trait_reference) (x-fee uint) (y-fee uint)) (response bool uint))`
 
-Private function to call set-variable-fees via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-variable-fees (pool-trait <dlmm-pool-trait>) (x-fee uint) (y-fee uint))
-  (contract-call? .dlmm-core-v-1-1 set-variable-fees pool-trait x-fee y-fee)
+	(contract-call? .dlmm-core-v-1-1 set-variable-fees pool-trait x-fee y-fee)
 )
 ```
 </details>
@@ -674,18 +676,18 @@ Private function to call set-variable-fees via DLMM Core
 
 ### set-x-fees
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L156)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L148)
 
 `(define-private (set-x-fees ((pool-trait trait_reference) (protocol-fee uint) (provider-fee uint)) (response bool uint))`
 
-Private function to call set-x-fees via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-x-fees (pool-trait <dlmm-pool-trait>) (protocol-fee uint) (provider-fee uint))
-  (contract-call? .dlmm-core-v-1-1 set-x-fees pool-trait protocol-fee provider-fee)
+	(contract-call? .dlmm-core-v-1-1 set-x-fees pool-trait protocol-fee provider-fee)
 )
 ```
 </details>
@@ -701,18 +703,18 @@ Private function to call set-x-fees via DLMM Core
 
 ### set-y-fees
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L161)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L152)
 
 `(define-private (set-y-fees ((pool-trait trait_reference) (protocol-fee uint) (provider-fee uint)) (response bool uint))`
 
-Private function to call set-y-fees via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-y-fees (pool-trait <dlmm-pool-trait>) (protocol-fee uint) (provider-fee uint))
-  (contract-call? .dlmm-core-v-1-1 set-y-fees pool-trait protocol-fee provider-fee)
+	(contract-call? .dlmm-core-v-1-1 set-y-fees pool-trait protocol-fee provider-fee)
 )
 ```
 </details>
@@ -728,18 +730,18 @@ Private function to call set-y-fees via DLMM Core
 
 ### set-variable-fees-cooldown
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L166)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L156)
 
 `(define-private (set-variable-fees-cooldown ((pool-trait trait_reference) (cooldown uint)) (response bool uint))`
 
-Private function to call set-variable-fees-cooldown via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-variable-fees-cooldown (pool-trait <dlmm-pool-trait>) (cooldown uint))
-  (contract-call? .dlmm-core-v-1-1 set-variable-fees-cooldown pool-trait cooldown)
+	(contract-call? .dlmm-core-v-1-1 set-variable-fees-cooldown pool-trait cooldown)
 )
 ```
 </details>
@@ -754,18 +756,18 @@ Private function to call set-variable-fees-cooldown via DLMM Core
 
 ### set-freeze-variable-fees-manager
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L171)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L160)
 
 `(define-private (set-freeze-variable-fees-manager ((pool-trait trait_reference)) (response bool uint))`
 
-Private function to call set-freeze-variable-fees-manager via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-freeze-variable-fees-manager (pool-trait <dlmm-pool-trait>))
-  (contract-call? .dlmm-core-v-1-1 set-freeze-variable-fees-manager pool-trait)
+	(contract-call? .dlmm-core-v-1-1 set-freeze-variable-fees-manager pool-trait)
 )
 ```
 </details>
@@ -779,18 +781,18 @@ Private function to call set-freeze-variable-fees-manager via DLMM Core
 
 ### reset-variable-fees
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L176)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L164)
 
 `(define-private (reset-variable-fees ((pool-trait trait_reference)) (response bool uint))`
 
-Private function to call reset-variable-fees via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (reset-variable-fees (pool-trait <dlmm-pool-trait>))
-  (contract-call? .dlmm-core-v-1-1 reset-variable-fees pool-trait)
+	(contract-call? .dlmm-core-v-1-1 reset-variable-fees pool-trait)
 )
 ```
 </details>
@@ -804,18 +806,18 @@ Private function to call reset-variable-fees via DLMM Core
 
 ### set-dynamic-config
 
-[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L181)
+[View in file](../clarity/contracts/dlmm-core-multi-helper-v-1-1.clar#L168)
 
 `(define-private (set-dynamic-config ((pool-trait trait_reference) (config (buff 4096))) (response bool uint))`
 
-Private function to call set-dynamic-config via DLMM Core
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-private (set-dynamic-config (pool-trait <dlmm-pool-trait>) (config (buff 4096)))
-  (contract-call? .dlmm-core-v-1-1 set-dynamic-config pool-trait config)
+	(contract-call? .dlmm-core-v-1-1 set-dynamic-config pool-trait config)
 )
 ```
 </details>

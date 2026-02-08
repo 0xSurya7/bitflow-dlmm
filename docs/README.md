@@ -1,6 +1,7 @@
 # Contracts
 
 - [`dlmm-core-multi-helper-v-1-1`](dlmm-core-multi-helper-v-1-1.md)
+- [`dlmm-core-trait-v-1-1`](dlmm-core-trait-v-1-1.md)
 - [`dlmm-core-v-1-1`](dlmm-core-v-1-1.md)
 - [`dlmm-liquidity-router-v-1-1`](dlmm-liquidity-router-v-1-1.md)
 - [`dlmm-pool-sbtc-usdc-v-1-1`](dlmm-pool-sbtc-usdc-v-1-1.md)

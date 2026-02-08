@@ -405,7 +405,7 @@ SIP 013 functions - minimal implementations
 
 [View in file](../clarity/contracts/mocks/mock-pool.clar#L175)
 
-`(define-read-only (get-pool-for-swap ((is-x-for-y bool)) (response (tuple (active-bin-id int) (bin-step uint) (fee-address principal) (initial-price uint) (pool-id uint) (pool-name (string-ascii 32)) (protocol-fee uint) (provider-fee uint) (variable-fee uint) (x-token principal) (y-token principal)) uint))`
+`(define-read-only (get-pool-for-swap ((is-x-for-y bool)) (response (tuple (active-bin-id int) (bin-step uint) (core-address principal) (fee-address principal) (initial-price uint) (pool-id uint) (pool-name (string-ascii 32)) (protocol-fee uint) (provider-fee uint) (variable-fee uint) (x-token principal) (y-token principal)) uint))`
 
 Get all pool data for swapping
 
@@ -423,6 +423,7 @@ Get all pool data for swapping
     (ok {
       pool-id: (get pool-id current-pool-info),
       pool-name: (get pool-name current-pool-info),
+      core-address: CORE_ADDRESS,
       fee-address: (get fee-address current-pool-addresses),
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
@@ -447,9 +448,9 @@ Get all pool data for swapping
 
 ### get-pool-for-add
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L199)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L200)
 
-`(define-read-only (get-pool-for-add () (response (tuple (active-bin-id int) (bin-step uint) (initial-price uint) (pool-id uint) (pool-name (string-ascii 32)) (x-protocol-fee uint) (x-provider-fee uint) (x-token principal) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-token principal) (y-variable-fee uint)) uint))`
+`(define-read-only (get-pool-for-add () (response (tuple (active-bin-id int) (bin-step uint) (core-address principal) (initial-price uint) (pool-id uint) (pool-name (string-ascii 32)) (x-protocol-fee uint) (x-provider-fee uint) (x-token principal) (x-variable-fee uint) (y-protocol-fee uint) (y-provider-fee uint) (y-token principal) (y-variable-fee uint)) uint))`
 
 Get all pool data for adding liquidity
 
@@ -467,6 +468,7 @@ Get all pool data for adding liquidity
     (ok {
       pool-id: (get pool-id current-pool-info),
       pool-name: (get pool-name current-pool-info),
+      core-address: CORE_ADDRESS,
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
       bin-step: (var-get bin-step),
@@ -489,9 +491,9 @@ Get all pool data for adding liquidity
 
 ### get-pool-for-withdraw
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L225)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L227)
 
-`(define-read-only (get-pool-for-withdraw () (response (tuple (pool-id uint) (pool-name (string-ascii 32)) (x-token principal) (y-token principal)) uint))`
+`(define-read-only (get-pool-for-withdraw () (response (tuple (core-address principal) (pool-id uint) (pool-name (string-ascii 32)) (x-token principal) (y-token principal)) uint))`
 
 Get all pool data for withdrawing liquidity
 
@@ -508,6 +510,7 @@ Get all pool data for withdrawing liquidity
     (ok {
       pool-id: (get pool-id current-pool-info),
       pool-name: (get pool-name current-pool-info),
+      core-address: CORE_ADDRESS,
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses)
     })
@@ -521,7 +524,7 @@ Get all pool data for withdrawing liquidity
 
 ### get-variable-fees-data
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L239)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L242)
 
 `(define-read-only (get-variable-fees-data () (response (tuple (bin-change-count uint) (dynamic-config (buff 4096)) (freeze-variable-fees-manager bool) (last-variable-fees-update uint) (variable-fees-cooldown uint) (variable-fees-manager principal) (x-variable-fee uint) (y-variable-fee uint)) none))`
 
@@ -556,7 +559,7 @@ Get all pool data for withdrawing liquidity
 
 ### get-active-bin-id
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L257)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L260)
 
 `(define-read-only (get-active-bin-id () (response int uint))`
 
@@ -578,7 +581,7 @@ Get all pool data for withdrawing liquidity
 
 ### get-bin-balances
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L262)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L265)
 
 `(define-read-only (get-bin-balances ((id uint)) (response (tuple (bin-shares uint) (x-balance uint) (y-balance uint)) none))`
 
@@ -602,7 +605,7 @@ Get all pool data for withdrawing liquidity
 
 ### get-user-bins
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L265)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L268)
 
 `(define-read-only (get-user-bins ((user principal)) (response (list 1001 uint) none))`
 
@@ -626,7 +629,7 @@ Get all pool data for withdrawing liquidity
 
 ### set-active-bin-id
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L269)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L272)
 
 `(define-public (set-active-bin-id ((id int)) (response bool uint))`
 
@@ -653,7 +656,7 @@ Core-only functions (kept minimal but functional)
 
 ### update-bin-balances
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L275)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L278)
 
 `(define-public (update-bin-balances ((bin-id uint) (x-balance uint) (y-balance uint)) (response bool uint))`
 
@@ -682,7 +685,7 @@ Core-only functions (kept minimal but functional)
 
 ### update-bin-balances-on-withdraw
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L282)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L285)
 
 `(define-public (update-bin-balances-on-withdraw ((bin-id uint) (x-balance uint) (y-balance uint) (bin-shares uint)) (response bool none))`
 
@@ -713,7 +716,7 @@ Core-only functions (kept minimal but functional)
 
 ### pool-mint
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L290)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L293)
 
 `(define-public (pool-mint ((id uint) (amount uint) (user principal)) (response bool uint))`
 
@@ -744,7 +747,7 @@ Core-only functions (kept minimal but functional)
 
 ### pool-burn
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L298)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L301)
 
 `(define-public (pool-burn ((id uint) (amount uint) (user principal)) (response bool uint))`
 
@@ -775,7 +778,7 @@ Core-only functions (kept minimal but functional)
 
 ### pool-transfer
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L306)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L309)
 
 `(define-public (pool-transfer ((token-trait trait_reference) (amount uint) (recipient principal)) (response bool uint))`
 
@@ -804,7 +807,7 @@ Core-only functions (kept minimal but functional)
 
 ### create-pool
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L312)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L315)
 
 `(define-public (create-pool ((x-token-contract principal) (y-token-contract principal) (variable-fees-mgr principal) (fee-addr principal) (core-caller principal) (active-bin int) (step uint) (price uint) (id uint) (name (string-ascii 32)) (symbol (string-ascii 32)) (uri (string-ascii 256))) (response bool uint))`
 
@@ -862,7 +865,7 @@ Core-only functions (kept minimal but functional)
 
 ### transfer
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L339)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L342)
 
 `(define-public (transfer ((token-id uint) (amount uint) (sender principal) (recipient principal)) (response bool none))`
 
@@ -889,7 +892,7 @@ Stub functions for SIP 013 compliance
 
 ### transfer-memo
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L342)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L345)
 
 `(define-public (transfer-memo ((token-id uint) (amount uint) (sender principal) (recipient principal) (memo (buff 34))) (response bool none))`
 
@@ -917,7 +920,7 @@ Stub functions for SIP 013 compliance
 
 ### transfer-many
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L345)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L348)
 
 `(define-public (transfer-many ((transfers (list 200 (tuple (amount uint) (recipient principal) (sender principal) (token-id uint))))) (response bool none))`
 
@@ -941,7 +944,7 @@ Stub functions for SIP 013 compliance
 
 ### transfer-many-memo
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L348)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L351)
 
 `(define-public (transfer-many-memo ((transfers (list 200 (tuple (amount uint) (memo (buff 34)) (recipient principal) (sender principal) (token-id uint))))) (response bool none))`
 
@@ -965,7 +968,7 @@ Stub functions for SIP 013 compliance
 
 ### set-pool-uri
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L352)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L355)
 
 `(define-public (set-pool-uri ((uri (string-ascii 256))) (response bool none))`
 
@@ -988,7 +991,7 @@ Stub functions for other core functions
 
 ### set-core-address
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L353)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L356)
 
 `(define-public (set-core-address ((address principal)) (response bool none))`
 
@@ -1011,7 +1014,7 @@ Stub functions for other core functions
 
 ### set-variable-fees-manager
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L354)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L357)
 
 `(define-public (set-variable-fees-manager ((manager principal)) (response bool none))`
 
@@ -1034,7 +1037,7 @@ Stub functions for other core functions
 
 ### set-fee-address
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L355)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L358)
 
 `(define-public (set-fee-address ((address principal)) (response bool none))`
 
@@ -1057,7 +1060,7 @@ Stub functions for other core functions
 
 ### set-x-fees
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L356)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L359)
 
 `(define-public (set-x-fees ((protocol-fee uint) (provider-fee uint)) (response bool none))`
 
@@ -1081,7 +1084,7 @@ Stub functions for other core functions
 
 ### set-y-fees
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L357)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L360)
 
 `(define-public (set-y-fees ((protocol-fee uint) (provider-fee uint)) (response bool none))`
 
@@ -1105,7 +1108,7 @@ Stub functions for other core functions
 
 ### set-variable-fees
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L358)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L361)
 
 `(define-public (set-variable-fees ((x-fee uint) (y-fee uint)) (response bool none))`
 
@@ -1129,7 +1132,7 @@ Stub functions for other core functions
 
 ### set-variable-fees-cooldown
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L359)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L362)
 
 `(define-public (set-variable-fees-cooldown ((cooldown uint)) (response bool none))`
 
@@ -1152,7 +1155,7 @@ Stub functions for other core functions
 
 ### set-freeze-variable-fees-manager
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L360)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L363)
 
 `(define-public (set-freeze-variable-fees-manager () (response bool none))`
 
@@ -1171,7 +1174,7 @@ Stub functions for other core functions
 
 ### set-dynamic-config
 
-[View in file](../clarity/contracts/mocks/mock-pool.clar#L361)
+[View in file](../clarity/contracts/mocks/mock-pool.clar#L364)
 
 `(define-public (set-dynamic-config ((config (buff 4096))) (response bool none))`
 

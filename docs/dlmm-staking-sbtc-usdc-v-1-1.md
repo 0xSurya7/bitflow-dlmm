@@ -118,18 +118,18 @@ dlmm-staking-sbtc-usdc-v-1-1
 
 ### get-admins
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L97)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L94)
 
 `(define-read-only (get-admins () (response (list 5 principal) none))`
 
-Get admins list
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-admins)
-  (ok (var-get admins))
+	(ok (var-get admins))
 )
 ```
 </details>
@@ -139,18 +139,18 @@ Get admins list
 
 ### get-admin-helper
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L102)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L98)
 
 `(define-read-only (get-admin-helper () (response principal none))`
 
-Get admin helper var
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-admin-helper)
-  (ok (var-get admin-helper))
+	(ok (var-get admin-helper))
 )
 ```
 </details>
@@ -160,18 +160,18 @@ Get admin helper var
 
 ### get-helper-value
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L107)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L102)
 
 `(define-read-only (get-helper-value () (response uint none))`
 
-Get helper value var
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-helper-value)
-  (ok (var-get helper-value))
+	(ok (var-get helper-value))
 )
 ```
 </details>
@@ -181,18 +181,18 @@ Get helper value var
 
 ### get-staking-status
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L112)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L106)
 
 `(define-read-only (get-staking-status () (response bool none))`
 
-Get staking status
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-staking-status)
-  (ok (var-get staking-status))
+	(ok (var-get staking-status))
 )
 ```
 </details>
@@ -202,18 +202,18 @@ Get staking status
 
 ### get-early-unstake-status
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L117)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L110)
 
 `(define-read-only (get-early-unstake-status () (response bool none))`
 
-Get early unstake status
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-early-unstake-status)
-  (ok (var-get early-unstake-status))
+	(ok (var-get early-unstake-status))
 )
 ```
 </details>
@@ -223,18 +223,18 @@ Get early unstake status
 
 ### get-early-unstake-fee-address
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L122)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L114)
 
 `(define-read-only (get-early-unstake-fee-address () (response principal none))`
 
-Get early unstake fee address
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-early-unstake-fee-address)
-  (ok (var-get early-unstake-fee-address))
+	(ok (var-get early-unstake-fee-address))
 )
 ```
 </details>
@@ -244,18 +244,18 @@ Get early unstake fee address
 
 ### get-early-unstake-fee
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L127)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L118)
 
 `(define-read-only (get-early-unstake-fee () (response uint none))`
 
-Get early unstake fee
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-early-unstake-fee)
-  (ok (var-get early-unstake-fee))
+	(ok (var-get early-unstake-fee))
 )
 ```
 </details>
@@ -265,18 +265,18 @@ Get early unstake fee
 
 ### get-minimum-staking-duration
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L132)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L122)
 
 `(define-read-only (get-minimum-staking-duration () (response uint none))`
 
-Get minimum staking duration
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-minimum-staking-duration)
-  (ok (var-get minimum-staking-duration))
+	(ok (var-get minimum-staking-duration))
 )
 ```
 </details>
@@ -286,18 +286,18 @@ Get minimum staking duration
 
 ### get-default-reward-period-duration
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L137)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L126)
 
 `(define-read-only (get-default-reward-period-duration () (response uint none))`
 
-Get default reward period duration
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-default-reward-period-duration)
-  (ok (var-get default-reward-period-duration))
+	(ok (var-get default-reward-period-duration))
 )
 ```
 </details>
@@ -307,18 +307,18 @@ Get default reward period duration
 
 ### get-total-lp-staked
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L142)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L130)
 
 `(define-read-only (get-total-lp-staked () (response uint none))`
 
-Get total LP staked
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-total-lp-staked)
-  (ok (var-get total-lp-staked))
+	(ok (var-get total-lp-staked))
 )
 ```
 </details>
@@ -328,18 +328,18 @@ Get total LP staked
 
 ### get-total-rewards-claimed
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L147)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L134)
 
 `(define-read-only (get-total-rewards-claimed () (response uint none))`
 
-Get total rewards claimed
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-total-rewards-claimed)
-  (ok (var-get total-rewards-claimed))
+	(ok (var-get total-rewards-claimed))
 )
 ```
 </details>
@@ -349,18 +349,18 @@ Get total rewards claimed
 
 ### get-bin
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L152)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L138)
 
 `(define-read-only (get-bin ((bin-id uint)) (response (optional (tuple (last-reward-index-update uint) (lp-staked uint) (reward-index uint) (reward-per-block uint) (reward-period-duration uint) (reward-period-end-block uint))) none))`
 
-Get bin data
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-bin (bin-id uint))
-  (ok (map-get? bin-data bin-id))
+	(ok (map-get? bin-data bin-id))
 )
 ```
 </details>
@@ -374,18 +374,18 @@ Get bin data
 
 ### get-user
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L157)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L142)
 
 `(define-read-only (get-user ((user principal)) (response (optional (tuple (bins-staked (list 1001 uint)) (lp-staked uint))) none))`
 
-Get user data
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-user (user principal))
-  (ok (map-get? user-data user))
+	(ok (map-get? user-data user))
 )
 ```
 </details>
@@ -399,18 +399,18 @@ Get user data
 
 ### get-user-data-at-bin
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L162)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L146)
 
 `(define-read-only (get-user-data-at-bin ((user principal) (bin-id uint)) (response (optional (tuple (accrued-rewards uint) (last-stake-height uint) (lp-staked uint) (reward-index uint))) none))`
 
-Get user data at a bin
+
 
 <details>
   <summary>Source code:</summary>
 
 ```clarity
 (define-read-only (get-user-data-at-bin (user principal) (bin-id uint))
-  (ok (map-get? user-data-at-bin {user: user, bin-id: bin-id}))
+	(ok (map-get? user-data-at-bin {user: user, bin-id: bin-id}))
 )
 ```
 </details>
@@ -425,7 +425,7 @@ Get user data at a bin
 
 ### get-updated-reward-index
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L167)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L151)
 
 `(define-read-only (get-updated-reward-index ((bin-id uint)) (response (tuple (reward-index uint) (reward-period-effective-block uint) (rewards-to-distribute uint)) uint))`
 
@@ -436,32 +436,32 @@ Get the updated reward index at a bin
 
 ```clarity
 (define-read-only (get-updated-reward-index (bin-id uint))
-  (let (
-    (current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
-    (lp-staked (get lp-staked current-bin-data))
-    (reward-per-block (get reward-per-block current-bin-data))
-    (reward-index (get reward-index current-bin-data))
-    (last-reward-index-update (get last-reward-index-update current-bin-data))
-    (reward-period-end-block (get reward-period-end-block current-bin-data))
-    (reward-period-effective-block (if (> reward-period-end-block u0)
-                                       (if (> stacks-block-height reward-period-end-block)
-                                           reward-period-end-block
-                                           stacks-block-height)
-                                       stacks-block-height))
-  )
-    ;; Get updated reward-index, rewards-to-distribute, and reward-period-effective-block
-    (if (and (> lp-staked u0) (> reward-period-effective-block last-reward-index-update) (> reward-per-block u0))
-      (let (
-        (blocks-since-last-update (- reward-period-effective-block last-reward-index-update))
-        (rewards-to-distribute (* reward-per-block blocks-since-last-update))
-        (reward-index-delta (/ (* rewards-to-distribute REWARD_SCALE_BPS) lp-staked))
-      )
-        (ok {reward-index: (+ reward-index reward-index-delta), rewards-to-distribute: rewards-to-distribute, reward-period-effective-block: reward-period-effective-block})
-      )
-      ;; Return reward-index, rewards-to-distribute, and reward-period-effective-block
-      (ok {reward-index: reward-index, rewards-to-distribute: u0, reward-period-effective-block: reward-period-effective-block})
-    )
-  )
+	(let (
+		(current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
+		(lp-staked (get lp-staked current-bin-data))
+		(reward-per-block (get reward-per-block current-bin-data))
+		(reward-index (get reward-index current-bin-data))
+		(last-reward-index-update (get last-reward-index-update current-bin-data))
+		(reward-period-end-block (get reward-period-end-block current-bin-data))
+		(reward-period-effective-block (if (> reward-period-end-block u0)
+																			 (if (> stacks-block-height reward-period-end-block)
+																					 reward-period-end-block
+																					 stacks-block-height)
+																			 stacks-block-height))
+	)
+		;; Get updated reward-index, rewards-to-distribute, and reward-period-effective-block
+		(if (and (> lp-staked u0) (> reward-period-effective-block last-reward-index-update) (> reward-per-block u0))
+			(let (
+				(blocks-since-last-update (- reward-period-effective-block last-reward-index-update))
+				(rewards-to-distribute (* reward-per-block blocks-since-last-update))
+				(reward-index-delta (/ (* rewards-to-distribute REWARD_SCALE_BPS) lp-staked))
+			)
+				(ok {reward-index: (+ reward-index reward-index-delta), rewards-to-distribute: rewards-to-distribute, reward-period-effective-block: reward-period-effective-block})
+			)
+			;; Return reward-index, rewards-to-distribute, and reward-period-effective-block
+			(ok {reward-index: reward-index, rewards-to-distribute: u0, reward-period-effective-block: reward-period-effective-block})
+		)
+	)
 )
 ```
 </details>
@@ -475,7 +475,7 @@ Get the updated reward index at a bin
 
 ### get-claimable-rewards
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L197)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L181)
 
 `(define-read-only (get-claimable-rewards ((user principal) (bin-id int)) (response (tuple (accrued-rewards uint) (claimable-rewards uint) (pending-rewards uint)) uint))`
 
@@ -486,16 +486,16 @@ Get claimable rewards for a user at a bin
 
 ```clarity
 (define-read-only (get-claimable-rewards (user principal) (bin-id int))
-  (let (
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: user, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
-    (reward-index-delta (- (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id))) (get reward-index current-user-data-at-bin)))
-    (pending-rewards (/ (* (get lp-staked current-user-data-at-bin) reward-index-delta) REWARD_SCALE_BPS))
-    (accrued-rewards (get accrued-rewards current-user-data-at-bin))
-  )
-    ;; Return pending-rewards, accrued-rewards, and claimable-rewards
-    (ok {pending-rewards: pending-rewards, accrued-rewards: accrued-rewards, claimable-rewards: (+ pending-rewards accrued-rewards)})
-  )
+	(let (
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: user, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
+		(reward-index-delta (- (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id))) (get reward-index current-user-data-at-bin)))
+		(pending-rewards (/ (* (get lp-staked current-user-data-at-bin) reward-index-delta) REWARD_SCALE_BPS))
+		(accrued-rewards (get accrued-rewards current-user-data-at-bin))
+	)
+		;; Return pending-rewards, accrued-rewards, and claimable-rewards
+		(ok {pending-rewards: pending-rewards, accrued-rewards: accrued-rewards, claimable-rewards: (+ pending-rewards accrued-rewards)})
+	)
 )
 ```
 </details>
@@ -510,7 +510,7 @@ Get claimable rewards for a user at a bin
 
 ### add-admin
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L211)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L195)
 
 `(define-public (add-admin ((admin principal)) (response bool uint))`
 
@@ -521,21 +521,20 @@ Add an admin to the admins list
 
 ```clarity
 (define-public (add-admin (admin principal))
-  (let (
-    (admins-list (var-get admins))
-    (caller tx-sender)
-  )
-    ;; Assert caller is an existing admin and new admin is not in admins-list
-    (asserts! (is-some (index-of admins-list caller)) ERR_NOT_AUTHORIZED)
-    (asserts! (is-none (index-of admins-list admin)) ERR_ALREADY_ADMIN)
+	(let (
+		(admins-list (var-get admins))
+		(caller tx-sender)
+	)
+		;; Assert caller is an existing admin and new admin is not in admins-list
+		(asserts! (is-some (index-of admins-list caller)) ERR_NOT_AUTHORIZED)
+		(asserts! (is-none (index-of admins-list admin)) ERR_ALREADY_ADMIN)
 
-    ;; Add admin to list with max length of 5
-    (var-set admins (unwrap! (as-max-len? (append admins-list admin) u5) ERR_ADMIN_LIMIT_REACHED))
+		;; Add admin to list with max length of 5
+		(var-set admins (unwrap! (as-max-len? (append admins-list admin) u5) ERR_ADMIN_LIMIT_REACHED))
 
-    ;; Print add admin data and return true
-    (print {action: "add-admin", caller: caller, data: {admin: admin}})
-    (ok true)
-  )
+		(print {action: "add-admin", caller: caller, data: {admin: admin}})
+		(ok true)
+	)
 )
 ```
 </details>
@@ -549,7 +548,7 @@ Add an admin to the admins list
 
 ### remove-admin
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L230)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L213)
 
 `(define-public (remove-admin ((admin principal)) (response bool uint))`
 
@@ -560,25 +559,24 @@ Remove an admin from the admins list
 
 ```clarity
 (define-public (remove-admin (admin principal))
-  (let (
-    (admins-list (var-get admins))
-    (caller tx-sender)
-  )
-    ;; Assert caller is an existing admin and admin to remove is in admins-list
-    (asserts! (is-some (index-of admins-list caller)) ERR_NOT_AUTHORIZED)
-    (asserts! (is-some (index-of admins-list admin)) ERR_ADMIN_NOT_IN_LIST)
+	(let (
+		(admins-list (var-get admins))
+		(caller tx-sender)
+	)
+		;; Assert caller is an existing admin and admin to remove is in admins-list
+		(asserts! (is-some (index-of admins-list caller)) ERR_NOT_AUTHORIZED)
+		(asserts! (is-some (index-of admins-list admin)) ERR_ADMIN_NOT_IN_LIST)
 
-    ;; Assert contract deployer cannot be removed
-    (asserts! (not (is-eq admin CONTRACT_DEPLOYER)) ERR_CANNOT_REMOVE_CONTRACT_DEPLOYER)
+		;; Assert contract deployer cannot be removed
+		(asserts! (not (is-eq admin CONTRACT_DEPLOYER)) ERR_CANNOT_REMOVE_CONTRACT_DEPLOYER)
 
-    ;; Set admin-helper to admin to remove and filter admins-list to remove admin
-    (var-set admin-helper admin)
-    (var-set admins (filter admin-not-removable admins-list))
+		;; Set admin-helper to admin to remove and filter admins-list to remove admin
+		(var-set admin-helper admin)
+		(var-set admins (filter admin-not-removable admins-list))
 
-    ;; Print remove admin data and return true
-    (print {action: "remove-admin", caller: caller, data: {admin: admin}})
-    (ok true)
-  )
+		(print {action: "remove-admin", caller: caller, data: {admin: admin}})
+		(ok true)
+	)
 )
 ```
 </details>
@@ -592,7 +590,7 @@ Remove an admin from the admins list
 
 ### set-staking-status
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L253)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L235)
 
 `(define-public (set-staking-status ((status bool)) (response bool uint))`
 
@@ -603,21 +601,20 @@ Enable or disable staking
 
 ```clarity
 (define-public (set-staking-status (status bool))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
 
-      ;; Set staking-status to status
-      (var-set staking-status status)
+			;; Set staking-status to status
+			(var-set staking-status status)
 
-      ;; Print function data and return true
-      (print {action: "set-staking-status", caller: caller, data: {status: status}})
-      (ok true)
-    )
-  )
+			(print {action: "set-staking-status", caller: caller, data: {status: status}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -631,7 +628,7 @@ Enable or disable staking
 
 ### set-early-unstake-status
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L272)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L253)
 
 `(define-public (set-early-unstake-status ((status bool)) (response bool uint))`
 
@@ -642,21 +639,20 @@ Enable or disable early unstaking
 
 ```clarity
 (define-public (set-early-unstake-status (status bool))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
 
-      ;; Set early-unstake-status to status
-      (var-set early-unstake-status status)
+			;; Set early-unstake-status to status
+			(var-set early-unstake-status status)
 
-      ;; Print function data and return true
-      (print {action: "set-early-unstake-status", caller: caller, data: {status: status}})
-      (ok true)
-    )
-  )
+			(print {action: "set-early-unstake-status", caller: caller, data: {status: status}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -670,7 +666,7 @@ Enable or disable early unstaking
 
 ### set-early-unstake-fee-address
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L291)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L271)
 
 `(define-public (set-early-unstake-fee-address ((address principal)) (response bool uint))`
 
@@ -681,22 +677,21 @@ Set early unstake fee address
 
 ```clarity
 (define-public (set-early-unstake-fee-address (address principal))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin and address is standard principal
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin and address is standard principal
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+			(asserts! (is-standard address) ERR_INVALID_PRINCIPAL)
 
-      ;; Set early-unstake-fee-address to address
-      (var-set early-unstake-fee-address address)
+			;; Set early-unstake-fee-address to address
+			(var-set early-unstake-fee-address address)
 
-      ;; Print function data and return true
-      (print {action: "set-early-unstake-fee-address", caller: caller, data: {address: address}})
-      (ok true)
-    )
-  )
+			(print {action: "set-early-unstake-fee-address", caller: caller, data: {address: address}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -710,7 +705,7 @@ Set early unstake fee address
 
 ### set-early-unstake-fee
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L311)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L290)
 
 `(define-public (set-early-unstake-fee ((fee uint)) (response bool uint))`
 
@@ -721,22 +716,21 @@ Set early unstake fee
 
 ```clarity
 (define-public (set-early-unstake-fee (fee uint))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin and fee is less than maximum FEE_SCALE_BPS
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (< fee FEE_SCALE_BPS) ERR_INVALID_FEE)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin and fee is less than maximum FEE_SCALE_BPS
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+			(asserts! (< fee FEE_SCALE_BPS) ERR_INVALID_FEE)
 
-      ;; Set early-unstake-fee to fee
-      (var-set early-unstake-fee fee)
+			;; Set early-unstake-fee to fee
+			(var-set early-unstake-fee fee)
 
-      ;; Print function data and return true
-      (print {action: "set-early-unstake-fee", caller: caller, data: {fee: fee}})
-      (ok true)
-    )
-  )
+			(print {action: "set-early-unstake-fee", caller: caller, data: {fee: fee}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -750,7 +744,7 @@ Set early unstake fee
 
 ### set-minimum-staking-duration
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L331)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L309)
 
 `(define-public (set-minimum-staking-duration ((duration uint)) (response bool uint))`
 
@@ -761,22 +755,21 @@ Set the minimum staking duration in blocks
 
 ```clarity
 (define-public (set-minimum-staking-duration (duration uint))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin and duration is greater than 0
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (> duration u0) ERR_INVALID_MIN_STAKING_DURATION)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin and duration is greater than 0
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+			(asserts! (> duration u0) ERR_INVALID_MIN_STAKING_DURATION)
 
-      ;; Set minimum-staking-duration to duration
-      (var-set minimum-staking-duration duration)
+			;; Set minimum-staking-duration to duration
+			(var-set minimum-staking-duration duration)
 
-      ;; Print function data and return true
-      (print {action: "set-minimum-staking-duration", caller: caller, data: {duration: duration}})
-      (ok true)
-    )
-  )
+			(print {action: "set-minimum-staking-duration", caller: caller, data: {duration: duration}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -790,7 +783,7 @@ Set the minimum staking duration in blocks
 
 ### set-default-reward-period-duration
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L351)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L328)
 
 `(define-public (set-default-reward-period-duration ((duration uint)) (response bool uint))`
 
@@ -801,22 +794,21 @@ Set the default reward period duration in blocks
 
 ```clarity
 (define-public (set-default-reward-period-duration (duration uint))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin and duration is greater than 0
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (> duration u0) ERR_INVALID_REWARD_PERIOD_DURATION)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin and duration is greater than 0
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+			(asserts! (> duration u0) ERR_INVALID_REWARD_PERIOD_DURATION)
 
-      ;; Set default-reward-period-duration to duration
-      (var-set default-reward-period-duration duration)
+			;; Set default-reward-period-duration to duration
+			(var-set default-reward-period-duration duration)
 
-      ;; Print function data and return true
-      (print {action: "set-default-reward-period-duration", caller: caller, data: {duration: duration}})
-      (ok true)
-    )
-  )
+			(print {action: "set-default-reward-period-duration", caller: caller, data: {duration: duration}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -830,7 +822,7 @@ Set the default reward period duration in blocks
 
 ### set-reward-period-duration
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L371)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L347)
 
 `(define-public (set-reward-period-duration ((bin-id int) (duration uint)) (response bool uint))`
 
@@ -841,32 +833,31 @@ Set the reward period duration in blocks for a bin
 
 ```clarity
 (define-public (set-reward-period-duration (bin-id int) (duration uint))
-  (let (
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-    (updated-reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin and duration is greater than 0
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (> duration u0) ERR_INVALID_REWARD_PERIOD_DURATION)
+	(let (
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+		(updated-reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin and duration is greater than 0
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+			(asserts! (> duration u0) ERR_INVALID_REWARD_PERIOD_DURATION)
 
-      ;; Assert current reward period has passed
-      (asserts! (> stacks-block-height (get reward-period-end-block current-bin-data)) ERR_REWARD_PERIOD_HAS_NOT_PASSED)
+			;; Assert current reward period has passed
+			(asserts! (> stacks-block-height (get reward-period-end-block current-bin-data)) ERR_REWARD_PERIOD_HAS_NOT_PASSED)
 
-      ;; Update bin-data mapping
-      (map-set bin-data unsigned-bin-id (merge current-bin-data {
-        reward-index: (get reward-index updated-reward-index),
-        reward-period-duration: duration,
-        last-reward-index-update: (get reward-period-effective-block updated-reward-index)
-      }))
+			;; Update bin-data mapping
+			(map-set bin-data unsigned-bin-id (merge current-bin-data {
+				reward-index: (get reward-index updated-reward-index),
+				reward-period-duration: duration,
+				last-reward-index-update: (get reward-period-effective-block updated-reward-index)
+			}))
 
-      ;; Print function data and return true
-      (print {action: "set-reward-period-duration", caller: caller, data: {bin-id: bin-id, duration: duration}})
-      (ok true)
-    )
-  )
+			(print {action: "set-reward-period-duration", caller: caller, data: {bin-id: bin-id, duration: duration}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -881,7 +872,7 @@ Set the reward period duration in blocks for a bin
 
 ### set-rewards-to-distribute
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L401)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L376)
 
 `(define-public (set-rewards-to-distribute ((bin-id int) (amount uint)) (response bool uint))`
 
@@ -892,70 +883,69 @@ Set rewards to distribute for a bin
 
 ```clarity
 (define-public (set-rewards-to-distribute (bin-id int) (amount uint))
-  (let (
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+	(let (
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
 
-      ;; Assert unsigned-bin-id is less than NUM_OF_BINS
-      (asserts! (< unsigned-bin-id NUM_OF_BINS) ERR_INVALID_BIN_ID)
+			;; Assert unsigned-bin-id is less than NUM_OF_BINS
+			(asserts! (< unsigned-bin-id NUM_OF_BINS) ERR_INVALID_BIN_ID)
 
-      ;; Update reward-index for bin
-      (if (is-some (map-get? bin-data unsigned-bin-id))
-          (unwrap-panic (update-reward-index unsigned-bin-id))
-          false)
+			;; Update reward-index for bin
+			(if (is-some (map-get? bin-data unsigned-bin-id))
+					(unwrap-panic (update-reward-index unsigned-bin-id))
+					false)
 
-      (let (
-        (current-bin-data (default-to {lp-staked: u0, reward-per-block: u0, reward-period-duration: (var-get default-reward-period-duration), reward-index: u0, last-reward-index-update: stacks-block-height, reward-period-end-block: u0} (map-get? bin-data unsigned-bin-id)))
-        (current-reward-per-block (get reward-per-block current-bin-data))
-        (current-reward-period-duration (get reward-period-duration current-bin-data))
-        (current-reward-period-end-block (get reward-period-end-block current-bin-data))
-        (reward-period-is-active (> current-reward-period-end-block stacks-block-height))
-        (reward-period-time-left (if reward-period-is-active
-                                     (- current-reward-period-end-block stacks-block-height)
-                                     u0))
-        (current-remaining-rewards (if reward-period-is-active
-                                       (* current-reward-per-block reward-period-time-left)
-                                       u0))
-        (updated-rewards-to-distribute (+ amount current-remaining-rewards))
-        (updated-reward-per-block (if (> updated-rewards-to-distribute u0)
-                                      (/ updated-rewards-to-distribute current-reward-period-duration)
-                                      u0))
-        (updated-reward-period-end-block (if (> updated-reward-per-block u0)
-                                             (+ stacks-block-height current-reward-period-duration)
-                                             stacks-block-height))
-      )
-        ;; Assert updated-rewards-to-distribute is less than or equal to the contract's reward token balance
-        (asserts! (<= updated-rewards-to-distribute (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+			(let (
+				(current-bin-data (default-to {lp-staked: u0, reward-per-block: u0, reward-period-duration: (var-get default-reward-period-duration), reward-index: u0, last-reward-index-update: stacks-block-height, reward-period-end-block: u0} (map-get? bin-data unsigned-bin-id)))
+				(current-reward-per-block (get reward-per-block current-bin-data))
+				(current-reward-period-duration (get reward-period-duration current-bin-data))
+				(current-reward-period-end-block (get reward-period-end-block current-bin-data))
+				(reward-period-is-active (> current-reward-period-end-block stacks-block-height))
+				(reward-period-time-left (if reward-period-is-active
+																		 (- current-reward-period-end-block stacks-block-height)
+																		 u0))
+				(current-remaining-rewards (if reward-period-is-active
+																			 (* current-reward-per-block reward-period-time-left)
+																			 u0))
+				(updated-rewards-to-distribute (+ amount current-remaining-rewards))
+				(updated-reward-per-block (if (> updated-rewards-to-distribute u0)
+																			(/ updated-rewards-to-distribute current-reward-period-duration)
+																			u0))
+				(updated-reward-period-end-block (if (> updated-reward-per-block u0)
+																						 (+ stacks-block-height current-reward-period-duration)
+																						 stacks-block-height))
+			)
+				;; Assert updated-rewards-to-distribute is less than or equal to the contract's reward token balance
+				(asserts! (<= updated-rewards-to-distribute (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
-        ;; Update bin-data mapping
-        (map-set bin-data unsigned-bin-id (merge current-bin-data {
-          reward-per-block: updated-reward-per-block,
-          last-reward-index-update: (if (> updated-reward-per-block u0)
-                                        stacks-block-height
-                                        (get last-reward-index-update current-bin-data)),
-          reward-period-end-block: updated-reward-period-end-block
-        }))
+				;; Update bin-data mapping
+				(map-set bin-data unsigned-bin-id (merge current-bin-data {
+					reward-per-block: updated-reward-per-block,
+					last-reward-index-update: (if (> updated-reward-per-block u0)
+																				stacks-block-height
+																				(get last-reward-index-update current-bin-data)),
+					reward-period-end-block: updated-reward-period-end-block
+				}))
 
-        ;; Print function data and return true
-        (print {
-          action: "set-rewards-to-distribute",
-          caller: caller,
-          data: {
-            bin-id: bin-id,
-            amount: amount,
-            updated-rewards-to-distribute: updated-rewards-to-distribute,
-            updated-reward-per-block: updated-reward-per-block,
-            updated-reward-period-end-block: updated-reward-period-end-block
-          }
-        })
-        (ok true)
-      )
-    )
-  )
+				(print {
+					action: "set-rewards-to-distribute",
+					caller: caller,
+					data: {
+						bin-id: bin-id,
+						amount: amount,
+						updated-rewards-to-distribute: updated-rewards-to-distribute,
+						updated-reward-per-block: updated-reward-per-block,
+						updated-reward-period-end-block: updated-reward-period-end-block
+					}
+				})
+				(ok true)
+			)
+		)
+	)
 )
 ```
 </details>
@@ -970,7 +960,7 @@ Set rewards to distribute for a bin
 
 ### stake-lp-tokens
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L469)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L443)
 
 `(define-public (stake-lp-tokens ((bin-id int) (amount uint)) (response bool uint))`
 
@@ -981,70 +971,69 @@ Stake LP tokens for a bin
 
 ```clarity
 (define-public (stake-lp-tokens (bin-id int) (amount uint))
-  (let (
-    (caller tx-sender)
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-    (current-user-data (map-get? user-data caller))
-    (current-user-data-at-bin (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}))
-    (current-user-bins-staked (default-to (list ) (get bins-staked current-user-data)))
-    (updated-user-bins-staked (if (is-none (index-of current-user-bins-staked unsigned-bin-id))
-                                  (unwrap! (as-max-len? (concat current-user-bins-staked (list unsigned-bin-id)) u1001) ERR_BINS_STAKED_OVERFLOW)
-                                  current-user-bins-staked))
-    (updated-user-lp-staked (+ (default-to u0 (get lp-staked current-user-data)) amount))
-    (updated-bin-lp-staked (+ (get lp-staked current-bin-data) amount))
-    (updated-total-lp-staked (+ (var-get total-lp-staked) amount))
-  )
-    (begin
-      ;; Assert staking-status is true and amount is greater than 0
-      (asserts! (var-get staking-status) ERR_STAKING_DISABLED)
-      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+	(let (
+		(caller tx-sender)
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+		(current-user-data (map-get? user-data caller))
+		(current-user-data-at-bin (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}))
+		(current-user-bins-staked (default-to (list ) (get bins-staked current-user-data)))
+		(updated-user-bins-staked (if (is-none (index-of current-user-bins-staked unsigned-bin-id))
+																	(unwrap! (as-max-len? (concat current-user-bins-staked (list unsigned-bin-id)) u1001) ERR_BINS_STAKED_OVERFLOW)
+																	current-user-bins-staked))
+		(updated-user-lp-staked (+ (default-to u0 (get lp-staked current-user-data)) amount))
+		(updated-bin-lp-staked (+ (get lp-staked current-bin-data) amount))
+		(updated-total-lp-staked (+ (var-get total-lp-staked) amount))
+	)
+		(begin
+			;; Assert staking-status is true and amount is greater than 0
+			(asserts! (var-get staking-status) ERR_STAKING_DISABLED)
+			(asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Update reward-index for bin
-      (unwrap-panic (update-reward-index unsigned-bin-id))
+			;; Update reward-index for bin
+			(unwrap-panic (update-reward-index unsigned-bin-id))
 
-      ;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
-      (let (
-        (updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-        (updated-reward-index (get reward-index updated-bin-data))
-        (updated-accrued-rewards (if (is-some current-user-data-at-bin)
-                                     (get claimable-rewards (try! (get-claimable-rewards caller bin-id)))
-                                     u0))
-      )
-        (var-set total-lp-staked updated-total-lp-staked)
-        (map-set bin-data unsigned-bin-id (merge updated-bin-data {
-          lp-staked: updated-bin-lp-staked
-        }))
-        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} {
-          lp-staked: (+ (default-to u0 (get lp-staked current-user-data-at-bin)) amount),
-          accrued-rewards: updated-accrued-rewards,
-          reward-index: updated-reward-index,
-          last-stake-height: stacks-block-height
-        })
-        (map-set user-data caller {
-          bins-staked: updated-user-bins-staked,
-          lp-staked: updated-user-lp-staked
-        })
-      )
+			;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
+			(let (
+				(updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+				(updated-reward-index (get reward-index updated-bin-data))
+				(updated-accrued-rewards (if (is-some current-user-data-at-bin)
+																		 (get claimable-rewards (try! (get-claimable-rewards caller bin-id)))
+																		 u0))
+			)
+				(var-set total-lp-staked updated-total-lp-staked)
+				(map-set bin-data unsigned-bin-id (merge updated-bin-data {
+					lp-staked: updated-bin-lp-staked
+				}))
+				(map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} {
+					lp-staked: (+ (default-to u0 (get lp-staked current-user-data-at-bin)) amount),
+					accrued-rewards: updated-accrued-rewards,
+					reward-index: updated-reward-index,
+					last-stake-height: stacks-block-height
+				})
+				(map-set user-data caller {
+					bins-staked: updated-user-bins-staked,
+					lp-staked: updated-user-lp-staked
+				})
+			)
 
-      ;; Transfer amount LP tokens from caller to contract
-      (try! (transfer-lp-token unsigned-bin-id amount caller current-contract))
+			;; Transfer amount LP tokens from caller to contract
+			(try! (transfer-lp-token unsigned-bin-id amount caller current-contract))
 
-      ;; Print function data and return true
-      (print {
-        action: "stake-lp-tokens",
-        caller: caller,
-        data: {
-          bin-id: bin-id,
-          amount: amount,
-          user-bins-staked: updated-user-bins-staked,
-          user-lp-staked: updated-user-lp-staked,
-          total-lp-staked: updated-total-lp-staked
-        }
-      })
-      (ok true)
-    )
-  )
+			(print {
+				action: "stake-lp-tokens",
+				caller: caller,
+				data: {
+					bin-id: bin-id,
+					amount: amount,
+					user-bins-staked: updated-user-bins-staked,
+					user-lp-staked: updated-user-lp-staked,
+					total-lp-staked: updated-total-lp-staked
+				}
+			})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -1059,7 +1048,7 @@ Stake LP tokens for a bin
 
 ### unstake-lp-tokens
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L537)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L510)
 
 `(define-public (unstake-lp-tokens ((bin-id int)) (response bool uint))`
 
@@ -1070,66 +1059,65 @@ Unstake LP tokens for a bin
 
 ```clarity
 (define-public (unstake-lp-tokens (bin-id int))
-  (let (
-    (caller tx-sender)
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-    (current-user-data (unwrap! (map-get? user-data caller) ERR_NO_USER_DATA))
-    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
-    (lp-to-unstake (get lp-staked current-user-data-at-bin))
-    (helper-value-unsigned-bin-id (var-set helper-value unsigned-bin-id))
-    (updated-total-lp-staked (- (var-get total-lp-staked) lp-to-unstake))
-    (updated-bin-lp-staked (- (get lp-staked current-bin-data) lp-to-unstake))
-    (updated-user-bins-staked (filter filter-values-eq-helper-value (get bins-staked current-user-data)))
-    (updated-user-lp-staked (- (get lp-staked current-user-data) lp-to-unstake))
-  )
-    (begin
-      ;; Assert lp-to-unstake is greater than 0 and minimum staking duration has passed
-      (asserts! (> lp-to-unstake u0) ERR_NO_LP_TO_UNSTAKE)
-      (asserts! (>= (- stacks-block-height (get last-stake-height current-user-data-at-bin)) (var-get minimum-staking-duration)) ERR_MINIMUM_STAKING_DURATION_HAS_NOT_PASSED)
+	(let (
+		(caller tx-sender)
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+		(current-user-data (unwrap! (map-get? user-data caller) ERR_NO_USER_DATA))
+		(current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
+		(lp-to-unstake (get lp-staked current-user-data-at-bin))
+		(helper-value-unsigned-bin-id (var-set helper-value unsigned-bin-id))
+		(updated-total-lp-staked (- (var-get total-lp-staked) lp-to-unstake))
+		(updated-bin-lp-staked (- (get lp-staked current-bin-data) lp-to-unstake))
+		(updated-user-bins-staked (filter filter-values-eq-helper-value (get bins-staked current-user-data)))
+		(updated-user-lp-staked (- (get lp-staked current-user-data) lp-to-unstake))
+	)
+		(begin
+			;; Assert lp-to-unstake is greater than 0 and minimum staking duration has passed
+			(asserts! (> lp-to-unstake u0) ERR_NO_LP_TO_UNSTAKE)
+			(asserts! (>= (- stacks-block-height (get last-stake-height current-user-data-at-bin)) (var-get minimum-staking-duration)) ERR_MINIMUM_STAKING_DURATION_HAS_NOT_PASSED)
 
-      ;; Update reward-index for bin
-      (unwrap-panic (update-reward-index unsigned-bin-id))
+			;; Update reward-index for bin
+			(unwrap-panic (update-reward-index unsigned-bin-id))
 
-      ;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
-      (let (
-        (updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-        (updated-reward-index (get reward-index updated-bin-data))
-        (updated-accrued-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
-      )
-        (var-set total-lp-staked updated-total-lp-staked)
-        (map-set bin-data unsigned-bin-id (merge updated-bin-data {
-          lp-staked: updated-bin-lp-staked
-        }))
-        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
-          lp-staked: u0,
-          accrued-rewards: updated-accrued-rewards,
-          reward-index: updated-reward-index
-        }))
-        (map-set user-data caller {
-          bins-staked: updated-user-bins-staked,
-          lp-staked: updated-user-lp-staked
-        })
-      )
+			;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
+			(let (
+				(updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+				(updated-reward-index (get reward-index updated-bin-data))
+				(updated-accrued-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
+			)
+				(var-set total-lp-staked updated-total-lp-staked)
+				(map-set bin-data unsigned-bin-id (merge updated-bin-data {
+					lp-staked: updated-bin-lp-staked
+				}))
+				(map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+					lp-staked: u0,
+					accrued-rewards: updated-accrued-rewards,
+					reward-index: updated-reward-index
+				}))
+				(map-set user-data caller {
+					bins-staked: updated-user-bins-staked,
+					lp-staked: updated-user-lp-staked
+				})
+			)
 
-      ;; Transfer lp-to-unstake LP tokens from contract to caller
-      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake tx-sender caller))))
+			;; Transfer lp-to-unstake LP tokens from contract to caller
+			(try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake tx-sender caller))))
 
-      ;; Print function data and return true
-      (print {
-        action: "unstake-lp-tokens",
-        caller: caller,
-        data: {
-          bin-id: bin-id,
-          lp-to-unstake: lp-to-unstake,
-          user-bins-staked: updated-user-bins-staked,
-          user-lp-staked: updated-user-lp-staked,
-          total-lp-staked: updated-total-lp-staked
-        }
-      })
-      (ok true)
-    )
-  )
+			(print {
+				action: "unstake-lp-tokens",
+				caller: caller,
+				data: {
+					bin-id: bin-id,
+					lp-to-unstake: lp-to-unstake,
+					user-bins-staked: updated-user-bins-staked,
+					user-lp-staked: updated-user-lp-staked,
+					total-lp-staked: updated-total-lp-staked
+				}
+			})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -1143,7 +1131,7 @@ Unstake LP tokens for a bin
 
 ### early-unstake-lp-tokens
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L601)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L573)
 
 `(define-public (early-unstake-lp-tokens ((bin-id int)) (response bool uint))`
 
@@ -1154,76 +1142,75 @@ Early unstake LP tokens at a bin
 
 ```clarity
 (define-public (early-unstake-lp-tokens (bin-id int))
-  (let (
-    (caller tx-sender)
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-    (current-user-data (unwrap! (map-get? user-data caller) ERR_NO_USER_DATA))
-    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
-    (lp-to-unstake (get lp-staked current-user-data-at-bin))
-    (lp-to-unstake-fees (/ (* lp-to-unstake (var-get early-unstake-fee)) FEE_SCALE_BPS))
-    (lp-to-unstake-user (- lp-to-unstake lp-to-unstake-fees))
-    (helper-value-unsigned-bin-id (var-set helper-value unsigned-bin-id))
-    (updated-total-lp-staked (- (var-get total-lp-staked) lp-to-unstake))
-    (updated-bin-lp-staked (- (get lp-staked current-bin-data) lp-to-unstake))
-    (updated-user-bins-staked (filter filter-values-eq-helper-value (get bins-staked current-user-data)))
-    (updated-user-lp-staked (- (get lp-staked current-user-data) lp-to-unstake))
-  )
-    (begin
-      ;; Assert early-unstake-status is true
-      (asserts! (var-get early-unstake-status) ERR_EARLY_UNSTAKE_DISABLED)
+	(let (
+		(caller tx-sender)
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(current-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+		(current-user-data (unwrap! (map-get? user-data caller) ERR_NO_USER_DATA))
+		(current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
+		(lp-to-unstake (get lp-staked current-user-data-at-bin))
+		(lp-to-unstake-fees (/ (* lp-to-unstake (var-get early-unstake-fee)) FEE_SCALE_BPS))
+		(lp-to-unstake-user (- lp-to-unstake lp-to-unstake-fees))
+		(helper-value-unsigned-bin-id (var-set helper-value unsigned-bin-id))
+		(updated-total-lp-staked (- (var-get total-lp-staked) lp-to-unstake))
+		(updated-bin-lp-staked (- (get lp-staked current-bin-data) lp-to-unstake))
+		(updated-user-bins-staked (filter filter-values-eq-helper-value (get bins-staked current-user-data)))
+		(updated-user-lp-staked (- (get lp-staked current-user-data) lp-to-unstake))
+	)
+		(begin
+			;; Assert early-unstake-status is true
+			(asserts! (var-get early-unstake-status) ERR_EARLY_UNSTAKE_DISABLED)
 
-      ;; Assert lp-to-unstake is greater than 0 and minimum staking duration hasn't passed
-      (asserts! (> lp-to-unstake u0) ERR_NO_EARLY_LP_TO_UNSTAKE)
-      (asserts! (< (- stacks-block-height (get last-stake-height current-user-data-at-bin)) (var-get minimum-staking-duration)) ERR_MINIMUM_STAKING_DURATION_PASSED)
+			;; Assert lp-to-unstake is greater than 0 and minimum staking duration hasn't passed
+			(asserts! (> lp-to-unstake u0) ERR_NO_EARLY_LP_TO_UNSTAKE)
+			(asserts! (< (- stacks-block-height (get last-stake-height current-user-data-at-bin)) (var-get minimum-staking-duration)) ERR_MINIMUM_STAKING_DURATION_PASSED)
 
-      ;; Update reward-index for bin
-      (unwrap-panic (update-reward-index unsigned-bin-id))
+			;; Update reward-index for bin
+			(unwrap-panic (update-reward-index unsigned-bin-id))
 
-      ;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
-      (let (
-        (updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
-        (updated-reward-index (get reward-index updated-bin-data))
-        (updated-accrued-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
-      )
-        (var-set total-lp-staked updated-total-lp-staked)
-        (map-set bin-data unsigned-bin-id (merge updated-bin-data {
-          lp-staked: updated-bin-lp-staked
-        }))
-        (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
-          lp-staked: u0,
-          accrued-rewards: updated-accrued-rewards,
-          reward-index: updated-reward-index
-        }))
-        (map-set user-data caller {
-          bins-staked: updated-user-bins-staked,
-          lp-staked: updated-user-lp-staked
-        })
-      )
+			;; Update total LP staked, bin-data mapping, user-data-at-bin mapping, and user-data mapping
+			(let (
+				(updated-bin-data (unwrap! (map-get? bin-data unsigned-bin-id) ERR_NO_BIN_DATA))
+				(updated-reward-index (get reward-index updated-bin-data))
+				(updated-accrued-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
+			)
+				(var-set total-lp-staked updated-total-lp-staked)
+				(map-set bin-data unsigned-bin-id (merge updated-bin-data {
+					lp-staked: updated-bin-lp-staked
+				}))
+				(map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+					lp-staked: u0,
+					accrued-rewards: updated-accrued-rewards,
+					reward-index: updated-reward-index
+				}))
+				(map-set user-data caller {
+					bins-staked: updated-user-bins-staked,
+					lp-staked: updated-user-lp-staked
+				})
+			)
 
-      ;; Transfer lp-to-unstake-user LP tokens from contract to caller
-      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-user tx-sender caller))))
+			;; Transfer lp-to-unstake-user LP tokens from contract to caller
+			(try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-user tx-sender caller))))
 
-      ;; Transfer lp-to-unstake-fees LP tokens from contract to early-unstake-fee-address
-      (if (> lp-to-unstake-fees u0)
-          (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-fees tx-sender (var-get early-unstake-fee-address)))))
-          false)
+			;; Transfer lp-to-unstake-fees LP tokens from contract to early-unstake-fee-address
+			(if (> lp-to-unstake-fees u0)
+					(try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-lp-token unsigned-bin-id lp-to-unstake-fees tx-sender (var-get early-unstake-fee-address)))))
+					false)
 
-      ;; Print function data and return true
-      (print {
-        action: "early-unstake-lp-tokens",
-        caller: caller,
-        data: {
-          bin-id: bin-id,
-          lp-to-unstake: lp-to-unstake,
-          user-bins-staked: updated-user-bins-staked,
-          user-lp-staked: updated-user-lp-staked,
-          total-lp-staked: updated-total-lp-staked
-        }
-      })
-      (ok true)
-    )
-  )
+			(print {
+				action: "early-unstake-lp-tokens",
+				caller: caller,
+				data: {
+					bin-id: bin-id,
+					lp-to-unstake: lp-to-unstake,
+					user-bins-staked: updated-user-bins-staked,
+					user-lp-staked: updated-user-lp-staked,
+					total-lp-staked: updated-total-lp-staked
+				}
+			})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -1237,7 +1224,7 @@ Early unstake LP tokens at a bin
 
 ### claim-rewards
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L675)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L646)
 
 `(define-public (claim-rewards ((bin-id int)) (response uint uint))`
 
@@ -1248,39 +1235,38 @@ Claim any claimable rewards at a bin
 
 ```clarity
 (define-public (claim-rewards (bin-id int))
-  (let (
-    (caller tx-sender)
-    (unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
-    (current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
-    (claimable-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
-  )
-    (begin
-      ;; Assert claimable-rewards is greater than 0
-      (asserts! (> claimable-rewards u0) ERR_NO_CLAIMABLE_REWARDS)
+	(let (
+		(caller tx-sender)
+		(unsigned-bin-id (to-uint (+ bin-id (to-int CENTER_BIN_ID))))
+		(current-user-data-at-bin (unwrap! (map-get? user-data-at-bin {user: caller, bin-id: unsigned-bin-id}) ERR_NO_USER_DATA_AT_BIN))
+		(claimable-rewards (get claimable-rewards (try! (get-claimable-rewards caller bin-id))))
+	)
+		(begin
+			;; Assert claimable-rewards is greater than 0
+			(asserts! (> claimable-rewards u0) ERR_NO_CLAIMABLE_REWARDS)
 
-      ;; Assert claimable-rewards is less than or equal to the contract's reward token balance
-      (asserts! (<= claimable-rewards (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+			;; Assert claimable-rewards is less than or equal to the contract's reward token balance
+			(asserts! (<= claimable-rewards (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
-      ;; Update reward-index for bin
-      (unwrap-panic (update-reward-index unsigned-bin-id))
+			;; Update reward-index for bin
+			(unwrap-panic (update-reward-index unsigned-bin-id))
 
-      ;; Transfer claimable-rewards rewards token from contract to caller
-      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token claimable-rewards tx-sender caller))))
+			;; Transfer claimable-rewards rewards token from contract to caller
+			(try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token claimable-rewards tx-sender caller))))
 
-      ;; Update user-data-at-bin mapping
-      (map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
-        accrued-rewards: u0,
-        reward-index: (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
-      }))
+			;; Update user-data-at-bin mapping
+			(map-set user-data-at-bin {user: caller, bin-id: unsigned-bin-id} (merge current-user-data-at-bin {
+				accrued-rewards: u0,
+				reward-index: (get reward-index (unwrap-panic (get-updated-reward-index unsigned-bin-id)))
+			}))
 
-      ;; Update total-rewards-claimed
-      (var-set total-rewards-claimed (+ (var-get total-rewards-claimed) claimable-rewards))
+			;; Update total-rewards-claimed
+			(var-set total-rewards-claimed (+ (var-get total-rewards-claimed) claimable-rewards))
 
-      ;; Print function data and return true
-      (print {action: "claim-rewards", caller: caller, data: {bin-id: bin-id, claimable-rewards: claimable-rewards}})
-      (ok claimable-rewards)
-    )
-  )
+			(print {action: "claim-rewards", caller: caller, data: {bin-id: bin-id, claimable-rewards: claimable-rewards}})
+			(ok claimable-rewards)
+		)
+	)
 )
 ```
 </details>
@@ -1294,7 +1280,7 @@ Claim any claimable rewards at a bin
 
 ### withdraw-rewards
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L712)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L682)
 
 `(define-public (withdraw-rewards ((amount uint) (recipient principal)) (response bool uint))`
 
@@ -1305,28 +1291,27 @@ Withdraw reward token from contract
 
 ```clarity
 (define-public (withdraw-rewards (amount uint) (recipient principal))
-  (let (
-    (caller tx-sender)
-  )
-    (begin
-      ;; Assert caller is an admin and recipient is standard principal
-      (asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
-      (asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
+	(let (
+		(caller tx-sender)
+	)
+		(begin
+			;; Assert caller is an admin and recipient is standard principal
+			(asserts! (is-some (index-of (var-get admins) caller)) ERR_NOT_AUTHORIZED)
+			(asserts! (is-standard recipient) ERR_INVALID_PRINCIPAL)
 
-      ;; Assert amount is greater than 0
-      (asserts! (> amount u0) ERR_INVALID_AMOUNT)
+			;; Assert amount is greater than 0
+			(asserts! (> amount u0) ERR_INVALID_AMOUNT)
 
-      ;; Assert amount is less than or equal to the contract's reward token balance
-      (asserts! (<= amount (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
+			;; Assert amount is less than or equal to the contract's reward token balance
+			(asserts! (<= amount (unwrap! (get-reward-token-balance) ERR_CANNOT_GET_TOKEN_BALANCE)) ERR_INSUFFICIENT_TOKEN_BALANCE)
 
-      ;; Transfer amount rewards token from contract to recipient
-      (try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token amount tx-sender recipient))))
+			;; Transfer amount rewards token from contract to recipient
+			(try! (as-contract? ((with-all-assets-unsafe)) (try! (transfer-reward-token amount tx-sender recipient))))
 
-      ;; Print function data and return true
-      (print {action: "withdraw-rewards", caller: caller, data: {amount: amount, recipient: recipient}})
-      (ok true)
-    )
-  )
+			(print {action: "withdraw-rewards", caller: caller, data: {amount: amount, recipient: recipient}})
+			(ok true)
+		)
+	)
 )
 ```
 </details>
@@ -1341,7 +1326,7 @@ Withdraw reward token from contract
 
 ### update-reward-index
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L738)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L707)
 
 `(define-public (update-reward-index ((bin-id uint)) (response bool uint))`
 
@@ -1352,27 +1337,26 @@ Update reward index for a bin
 
 ```clarity
 (define-public (update-reward-index (bin-id uint))
-  (let (
-    (current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
-    (updated-reward-index (unwrap-panic (get-updated-reward-index bin-id)))
-    (reward-period-effective-block (get reward-period-effective-block updated-reward-index))
-    (caller tx-sender)
-  )
-    ;; Update reward index if reward-period-effective-block is greater than last-reward-index-update
-    (if (> reward-period-effective-block (get last-reward-index-update current-bin-data))
-        (begin
-          ;; Update bin-data mapping
-          (map-set bin-data bin-id (merge (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA) {
-            reward-index: (get reward-index updated-reward-index),
-            last-reward-index-update: reward-period-effective-block
-          }))
+	(let (
+		(current-bin-data (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA))
+		(updated-reward-index (unwrap-panic (get-updated-reward-index bin-id)))
+		(reward-period-effective-block (get reward-period-effective-block updated-reward-index))
+		(caller tx-sender)
+	)
+		;; Update reward index if reward-period-effective-block is greater than last-reward-index-update
+		(if (> reward-period-effective-block (get last-reward-index-update current-bin-data))
+				(begin
+					;; Update bin-data mapping
+					(map-set bin-data bin-id (merge (unwrap! (map-get? bin-data bin-id) ERR_NO_BIN_DATA) {
+						reward-index: (get reward-index updated-reward-index),
+						last-reward-index-update: reward-period-effective-block
+					}))
 
-          ;; Print function data and return true
-          (print {action: "update-reward-index", caller: caller, data: {bin-id: bin-id, updated-reward-index: updated-reward-index}})
-          (ok true)
-        )
-        (ok true))
-  )
+					(print {action: "update-reward-index", caller: caller, data: {bin-id: bin-id, updated-reward-index: updated-reward-index}})
+					(ok true)
+				)
+				(ok true))
+	)
 )
 ```
 </details>
@@ -1386,7 +1370,7 @@ Update reward index for a bin
 
 ### get-claimable-rewards-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L763)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L731)
 
 `(define-public (get-claimable-rewards-multi ((users (list 350 principal)) (bin-ids (list 350 int))) (response (list 350 (response (tuple (accrued-rewards uint) (claimable-rewards uint) (pending-rewards uint)) uint)) none))`
 
@@ -1397,10 +1381,10 @@ Get claimable rewards for multiple bins
 
 ```clarity
 (define-public (get-claimable-rewards-multi
-    (users (list 350 principal))
-    (bin-ids (list 350 int))
-  )
-  (ok (map get-claimable-rewards users bin-ids))
+		(users (list 350 principal))
+		(bin-ids (list 350 int))
+	)
+	(ok (map get-claimable-rewards users bin-ids))
 )
 ```
 </details>
@@ -1415,7 +1399,7 @@ Get claimable rewards for multiple bins
 
 ### set-reward-period-duration-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L771)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L739)
 
 `(define-public (set-reward-period-duration-multi ((bin-ids (list 350 int)) (durations (list 350 uint))) (response (list 350 (response bool uint)) none))`
 
@@ -1426,10 +1410,10 @@ Set reward period duration for multiple bins
 
 ```clarity
 (define-public (set-reward-period-duration-multi
-    (bin-ids (list 350 int))
-    (durations (list 350 uint))
-  )
-  (ok (map set-reward-period-duration bin-ids durations))
+		(bin-ids (list 350 int))
+		(durations (list 350 uint))
+	)
+	(ok (map set-reward-period-duration bin-ids durations))
 )
 ```
 </details>
@@ -1444,7 +1428,7 @@ Set reward period duration for multiple bins
 
 ### set-rewards-to-distribute-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L779)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L747)
 
 `(define-public (set-rewards-to-distribute-multi ((bin-ids (list 350 int)) (amounts (list 350 uint))) (response (list 350 (response bool uint)) none))`
 
@@ -1455,10 +1439,10 @@ Set rewards to distribute for multiple bins
 
 ```clarity
 (define-public (set-rewards-to-distribute-multi
-    (bin-ids (list 350 int))
-    (amounts (list 350 uint))
-  )
-  (ok (map set-rewards-to-distribute bin-ids amounts))
+		(bin-ids (list 350 int))
+		(amounts (list 350 uint))
+	)
+	(ok (map set-rewards-to-distribute bin-ids amounts))
 )
 ```
 </details>
@@ -1473,7 +1457,7 @@ Set rewards to distribute for multiple bins
 
 ### stake-lp-tokens-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L787)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L755)
 
 `(define-public (stake-lp-tokens-multi ((bin-ids (list 350 int)) (amounts (list 350 uint))) (response (list 350 (response bool uint)) none))`
 
@@ -1484,10 +1468,10 @@ Stake LP tokens for multiple bins
 
 ```clarity
 (define-public (stake-lp-tokens-multi
-    (bin-ids (list 350 int))
-    (amounts (list 350 uint))
-  )
-  (ok (map stake-lp-tokens bin-ids amounts))
+		(bin-ids (list 350 int))
+		(amounts (list 350 uint))
+	)
+	(ok (map stake-lp-tokens bin-ids amounts))
 )
 ```
 </details>
@@ -1502,7 +1486,7 @@ Stake LP tokens for multiple bins
 
 ### unstake-lp-tokens-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L795)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L763)
 
 `(define-public (unstake-lp-tokens-multi ((bin-ids (list 350 int))) (response (list 350 (response bool uint)) none))`
 
@@ -1513,9 +1497,9 @@ Unstake LP tokens for multiple bins
 
 ```clarity
 (define-public (unstake-lp-tokens-multi
-    (bin-ids (list 350 int))
-  )
-  (ok (map unstake-lp-tokens bin-ids))
+		(bin-ids (list 350 int))
+	)
+	(ok (map unstake-lp-tokens bin-ids))
 )
 ```
 </details>
@@ -1529,7 +1513,7 @@ Unstake LP tokens for multiple bins
 
 ### early-unstake-lp-tokens-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L802)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L770)
 
 `(define-public (early-unstake-lp-tokens-multi ((bin-ids (list 350 int))) (response (list 350 (response bool uint)) none))`
 
@@ -1540,9 +1524,9 @@ Early unstake LP tokens for multiple bins
 
 ```clarity
 (define-public (early-unstake-lp-tokens-multi
-    (bin-ids (list 350 int))
-  )
-  (ok (map early-unstake-lp-tokens bin-ids))
+		(bin-ids (list 350 int))
+	)
+	(ok (map early-unstake-lp-tokens bin-ids))
 )
 ```
 </details>
@@ -1556,7 +1540,7 @@ Early unstake LP tokens for multiple bins
 
 ### claim-rewards-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L809)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L777)
 
 `(define-public (claim-rewards-multi ((bin-ids (list 350 int))) (response (list 350 (response uint uint)) none))`
 
@@ -1567,9 +1551,9 @@ Claim any claimable rewards for multiple bins
 
 ```clarity
 (define-public (claim-rewards-multi
-    (bin-ids (list 350 int))
-  )
-  (ok (map claim-rewards bin-ids))
+		(bin-ids (list 350 int))
+	)
+	(ok (map claim-rewards bin-ids))
 )
 ```
 </details>
@@ -1583,7 +1567,7 @@ Claim any claimable rewards for multiple bins
 
 ### update-reward-index-multi
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L816)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L784)
 
 `(define-public (update-reward-index-multi ((bin-ids (list 350 uint))) (response (list 350 (response bool uint)) none))`
 
@@ -1594,9 +1578,9 @@ Update reward index for multiple bins
 
 ```clarity
 (define-public (update-reward-index-multi
-    (bin-ids (list 350 uint))
-  )
-  (ok (map update-reward-index bin-ids))
+		(bin-ids (list 350 uint))
+	)
+	(ok (map update-reward-index bin-ids))
 )
 ```
 </details>
@@ -1610,7 +1594,7 @@ Update reward index for multiple bins
 
 ### admin-not-removable
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L823)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L791)
 
 `(define-private (admin-not-removable ((admin principal)) bool)`
 
@@ -1621,7 +1605,7 @@ Helper function for removing an admin
 
 ```clarity
 (define-private (admin-not-removable (admin principal))
-  (not (is-eq admin (var-get admin-helper)))
+	(not (is-eq admin (var-get admin-helper)))
 )
 ```
 </details>
@@ -1635,7 +1619,7 @@ Helper function for removing an admin
 
 ### filter-values-eq-helper-value
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L828)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L796)
 
 `(define-private (filter-values-eq-helper-value ((value uint)) bool)`
 
@@ -1646,7 +1630,7 @@ Filter function for removing a bin-id from the bins-staked list
 
 ```clarity
 (define-private (filter-values-eq-helper-value (value uint))
-  (not (is-eq value (var-get helper-value)))
+	(not (is-eq value (var-get helper-value)))
 )
 ```
 </details>
@@ -1660,7 +1644,7 @@ Filter function for removing a bin-id from the bins-staked list
 
 ### get-reward-token-balance
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L833)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L801)
 
 `(define-private (get-reward-token-balance () (response uint uint))`
 
@@ -1671,8 +1655,8 @@ Get reward token balance for contract
 
 ```clarity
 (define-private (get-reward-token-balance)
-  (ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance
-               current-contract) ERR_CANNOT_GET_TOKEN_BALANCE))
+	(ok (unwrap! (contract-call? .token-stx-v-1-1 get-balance
+							 current-contract) ERR_CANNOT_GET_TOKEN_BALANCE))
 )
 ```
 </details>
@@ -1682,7 +1666,7 @@ Get reward token balance for contract
 
 ### transfer-lp-token
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L839)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L807)
 
 `(define-private (transfer-lp-token ((bin-id uint) (amount uint) (sender principal) (recipient principal)) (response bool uint))`
 
@@ -1693,8 +1677,8 @@ Transfer LP token
 
 ```clarity
 (define-private (transfer-lp-token (bin-id uint) (amount uint) (sender principal) (recipient principal))
-  (ok (unwrap! (contract-call? .dlmm-pool-sbtc-usdc-v-1-1 transfer
-               bin-id amount sender recipient) ERR_TOKEN_TRANSFER_FAILED))
+	(ok (unwrap! (contract-call? .dlmm-pool-sbtc-usdc-v-1-1 transfer
+							 bin-id amount sender recipient) ERR_TOKEN_TRANSFER_FAILED))
 )
 ```
 </details>
@@ -1711,7 +1695,7 @@ Transfer LP token
 
 ### transfer-reward-token
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L845)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L813)
 
 `(define-private (transfer-reward-token ((amount uint) (sender principal) (recipient principal)) (response bool uint))`
 
@@ -1722,8 +1706,8 @@ Transfer reward token
 
 ```clarity
 (define-private (transfer-reward-token (amount uint) (sender principal) (recipient principal))
-  (ok (unwrap! (contract-call? .token-stx-v-1-1 transfer
-               amount sender recipient none) ERR_TOKEN_TRANSFER_FAILED))
+	(ok (unwrap! (contract-call? .token-stx-v-1-1 transfer
+							 amount sender recipient none) ERR_TOKEN_TRANSFER_FAILED))
 )
 ```
 </details>
@@ -1741,16 +1725,16 @@ Transfer reward token
 
 ### bin-data
 
-Define bin-data map
+Define mappings
 
 ```clarity
 (define-map bin-data uint {
-  lp-staked: uint,
-  reward-per-block: uint,
-  reward-period-duration: uint,
-  reward-index: uint,
-  last-reward-index-update: uint,
-  reward-period-end-block: uint
+	lp-staked: uint,
+	reward-per-block: uint,
+	reward-period-duration: uint,
+	reward-index: uint,
+	last-reward-index-update: uint,
+	reward-period-end-block: uint
 })
 ```
 
@@ -1758,31 +1742,31 @@ Define bin-data map
 
 ### user-data
 
-Define user-data map
+
 
 ```clarity
 (define-map user-data principal {
-  bins-staked: (list 1001 uint),
-  lp-staked: uint
+	bins-staked: (list 1001 uint),
+	lp-staked: uint
 })
 ```
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L83)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L82)
 
 ### user-data-at-bin
 
-Define user-data-at-bin map
+
 
 ```clarity
 (define-map user-data-at-bin {user: principal, bin-id: uint} {
-  lp-staked: uint,
-  accrued-rewards: uint,
-  reward-index: uint,
-  last-stake-height: uint
+	lp-staked: uint,
+	accrued-rewards: uint,
+	reward-index: uint,
+	last-stake-height: uint
 })
 ```
 
-[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L89)
+[View in file](../clarity/contracts/dlmm-staking-sbtc-usdc-v-1-1.clar#L87)
 
 ## Variables
 

@@ -82,6 +82,11 @@ plan:
             path: contracts/dlmm-pool-trait-v-1-1.clar
             clarity-version: 4
         - emulated-contract-publish:
+            contract-name: dlmm-core-trait-v-1-1
+            emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+            path: contracts/dlmm-core-trait-v-1-1.clar
+            clarity-version: 4
+        - emulated-contract-publish:
             contract-name: dlmm-core-v-1-1
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
             path: contracts/dlmm-core-v-1-1.clar

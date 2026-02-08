@@ -182,6 +182,7 @@
     (ok {
       pool-id: (get pool-id current-pool-info),
       pool-name: (get pool-name current-pool-info),
+      core-address: CORE_ADDRESS,
       fee-address: (get fee-address current-pool-addresses),
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
@@ -206,6 +207,7 @@
     (ok {
       pool-id: (get pool-id current-pool-info),
       pool-name: (get pool-name current-pool-info),
+      core-address: CORE_ADDRESS,
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses),
       bin-step: (var-get bin-step),
@@ -231,6 +233,7 @@
     (ok {
       pool-id: (get pool-id current-pool-info),
       pool-name: (get pool-name current-pool-info),
+      core-address: CORE_ADDRESS,
       x-token: (get x-token current-pool-addresses),
       y-token: (get y-token current-pool-addresses)
     })
